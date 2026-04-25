@@ -38,8 +38,16 @@ const styleEl = document.createElement("style");
 styleEl.textContent = `
   *{box-sizing:border-box;margin:0;padding:0}
   html,body,#root{height:100%;width:100%;overflow:hidden;background:#f0e8d0}
+  :root{
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+  }
   .leaflet-container{height:100%!important;width:100%!important}
   .pm-pin{background:none!important;border:none!important}
+  .safe-bottom{padding-bottom:env(safe-area-inset-bottom, 16px)}
+  .safe-pad{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0)}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   @keyframes pop{0%{opacity:0;transform:scale(0.85)}70%{opacity:1;transform:scale(1.03)}100%{transform:scale(1)}}
   @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
@@ -133,7 +141,7 @@ function App() {
 
   const [open,    setOpen]    = useState(false);
   const [tab,     setTab]     = useState("search");
-  const [fabPos,  setFabPos]  = useState({bottom:32,right:20});
+  const [fabPos,  setFabPos]  = useState({bottom:'calc(32px + env(safe-area-inset-bottom, 0px))',right:'calc(20px + env(safe-area-inset-right, 0px))'});
 
   const [searchTag,     setSearchTag]     = useState("");
   const [searchResults, setSearchResults] = useState(null);
@@ -276,7 +284,9 @@ function App() {
 
   function bubblePos(){
     const vw=window.innerWidth,vh=window.innerHeight,bw=300,bh=Math.min(vh*0.72,540);
-    let right=fabPos.right,bottom=fabPos.bottom+58;
+    const sab=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab'))||0;
+    const sar=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sar'))||0;
+    let right=(typeof fabPos.right==='number'?fabPos.right:20)+sar,bottom=(typeof fabPos.bottom==='number'?fabPos.bottom:32)+58+sab;
     if(bottom+bh>vh-12) bottom=Math.max(12,vh-bh-12);
     if(vw-right-bw<8) right=Math.max(8,vw-bw-8);
     return {position:"absolute",right,bottom,width:bw,maxHeight:bh,display:"flex",flexDirection:"column",background:"rgba(255,253,248,0.98)",backdropFilter:"blur(20px)",border:"1px solid #d0c4a8",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.18)",zIndex:1000,overflow:"hidden",transformOrigin:"bottom right"};
@@ -305,20 +315,20 @@ function App() {
     e("div",{ref:mapDiv,style:{position:"absolute",top:0,left:0,right:0,bottom:0,zIndex:0}}),
 
     // Search bar
-    !activeFilter && e("div",{style:{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,width:"88%",maxWidth:380}},
+    !activeFilter && e("div",{style:{position:"absolute",top:"calc(16px + env(safe-area-inset-top, 0px))",left:"50%",transform:"translateX(-50%)",zIndex:999,width:"88%",maxWidth:380}},
       e("input",{style:{width:"100%",padding:"11px 20px",borderRadius:25,border:"none",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",fontSize:14,outline:"none",background:"rgba(255,255,255,0.97)",color:"#2c2416"},
         placeholder:"Search #hashtags...",value:searchTag,onChange:ev=>setSearchTag(ev.target.value),
         onKeyDown:ev=>{ if(ev.key==="Enter"&&searchTag.trim()){doSearch();setOpen(true);setTab("search");} }})
     ),
 
     // Active filter pill
-    activeFilter && e("div",{style:{position:"absolute",top:14,left:"50%",transform:"translateX(-50%)",background:"rgba(255,255,255,0.97)",borderRadius:25,padding:"6px 14px",fontSize:12,zIndex:999,display:"flex",alignItems:"center",gap:7,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
+    activeFilter && e("div",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top, 0px))",left:"50%",transform:"translateX(-50%)",background:"rgba(255,255,255,0.97)",borderRadius:25,padding:"6px 14px",fontSize:12,zIndex:999,display:"flex",alignItems:"center",gap:7,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
       e("span",{style:{color:tagColor(activeFilter),fontWeight:700}}, `#${activeFilter}`),
       e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:12,padding:0},onClick:()=>{setActiveFilter(null);setSearchResults(null);setSearchTag("");}}, "✕")
     ),
 
     // GPS button
-    e("button",{onClick:gpsLocate,title:"My location",style:{position:"absolute",top:70,right:14,width:42,height:42,borderRadius:"50%",background:"rgba(255,253,248,0.96)",backdropFilter:"blur(12px)",border:`1.5px solid ${locating?"#1565c0":"#c8b89a"}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:999,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
+    e("button",{onClick:gpsLocate,title:"My location",style:{position:"absolute",top:"calc(70px + env(safe-area-inset-top, 0px))",right:"calc(14px + env(safe-area-inset-right, 0px))",width:42,height:42,borderRadius:"50%",background:"rgba(255,253,248,0.96)",backdropFilter:"blur(12px)",border:`1.5px solid ${locating?"#1565c0":"#c8b89a"}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:999,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
       locating
         ? e("span",{style:{fontSize:16,display:"inline-block",animation:"spin 1s linear infinite"}}, "⟳")
         : e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"#1565c0",strokeWidth:2.2,strokeLinecap:"round",strokeLinejoin:"round"},
@@ -450,7 +460,7 @@ function App() {
     ),
 
     // Pin detail popup
-    selPin && e("div",{className:"detail",style:{position:"absolute",bottom:20,left:16,background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"13px 15px",minWidth:220,maxWidth:290,zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)"}},
+    selPin && e("div",{className:"detail",style:{position:"absolute",bottom:"calc(20px + env(safe-area-inset-bottom, 0px))",left:"calc(16px + env(safe-area-inset-left, 0px))",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"13px 15px",minWidth:220,maxWidth:290,zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)"}},
       e("button",{style:{position:"absolute",top:8,right:10,background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:12},onClick:()=>setSelPin(null)}, "✕"),
       selPin.photo && e("img",{src:selPin.photo,style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:140,objectFit:"cover"}}),
       e("div",{style:{fontWeight:700,fontSize:14,color:"#2c2416",marginBottom:2,paddingRight:16}}, selPin.name),
@@ -470,7 +480,7 @@ function App() {
     ),
 
     // Toast
-    toast && e("div",{style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",color:"#2e7d32",padding:"7px 16px",borderRadius:20,fontSize:11,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}}, toast)
+    toast && e("div",{style:{position:"absolute",bottom:"calc(18px + env(safe-area-inset-bottom, 0px))",left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",color:"#2e7d32",padding:"7px 16px",borderRadius:20,fontSize:11,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}}, toast)
   );
 }
 
