@@ -138,7 +138,7 @@ function Splash(props) {
   var expState = useState(false); var expanded = expState[0]; var setExpanded = expState[1];
   return e("div",{style:{position:"fixed",inset:0,background:"#f0e8d0",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16}},
     e("div",{style:{textAlign:"center",padding:"36px 28px",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,maxWidth:340,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.12)"}},
-      e("div",{style:{fontSize:44,marginBottom:6}},"[pin]"),
+      e("div",{style:{fontSize:44,marginBottom:6}},"📍"),
       e("div",{style:{fontSize:28,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:4}},"PINMAP"),
       e("div",{style:{fontSize:14,color:"#9a8a70",letterSpacing:1,marginBottom:6}},"Tag the terrain. Share the stoke."),
       e("div",{style:{fontSize:11,color:"#c8b89a",marginBottom:20,letterSpacing:0.3}},"(c) "+new Date().getFullYear()+" Seth Gray. All rights reserved."),
@@ -275,9 +275,9 @@ function PinCard(props) {
       notOwner && e(React.Fragment,null,
         e("button",{style:S.miniBtn,onClick:function(){props.onUpvote(pin.id);}},
           (pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?"*":"o")+" "+(pin.upvotes?pin.upvotes.length:0)),
-        e("button",{style:S.miniBtn,onClick:function(){props.onSave(pin);}}, "[star] Save")
+        e("button",{style:S.miniBtn,onClick:function(){props.onSave(pin);}}, "⭐ Save")
       ),
-      isOwner && !pin.saved_from && e("button",{style:Object.assign({},S.miniBtn,{color:"#c05050"}),onClick:function(){props.onDelete(pin.id);}}, "[del]")
+      isOwner && !pin.saved_from && e("button",{style:Object.assign({},S.miniBtn,{color:"#c05050"}),onClick:function(){props.onDelete(pin.id);}}, "🗑")
     )
   );
 }
@@ -288,13 +288,13 @@ function ProfilePanel(props) {
   var own=myPins.filter(function(p){return !p.saved_from;});
   var saved=myPins.filter(function(p){return p.saved_from;});
   var upvotes=own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
-  var stats=[["[pin]",own.length,"pins"],["[globe]",own.filter(function(p){return p.privacy==="public";}).length,"public"],["[star]",saved.length,"saved"],["*",upvotes,"upvotes"]];
+  var stats=[["📍",own.length,"pins"],["🌍",own.filter(function(p){return p.privacy==="public";}).length,"public"],["⭐",saved.length,"saved"],["*",upvotes,"upvotes"]];
   var avatar=userAvatar(user);
   return e("div",null,
     e("div",{style:{textAlign:"center",marginBottom:16}},
       avatar
         ? e("img",{src:avatar,style:{width:64,height:64,borderRadius:"50%",border:"2px solid #d0c4a8",marginBottom:8,display:"block",margin:"0 auto 8px"}})
-        : e("div",{style:{fontSize:40,marginBottom:8}},"[compass]"),
+        : e("div",{style:{fontSize:40,marginBottom:8}},"🧭"),
       e("div",{style:{fontWeight:700,fontSize:17,color:"#2c2416",marginBottom:2}},uname),
       user && e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:12}},user.email),
       user
@@ -655,7 +655,7 @@ function App() {
     open && e("div",{className:"bubble",style:bubblePos()},
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 13px",borderBottom:"1px solid #e8dcc4",background:"rgba(245,238,218,0.9)",flexShrink:0}},
         e("div",{style:{display:"flex",flexDirection:"column",gap:1}},
-          e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"[pin] PINMAP"),
+          e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"📍 PINMAP"),
           e("span",{style:{fontSize:10,color:"#b0a080",letterSpacing:0.3}},"(c) Seth Gray")
         ),
         e("div",{style:{display:"flex",alignItems:"center",gap:6}},
@@ -846,7 +846,7 @@ function App() {
         (uname&&selPin.owner!==uname)&&e(React.Fragment,null,
           e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){toggleUpvote(selPin.id);}},
             (selPin.upvotes&&selPin.upvotes.indexOf(uname)>=0?"* ":"o ")+(selPin.upvotes?selPin.upvotes.length:0)),
-          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){saveToCollection(selPin);}},"[star] Save")
+          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){saveToCollection(selPin);}},"⭐ Save")
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
           e("button",{style:{background:"none",border:"1px solid #2e7d32",color:"#2e7d32",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){openEdit(selPin);}},"Edit"),
