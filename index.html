@@ -258,7 +258,7 @@ function App() {
       if(!window.L||!mapDiv.current){setTimeout(tryInit,150);return;}
       var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
       window.L.control.zoom({position:"bottomleft"}).addTo(map);
-      window.L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{attribution:"(c) OpenStreetMap contributors, (c) CARTO",maxZoom:19}).addTo(map);
+      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
       map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set");});
       mapObj.current=map;
     }
