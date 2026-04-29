@@ -378,23 +378,23 @@ function App() {
       window.L.control.zoom({position:"bottomleft"}).addTo(map);
       window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
       clusterGroup.current=window.L.markerClusterGroup({
-      showCoverageOnHover:false,
-      maxClusterRadius:50,
-      iconCreateFunction:function(cluster){
-        var count=cluster.getChildCount();
-        var sz=count<10?38:count<50?44:50;
-        return window.L.divIcon({
-          html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:rgba(46,125,50,0.88);border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-family:Courier New,monospace;font-weight:700;font-size:'+(count<10?14:12)+'px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">'+count+'</div>',
-          className:"",iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
-        });
-      }
-    });
-    map.addLayer(clusterGroup.current);
-    map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
-    mapObj.current=map;
+        showCoverageOnHover:false,
+        maxClusterRadius:50,
+        iconCreateFunction:function(cluster){
+          var count=cluster.getChildCount();
+          var sz=count<10?38:count<50?44:50;
+          return window.L.divIcon({
+            html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:rgba(46,125,50,0.88);border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-family:Courier New,monospace;font-weight:700;font-size:'+(count<10?14:12)+'px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">'+count+'</div>',
+            className:"",iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
+          });
+        }
+      });
+      map.addLayer(clusterGroup.current);
+      map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
+      mapObj.current=map;
     }
     initMap();
-  },[]);
+  },[]);;
 
   useEffect(function(){
     if(!splashDone) return;
