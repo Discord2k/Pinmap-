@@ -140,7 +140,8 @@ function Splash(props) {
     e("div",{style:{textAlign:"center",padding:"36px 28px",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,maxWidth:340,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.12)"}},
       e("div",{style:{fontSize:44,marginBottom:6}},"[pin]"),
       e("div",{style:{fontSize:28,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:4}},"PINMAP"),
-      e("div",{style:{fontSize:14,color:"#9a8a70",letterSpacing:1,marginBottom:20}},"Tag the terrain. Share the stoke."),
+      e("div",{style:{fontSize:14,color:"#9a8a70",letterSpacing:1,marginBottom:6}},"Tag the terrain. Share the stoke."),
+      e("div",{style:{fontSize:11,color:"#c8b89a",marginBottom:20,letterSpacing:0.3}},"(c) "+new Date().getFullYear()+" Seth Gray. All rights reserved."),
       e("button",{
         onClick:function(){setExpanded(function(v){return !v;});},
         style:{background:"none",border:"1px solid #d0c4a8",borderRadius:8,padding:"8px 16px",fontSize:13,color:"#6a5a40",cursor:"pointer",marginBottom:14,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6}
@@ -150,7 +151,10 @@ function Splash(props) {
         e("p",{style:{marginBottom:10}},"PINMAP lets you drop a pin on any location and tag it with hashtags - then share it publicly or keep it just for yourself."),
         e("p",{style:{marginBottom:10}},"Search any hashtag to discover pins saved by others. Follow a tag like #murals and find hidden street art in your city, or browse #wildflowers to see where others have spotted rare blooms."),
         e("p",{style:{marginBottom:10}},"Save pins from other users to your own collections. Upvote the ones you love. Export your collections to GPX or GeoJSON to use in other apps like Gaia GPS or AllTrails."),
-        e("p",{style:{fontStyle:"italic",color:"#7a6a50"}},"Great pubs, unique murals, favourite flowers, secret trails, hidden gems - if it has a location, it belongs on PINMAP.")
+        e("p",{style:{fontStyle:"italic",color:"#7a6a50"}},"Great pubs, unique murals, favourite flowers, secret trails, hidden gems - if it has a location, it belongs on PINMAP."),
+        e("p",{style:{marginTop:10,fontSize:10,color:"#c8b89a",borderTop:"1px solid #d0c4a8",paddingTop:8}},
+          "PINMAP is the intellectual property of Seth Gray. (c) "+new Date().getFullYear()+" All rights reserved. Unauthorised reproduction or redistribution is prohibited."
+        )
       ),
       props.loading
         ? e("div",{style:{fontSize:15,color:"#9a8a70",padding:"16px 0"}},"Checking session...")
@@ -587,7 +591,10 @@ function App() {
 
     open && e("div",{className:"bubble",style:bubblePos()},
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 13px",borderBottom:"1px solid #e8dcc4",background:"rgba(245,238,218,0.9)",flexShrink:0}},
-        e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"[pin] PINMAP"),
+        e("div",{style:{display:"flex",flexDirection:"column",gap:1}},
+          e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"[pin] PINMAP"),
+          e("span",{style:{fontSize:10,color:"#b0a080",letterSpacing:0.3}},"(c) Seth Gray")
+        ),
         e("div",{style:{display:"flex",alignItems:"center",gap:6}},
           user&&userAvatar(user)?e("img",{src:userAvatar(user),style:{width:22,height:22,borderRadius:"50%",border:"1px solid #d0c4a8"}}):null,
           e("span",{style:{fontSize:12,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d0c4a8"}},uname),
