@@ -592,7 +592,7 @@ function App() {
     open && e("div",{className:"bubble",style:bubblePos()},
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 13px",borderBottom:"1px solid #e8dcc4",background:"rgba(245,238,218,0.9)",flexShrink:0}},
         e("div",{style:{display:"flex",flexDirection:"column",gap:1}},
-          e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"[pin] PINMAP"),
+          e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"PINMAP"),
           e("span",{style:{fontSize:10,color:"#b0a080",letterSpacing:0.3}},"(c) Seth Gray")
         ),
         e("div",{style:{display:"flex",alignItems:"center",gap:6}},
@@ -628,7 +628,7 @@ function App() {
               )
             :e("div",{style:S.hint},"Search public pins by hashtag.",
                 e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
-                  ["hiking","urbex","bikepacking","bouldering","overlanding","kayaking"].map(function(t){
+                  ["hiking","geocache","biketrail","fishingspot","campsites","murals"].map(function(t){
                     return e("span",{key:t,style:{fontSize:12,padding:"2px 8px",borderRadius:10,background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
                   })
                 )
