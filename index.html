@@ -112,12 +112,12 @@ styleEl.textContent=[
 document.head.appendChild(styleEl);
 
 var S = {
-  input:{width:"100%",background:"#f0e8d4",border:"1px solid #d0c4a8",color:"#2c2416",padding:"7px 9px",fontSize:11,borderRadius:4,marginBottom:6,boxSizing:"border-box",outline:"none",display:"block"},
-  btn:{background:"#2e7d32",color:"#fff",border:"none",padding:"7px 12px",fontWeight:700,fontSize:11,cursor:"pointer",borderRadius:4,whiteSpace:"nowrap"},
-  miniBtn:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"2px 7px",fontSize:10,cursor:"pointer",borderRadius:10},
-  chip:{background:"none",border:"1px solid #c8b89a",color:"#2e7d32",padding:"3px 8px",fontSize:10,cursor:"pointer",borderRadius:12},
-  secHead:{fontSize:9,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:7,borderBottom:"1px solid #e8dcc4",paddingBottom:4},
-  hint:{fontSize:11,color:"#9a8a70",lineHeight:1.65},
+  input:{width:"100%",background:"#f0e8d4",border:"1px solid #d0c4a8",color:"#2c2416",padding:"7px 9px",fontSize:13,borderRadius:4,marginBottom:6,boxSizing:"border-box",outline:"none",display:"block"},
+  btn:{background:"#2e7d32",color:"#fff",border:"none",padding:"7px 12px",fontWeight:700,fontSize:13,cursor:"pointer",borderRadius:4,whiteSpace:"nowrap"},
+  miniBtn:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"2px 7px",fontSize:12,cursor:"pointer",borderRadius:10},
+  chip:{background:"none",border:"1px solid #c8b89a",color:"#2e7d32",padding:"3px 8px",fontSize:12,cursor:"pointer",borderRadius:12},
+  secHead:{fontSize:11,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:7,borderBottom:"1px solid #e8dcc4",paddingBottom:4},
+  hint:{fontSize:13,color:"#9a8a70",lineHeight:1.65},
   card:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:5,padding:"7px 9px",marginBottom:6,cursor:"pointer",position:"relative"}
 };
 
@@ -127,13 +127,13 @@ function Splash(props) {
   return e("div",{style:{position:"fixed",inset:0,background:"#f0e8d0",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16}},
     e("div",{style:{textAlign:"center",padding:"36px 28px",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,maxWidth:340,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.12)"}},
       e("div",{style:{fontSize:44,marginBottom:6}},"[pin]"),
-      e("div",{style:{fontSize:26,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:4}},"PINMAP"),
-      e("div",{style:{fontSize:12,color:"#9a8a70",letterSpacing:1,marginBottom:20}},"Tag the terrain. Share the stoke."),
+      e("div",{style:{fontSize:28,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:4}},"PINMAP"),
+      e("div",{style:{fontSize:14,color:"#9a8a70",letterSpacing:1,marginBottom:20}},"Tag the terrain. Share the stoke."),
       e("button",{
         onClick:function(){setExpanded(function(v){return !v;});},
-        style:{background:"none",border:"1px solid #d0c4a8",borderRadius:8,padding:"8px 16px",fontSize:11,color:"#6a5a40",cursor:"pointer",marginBottom:14,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6}
+        style:{background:"none",border:"1px solid #d0c4a8",borderRadius:8,padding:"8px 16px",fontSize:13,color:"#6a5a40",cursor:"pointer",marginBottom:14,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6}
       }, expanded?"Hide description":"What is PINMAP? (learn more)"),
-      expanded && e("div",{style:{textAlign:"left",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:"14px 16px",marginBottom:16,fontSize:11,color:"#4a3a28",lineHeight:1.75}},
+      expanded && e("div",{style:{textAlign:"left",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:"14px 16px",marginBottom:16,fontSize:13,color:"#4a3a28",lineHeight:1.75}},
         e("p",{style:{marginBottom:10,fontWeight:700,color:"#2e7d32"}},"A lightweight social map for the things that matter to you."),
         e("p",{style:{marginBottom:10}},"PINMAP lets you drop a pin on any location and tag it with hashtags - then share it publicly or keep it just for yourself."),
         e("p",{style:{marginBottom:10}},"Search any hashtag to discover pins saved by others. Follow a tag like #murals and find hidden street art in your city, or browse #wildflowers to see where others have spotted rare blooms."),
@@ -141,10 +141,10 @@ function Splash(props) {
         e("p",{style:{fontStyle:"italic",color:"#7a6a50"}},"Great pubs, unique murals, favourite flowers, secret trails, hidden gems - if it has a location, it belongs on PINMAP.")
       ),
       props.loading
-        ? e("div",{style:{fontSize:13,color:"#9a8a70",padding:"16px 0"}},"Checking session...")
+        ? e("div",{style:{fontSize:15,color:"#9a8a70",padding:"16px 0"}},"Checking session...")
         : e("div",null,
             e("button",{
-              style:{width:"100%",padding:12,marginBottom:10,background:"#fff",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,fontWeight:700,color:"#2c2416",display:"flex",alignItems:"center",justifyContent:"center",gap:8},
+              style:{width:"100%",padding:12,marginBottom:10,background:"#fff",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:15,fontWeight:700,color:"#2c2416",display:"flex",alignItems:"center",justifyContent:"center",gap:8},
               onClick:props.onGoogle
             },
               e("svg",{width:18,height:18,viewBox:"0 0 48 48"},
@@ -156,7 +156,7 @@ function Splash(props) {
               "Continue with Google"
             ),
             e("button",{
-              style:{width:"100%",padding:11,background:"none",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,color:"#6a5a40"},
+              style:{width:"100%",padding:11,background:"none",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:15,color:"#6a5a40"},
               onClick:props.onGuest
             },"Browse as Guest")
           )
@@ -183,11 +183,11 @@ function Onboarding(props) {
           return e("div",{key:i,style:{width:i===step?20:6,height:6,borderRadius:3,background:i===step?"#2e7d32":"#d0c4a8",transition:"width 0.2s"}});
         })
       ),
-      e("div",{style:{fontSize:15,fontWeight:700,color:"#2c2416",marginBottom:8,textAlign:"center"}},info.title),
-      e("div",{style:{fontSize:12,color:"#5a4a30",lineHeight:1.75,textAlign:"center",marginBottom:18}},info.body),
+      e("div",{style:{fontSize:17,fontWeight:700,color:"#2c2416",marginBottom:8,textAlign:"center"}},info.title),
+      e("div",{style:{fontSize:14,color:"#5a4a30",lineHeight:1.75,textAlign:"center",marginBottom:18}},info.body),
       e("div",{style:{display:"flex",gap:8}},
-        e("button",{style:{flex:1,padding:9,background:"none",border:"1px solid #d0c4a8",borderRadius:8,fontSize:12,color:"#9a8a70",cursor:"pointer"},onClick:props.onSkip},"Skip"),
-        e("button",{style:{flex:2,padding:9,background:"#2e7d32",border:"none",borderRadius:8,fontSize:12,color:"#fff",fontWeight:700,cursor:"pointer"},onClick:props.onNext},isLast?"Get Started!":"Next")
+        e("button",{style:{flex:1,padding:9,background:"none",border:"1px solid #d0c4a8",borderRadius:8,fontSize:14,color:"#9a8a70",cursor:"pointer"},onClick:props.onSkip},"Skip"),
+        e("button",{style:{flex:2,padding:9,background:"#2e7d32",border:"none",borderRadius:8,fontSize:14,color:"#fff",fontWeight:700,cursor:"pointer"},onClick:props.onNext},isLast?"Get Started!":"Next")
       )
     )
   );
@@ -216,24 +216,24 @@ function Comments(props) {
   return e("div",{style:{borderTop:"1px solid #e8dcc4",marginTop:10,paddingTop:10}},
     e("div",{style:S.secHead},"Comments ("+(cLoading?"...":comments.length)+")"),
     cLoading
-      ? e("div",{style:{fontSize:11,color:"#9a8a70"}},"Loading...")
+      ? e("div",{style:{fontSize:13,color:"#9a8a70"}},"Loading...")
       : e("div",null,
-          comments.length===0 && e("div",{style:{fontSize:11,color:"#b0a080",fontStyle:"italic",marginBottom:8}},"No comments yet. Be the first!"),
+          comments.length===0 && e("div",{style:{fontSize:13,color:"#b0a080",fontStyle:"italic",marginBottom:8}},"No comments yet. Be the first!"),
           comments.map(function(c){
             return e("div",{key:c.id,style:{marginBottom:7,padding:"7px 9px",background:"#f0e8d4",borderRadius:6,border:"1px solid #e0d4bc",position:"relative"}},
-              e("div",{style:{fontSize:10,fontWeight:700,color:"#2e7d32",marginBottom:2}},"@"+c.owner),
-              e("div",{style:{fontSize:11,color:"#2c2416",lineHeight:1.5,paddingRight:c.owner===uname?16:0}},c.body),
-              c.owner===uname && e("button",{style:{position:"absolute",top:6,right:6,background:"none",border:"none",fontSize:10,color:"#c05050",cursor:"pointer"},onClick:function(){del(c.id);}},"x")
+              e("div",{style:{fontSize:12,fontWeight:700,color:"#2e7d32",marginBottom:2}},"@"+c.owner),
+              e("div",{style:{fontSize:13,color:"#2c2416",lineHeight:1.5,paddingRight:c.owner===uname?16:0}},c.body),
+              c.owner===uname && e("button",{style:{position:"absolute",top:6,right:6,background:"none",border:"none",fontSize:12,color:"#c05050",cursor:"pointer"},onClick:function(){del(c.id);}},"x")
             );
           }),
           e("div",{style:{display:"flex",gap:5,marginTop:8}},
             e("input",{
-              style:{flex:1,background:"#f0e8d4",border:"1px solid #d0c4a8",color:"#2c2416",padding:"7px 9px",fontSize:11,borderRadius:4,outline:"none"},
+              style:{flex:1,background:"#f0e8d4",border:"1px solid #d0c4a8",color:"#2c2416",padding:"7px 9px",fontSize:13,borderRadius:4,outline:"none"},
               placeholder:uname?"Add a comment...":"Sign in to comment",
               value:draft,onChange:function(ev){setDraft(ev.target.value);},
               onKeyDown:function(ev){if(ev.key==="Enter")submit();}
             }),
-            e("button",{style:{background:"#2e7d32",color:"#fff",border:"none",padding:"7px 10px",fontSize:11,fontWeight:700,cursor:"pointer",borderRadius:4,opacity:sending?0.6:1},onClick:submit,disabled:sending},sending?"...":"Post")
+            e("button",{style:{background:"#2e7d32",color:"#fff",border:"none",padding:"7px 10px",fontSize:13,fontWeight:700,cursor:"pointer",borderRadius:4,opacity:sending?0.6:1},onClick:submit,disabled:sending},sending?"...":"Post")
           )
         )
   );
@@ -248,13 +248,13 @@ function PinCard(props) {
     pin.photo && e("img",{src:pin.photo,style:{width:"100%",borderRadius:4,marginBottom:5,maxHeight:80,objectFit:"cover"}}),
     e("div",{style:{display:"flex",alignItems:"center",gap:5,marginBottom:1}},
       e("span",{style:{width:8,height:8,borderRadius:"50%",background:pin.color||tagColor(pin.tags&&pin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
-      e("span",{style:{fontWeight:700,fontSize:11,color:"#2c2416"}},pin.name)
+      e("span",{style:{fontWeight:700,fontSize:13,color:"#2c2416"}},pin.name)
     ),
-    e("div",{style:{fontSize:9,color:"#9a8a70",marginBottom:2}},
+    e("div",{style:{fontSize:11,color:"#9a8a70",marginBottom:2}},
       "@"+pin.owner+(pin.saved_from?" - saved from @"+pin.saved_from:"")+" - "+pin.privacy,
       props.dist!==undefined && e("span",{style:{color:"#2e7d32",marginLeft:4}},props.dist.toFixed(1)+"km")
     ),
-    e("div",{style:{fontSize:10,marginBottom:4}},(pin.tags||[]).map(function(t){return e("span",{key:t,style:{color:tagColor(t),marginRight:3}},"#"+t);})),
+    e("div",{style:{fontSize:12,marginBottom:4}},(pin.tags||[]).map(function(t){return e("span",{key:t,style:{color:tagColor(t),marginRight:3}},"#"+t);})),
     e("div",{style:{display:"flex",gap:4},onClick:function(ev){ev.stopPropagation();}},
       notOwner && e(React.Fragment,null,
         e("button",{style:S.miniBtn,onClick:function(){props.onUpvote(pin.id);}},
@@ -279,8 +279,8 @@ function ProfilePanel(props) {
       avatar
         ? e("img",{src:avatar,style:{width:64,height:64,borderRadius:"50%",border:"2px solid #d0c4a8",marginBottom:8,display:"block",margin:"0 auto 8px"}})
         : e("div",{style:{fontSize:40,marginBottom:8}},"[compass]"),
-      e("div",{style:{fontWeight:700,fontSize:15,color:"#2c2416",marginBottom:2}},uname),
-      user && e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:12}},user.email),
+      e("div",{style:{fontWeight:700,fontSize:17,color:"#2c2416",marginBottom:2}},uname),
+      user && e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:12}},user.email),
       user
         ? e("button",{style:Object.assign({},S.miniBtn,{padding:"5px 14px",fontSize:11}),onClick:props.onSignOut},"Sign out")
         : e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
@@ -289,8 +289,8 @@ function ProfilePanel(props) {
       stats.map(function(s){
         return e("div",{key:s[2],style:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:"10px 8px",textAlign:"center"}},
           e("div",{style:{fontSize:18}},s[0]),
-          e("div",{style:{fontWeight:700,fontSize:18,color:"#2e7d32"}},s[1]),
-          e("div",{style:{fontSize:9,color:"#9a8a70",textTransform:"uppercase",letterSpacing:0.5}},s[2])
+          e("div",{style:{fontWeight:700,fontSize:20,color:"#2e7d32"}},s[1]),
+          e("div",{style:{fontSize:11,color:"#9a8a70",textTransform:"uppercase",letterSpacing:0.5}},s[2])
         );
       })
     ),
@@ -489,7 +489,7 @@ function App() {
   }
 
   function bubblePos(){
-    var vw=window.innerWidth,vh=window.innerHeight,bw=Math.min(320,vw-24),bh=Math.min(vh*0.78,580);
+    var vw=window.innerWidth,vh=window.innerHeight,bw=Math.min(340,vw-16),bh=Math.min(vh*0.82,600);
     var right=fabPos.right,bottom=fabPos.bottom+58;
     if(bottom+bh>vh-12) bottom=Math.max(12,vh-bh-12);
     if(vw-right-bw<8) right=Math.max(8,vw-bw-8);
@@ -509,39 +509,39 @@ function App() {
     e("div",{ref:mapDiv,style:{position:"absolute",top:0,left:0,right:0,bottom:0,zIndex:0}}),
 
     !activeFilter && e("div",{className:"pm-search",style:{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,width:"88%",maxWidth:380}},
-      e("input",{style:{width:"100%",padding:"11px 20px",borderRadius:25,border:"none",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",fontSize:14,outline:"none",background:"rgba(255,255,255,0.97)",color:"#2c2416"},
+      e("input",{style:{width:"100%",padding:"11px 20px",borderRadius:25,border:"none",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",fontSize:16,outline:"none",background:"rgba(255,255,255,0.97)",color:"#2c2416"},
         placeholder:"Search #hashtags...",value:searchTag,onChange:function(ev){setSearchTag(ev.target.value);},
         onKeyDown:function(ev){if(ev.key==="Enter"&&searchTag.trim()){doSearch();setOpen(true);setTab("search");}}})
     ),
 
-    activeFilter && e("div",{className:"pm-filter",style:{position:"absolute",top:14,left:"50%",transform:"translateX(-50%)",background:"rgba(255,255,255,0.97)",borderRadius:25,padding:"6px 14px",fontSize:12,zIndex:999,display:"flex",alignItems:"center",gap:7,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
+    activeFilter && e("div",{className:"pm-filter",style:{position:"absolute",top:14,left:"50%",transform:"translateX(-50%)",background:"rgba(255,255,255,0.97)",borderRadius:25,padding:"6px 14px",fontSize:14,zIndex:999,display:"flex",alignItems:"center",gap:7,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
       e("span",{style:{color:tagColor(activeFilter),fontWeight:700}},"#"+activeFilter),
-      e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:12,padding:0},onClick:function(){setActiveFilter(null);setSearchResults(null);setSearchTag("");}},"x")
+      e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:14,padding:0},onClick:function(){setActiveFilter(null);setSearchResults(null);setSearchTag("");}},"x")
     ),
 
     e("button",{onClick:gpsLocate,className:"pm-gps",style:{position:"absolute",top:70,right:14,width:42,height:42,borderRadius:"50%",background:"rgba(255,253,248,0.96)",backdropFilter:"blur(12px)",border:"1.5px solid "+(locating?"#1565c0":"#c8b89a"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:999,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
-      locating?e("span",{style:{fontSize:16,display:"inline-block",animation:"spin 1s linear infinite"}},"~"):"[GPS]"
+      locating?e("span",{style:{fontSize:18,display:"inline-block",animation:"spin 1s linear infinite"}},"~"):"[GPS]"
     ),
 
-    loading && e("div",{style:{position:"absolute",top:70,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:20,padding:"5px 14px",fontSize:11,zIndex:999,color:"#9a8a70"}},"Loading..."),
+    loading && e("div",{style:{position:"absolute",top:70,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:20,padding:"5px 14px",fontSize:13,zIndex:999,color:"#9a8a70"}},"Loading..."),
 
     open && e("div",{className:"bubble",style:bubblePos()},
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 13px",borderBottom:"1px solid #e8dcc4",background:"rgba(245,238,218,0.9)",flexShrink:0}},
-        e("span",{style:{fontSize:12,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"[pin] PINMAP"),
+        e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"[pin] PINMAP"),
         e("div",{style:{display:"flex",alignItems:"center",gap:6}},
           user&&userAvatar(user)?e("img",{src:userAvatar(user),style:{width:22,height:22,borderRadius:"50%",border:"1px solid #d0c4a8"}}):null,
-          e("span",{style:{fontSize:10,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d0c4a8"}},uname),
+          e("span",{style:{fontSize:12,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d0c4a8"}},uname),
           user
-            ?e("button",{style:{fontSize:10,background:"none",border:"1px solid #d0c4a8",color:"#9a8a70",padding:"2px 7px",borderRadius:3,cursor:"pointer"},onClick:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});}},"Sign out")
-            :e("button",{style:{fontSize:10,background:"#2e7d32",color:"#fff",border:"none",padding:"3px 8px",borderRadius:3,cursor:"pointer"},onClick:api.signInGoogle},"Sign in"),
-          e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:18,lineHeight:1,padding:"0 2px"},onClick:function(){setOpen(false);}},"x")
+            ?e("button",{style:{fontSize:12,background:"none",border:"1px solid #d0c4a8",color:"#9a8a70",padding:"2px 7px",borderRadius:3,cursor:"pointer"},onClick:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});}},"Sign out")
+            :e("button",{style:{fontSize:12,background:"#2e7d32",color:"#fff",border:"none",padding:"3px 8px",borderRadius:3,cursor:"pointer"},onClick:api.signInGoogle},"Sign in"),
+          e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:20,lineHeight:1,padding:"0 2px"},onClick:function(){setOpen(false);}},"x")
         )
       ),
 
       e("div",{style:{display:"flex",borderBottom:"1px solid #e8dcc4",flexShrink:0,background:"rgba(250,246,236,0.8)"}},
         TABS.map(function(t){
           return e("button",{key:t[0],onClick:function(){setTab(t[0]);},
-            style:{flex:1,padding:"9px 2px",background:"none",border:"none",cursor:"pointer",fontSize:10,color:tab===t[0]?"#2e7d32":"#9a8a70",borderBottom:tab===t[0]?"2px solid #2e7d32":"2px solid transparent",fontFamily:"Courier New,monospace",fontWeight:tab===t[0]?700:400}},
+            style:{flex:1,padding:"9px 2px",background:"none",border:"none",cursor:"pointer",fontSize:12,color:tab===t[0]?"#2e7d32":"#9a8a70",borderBottom:tab===t[0]?"2px solid #2e7d32":"2px solid transparent",fontFamily:"Courier New,monospace",fontWeight:tab===t[0]?700:400}},
             t[1]);
         })
       ),
@@ -562,7 +562,7 @@ function App() {
             :e("div",{style:S.hint},"Search public pins by hashtag.",
                 e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
                   ["hiking","urbex","bikepacking","bouldering","overlanding","kayaking"].map(function(t){
-                    return e("span",{key:t,style:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
+                    return e("span",{key:t,style:{fontSize:12,padding:"2px 8px",borderRadius:10,background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
                   })
                 )
               )
@@ -575,7 +575,7 @@ function App() {
             return e("div",{key:tag,style:{marginBottom:12}},
               e("div",{style:{display:"flex",alignItems:"center",gap:4,marginBottom:4}},
                 e("span",{style:{color:tagColor(tag),fontWeight:700,fontSize:12}},"#"+tag),
-                e("span",{style:{fontSize:9,background:"#ddd5bb",padding:"1px 5px",borderRadius:8,color:"#2e7d32"}},tp.length),
+                e("span",{style:{fontSize:11,background:"#ddd5bb",padding:"1px 5px",borderRadius:8,color:"#2e7d32"}},tp.length),
                 e("button",{style:Object.assign({},S.miniBtn,{marginLeft:"auto"}),onClick:function(){setActiveFilter(activeFilter===tag?null:tag);}},activeFilter===tag?"map on":"map"),
                 e("button",{style:S.miniBtn,onClick:function(){dlFile(toGeoJSON(tp),"pins.geojson","application/json");}},"GeoJSON"),
                 e("button",{style:S.miniBtn,onClick:function(){dlFile(toGPX(tp),"pins.gpx","application/gpx+xml");}},"GPX")
@@ -592,7 +592,7 @@ function App() {
         tab==="add" && e("div",null,
           e("div",{style:S.secHead},"Drop a pin"),
           !user&&e("div",{style:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:10,marginBottom:10,textAlign:"center"}},
-            e("div",{style:{fontSize:11,color:"#5a4a30",marginBottom:8}},"Sign in to save pins to your account"),
+            e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8}},"Sign in to save pins to your account"),
             e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
           ),
           e("div",{style:Object.assign({},S.hint,{marginBottom:8})},pendingLL?"Location: "+pendingLL.lat.toFixed(4)+", "+pendingLL.lng.toFixed(4):"Close this and tap the map to set a location"),
@@ -608,7 +608,7 @@ function App() {
             e("button",{onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.5)",border:"none",color:"#fff",borderRadius:"50%",width:20,height:20,cursor:"pointer",fontSize:11}},"x")
           ),
           e("div",{style:{marginBottom:10}},
-            e("div",{style:{fontSize:9,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid #e8dcc4",paddingBottom:4}},"Pin colour"),
+            e("div",{style:{fontSize:11,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid #e8dcc4",paddingBottom:4}},"Pin colour"),
             e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}},
               ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e","#f57f17","#00838f"].map(function(col){
                 return e("div",{key:col,
@@ -618,7 +618,7 @@ function App() {
                     boxSizing:"border-box",flexShrink:0}
                 });
               }),
-              e("label",{style:{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"#6a5a40",cursor:"pointer"}},
+              e("label",{style:{display:"flex",alignItems:"center",gap:4,fontSize:12,color:"#6a5a40",cursor:"pointer"}},
                 "Custom:",
                 e("input",{type:"color",value:form.color||"#2e7d32",
                   onChange:function(ev){setForm(function(f){return Object.assign({},f,{color:ev.target.value});});},
@@ -629,13 +629,13 @@ function App() {
           ),
           e("div",{style:{display:"flex",gap:10,marginBottom:6}},
             ["public","private","shareable"].map(function(opt){
-              return e("label",{key:opt,style:{fontSize:11,cursor:"pointer",color:"#6a5a40"}},
+              return e("label",{key:opt,style:{fontSize:13,cursor:"pointer",color:"#6a5a40"}},
                 e("input",{type:"radio",name:"priv",checked:form.privacy===opt,onChange:function(){setForm(function(f){return Object.assign({},f,{privacy:opt});});}}),
                 " "+opt
               );
             })
           ),
-          e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:10,fontStyle:"italic"}},
+          e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:10,fontStyle:"italic"}},
             form.privacy==="public"?"Searchable by everyone":form.privacy==="private"?"Only visible to you":"Link-only"
           ),
           e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:savePin},"SAVE PIN")
@@ -645,7 +645,7 @@ function App() {
           e("div",{style:S.secHead},"Nearby pins"),
           e("div",{style:Object.assign({},S.hint,{marginBottom:10})},userLL?"Location known":"Tap the GPS button on the map first"),
           e("div",{style:{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}},
-            e("span",{style:{fontSize:11,color:"#6a5a40"}},"Radius:"),
+            e("span",{style:{fontSize:13,color:"#6a5a40"}},"Radius:"),
             [5,10,25,50].map(function(r){
               return e("button",{key:r,style:Object.assign({},S.chip,{background:nearbyKm===r?"#2e7d32":"none",color:nearbyKm===r?"#fff":"#2e7d32"}),onClick:function(){setNearbyKm(r);}},r+"km");
             })
@@ -671,7 +671,7 @@ function App() {
       onPointerDown:onFabDown,className:"fab-btn",
       style:{position:"absolute",bottom:fabPos.bottom,right:fabPos.right,width:50,height:50,borderRadius:"50%",background:"rgba(255,253,248,0.96)",backdropFilter:"blur(12px)",border:"1.5px solid "+(open?"#2e7d32":"#c8b89a"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"grab",zIndex:1001,boxShadow:"0 4px 18px rgba(0,0,0,0.15)",touchAction:"none",userSelect:"none"}
     },
-      open?e("span",{style:{fontSize:18,color:"#2e7d32",lineHeight:1}},"x")
+      open?e("span",{style:{fontSize:20,color:"#2e7d32",lineHeight:1}},"x")
         :e("svg",{width:20,height:15,viewBox:"0 0 20 15",fill:"none"},
             e("rect",{width:20,height:2.4,rx:1.2,fill:"#2e7d32"}),
             e("rect",{y:6.3,width:20,height:2.4,rx:1.2,fill:"#2e7d32"}),
@@ -679,38 +679,38 @@ function App() {
           )
     ),
 
-    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",bottom:20,left:16,right:16,background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"14px 15px",maxHeight:"62vh",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)"}},
+    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",bottom:20,left:16,right:16,background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"14px 15px",maxHeight:"68vh",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)"}},
       e("button",{style:{position:"absolute",top:8,right:10,background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:14},onClick:function(){setSelPin(null);}},"x"),
       selPin.photo&&e("img",{src:selPin.photo,style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover"}}),
       e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:2,paddingRight:20}},
       e("span",{style:{width:12,height:12,borderRadius:"50%",background:selPin.color||tagColor(selPin.tags&&selPin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
-      e("span",{style:{fontWeight:700,fontSize:14,color:"#2c2416"}},selPin.name)
+      e("span",{style:{fontWeight:700,fontSize:16,color:"#2c2416"}},selPin.name)
     ),
-      e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:6}},
+      e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:6}},
         "@"+selPin.owner,
         selPin.saved_from&&e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)
       ),
-      selPin.description&&e("div",{style:{fontSize:11,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
+      selPin.description&&e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
       e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}},
         (selPin.tags||[]).map(function(t){
-          return e("span",{key:t,style:{fontSize:10,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
+          return e("span",{key:t,style:{fontSize:12,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
         })
       ),
-      e("div",{style:{fontSize:9,color:"#b0a080",fontFamily:"monospace",marginBottom:10}},selPin.lat.toFixed(5)+", "+selPin.lng.toFixed(5)),
+      e("div",{style:{fontSize:11,color:"#b0a080",fontFamily:"monospace",marginBottom:10}},selPin.lat.toFixed(5)+", "+selPin.lng.toFixed(5)),
       e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}},
         (uname&&selPin.owner!==uname)&&e(React.Fragment,null,
-          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:11,cursor:"pointer",borderRadius:10},onClick:function(){toggleUpvote(selPin.id);}},
+          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){toggleUpvote(selPin.id);}},
             (selPin.upvotes&&selPin.upvotes.indexOf(uname)>=0?"* ":"o ")+(selPin.upvotes?selPin.upvotes.length:0)),
-          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:11,cursor:"pointer",borderRadius:10},onClick:function(){saveToCollection(selPin);}},"[star] Save")
+          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){saveToCollection(selPin);}},"[star] Save")
         ),
-        (uname&&selPin.owner===uname)&&e("button",{style:{background:"none",border:"1px solid #c08080",color:"#c05050",padding:"4px 10px",cursor:"pointer",fontSize:10,borderRadius:3},onClick:function(){deletePin(selPin.id);}},"[del] Delete")
+        (uname&&selPin.owner===uname)&&e("button",{style:{background:"none",border:"1px solid #c08080",color:"#c05050",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){deletePin(selPin.id);}},"[del] Delete")
       ),
       e(Comments,{pinId:selPin.id,uname:uname})
     ),
 
     onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard}),
 
-    toast&&e("div",{className:"pm-toast",style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",color:"#2e7d32",padding:"7px 16px",borderRadius:20,fontSize:11,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast)
+    toast&&e("div",{className:"pm-toast",style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",color:"#2e7d32",padding:"7px 16px",borderRadius:20,fontSize:13,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast)
 
   );
 }
