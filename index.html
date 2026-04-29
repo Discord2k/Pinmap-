@@ -14,20 +14,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
-  <script>
-    window._mcLoaded = false;
-    function _loadMarkerCluster() {
-      var s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js";
-      s.onload = function() { window._mcLoaded = true; };
-      document.head.appendChild(s);
-    }
-  </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" onload="_loadMarkerCluster()"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -372,11 +363,10 @@ function App() {
 
   useEffect(function(){
     if(mapObj.current||!mapDiv.current) return;
-    function initMap(){
-      if(!window._mcLoaded){ setTimeout(initMap,50); return; }
-      var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
-      window.L.control.zoom({position:"bottomleft"}).addTo(map);
-      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
+    var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
+    window.L.control.zoom({position:"bottomleft"}).addTo(map);
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
+    if(window.L.markerClusterGroup){
       clusterGroup.current=window.L.markerClusterGroup({
         showCoverageOnHover:false,
         maxClusterRadius:50,
@@ -390,10 +380,9 @@ function App() {
         }
       });
       map.addLayer(clusterGroup.current);
-      map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
-      mapObj.current=map;
     }
-    initMap();
+    map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
+    mapObj.current=map;
   },[]);;
 
   useEffect(function(){
