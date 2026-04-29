@@ -15,10 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,7 +33,7 @@
     window.onerror=function(msg,src,line){showErr("JS ERROR: "+msg+"\nAt: "+src+":"+line);return false;};
     window.addEventListener("unhandledrejection",function(ev){showErr("PROMISE: "+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason)));});
     window.addEventListener("error",function(ev){if(ev.target&&ev.target.src)showErr("LOAD FAILED: "+ev.target.src);},true);
-    setTimeout(function(){var r=document.getElementById("root");if(r&&r.children.length===0)showErr("APP DID NOT MOUNT\nReact:"+!!window.React+"\nL:"+!!window.L+"\nCluster:"+!!(window.L&&window.L.markerClusterGroup));},5000);
+    setTimeout(function(){var r=document.getElementById("root");if(r&&r.children.length===0)showErr("APP DID NOT MOUNT\nReact:"+!!window.React+"\nLeaflet:"+!!window.L);},5000);
   </script>
 
   <script>
@@ -315,7 +312,7 @@ function ProfilePanel(props) {
 
 /*    App                                                                         */
 function App() {
-  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), clusterGroup=useRef(null);
+  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({});
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
   var s2=useState(false);    var sessionChecked=s2[0]; var setSessionChecked=s2[1];
   var s3=useState(false);    var splashDone=s3[0];     var setSplashDone=s3[1];
@@ -366,21 +363,6 @@ function App() {
     var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
     window.L.control.zoom({position:"bottomleft"}).addTo(map);
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
-    if(window.L.markerClusterGroup){
-      clusterGroup.current=window.L.markerClusterGroup({
-        showCoverageOnHover:false,
-        maxClusterRadius:50,
-        iconCreateFunction:function(cluster){
-          var count=cluster.getChildCount();
-          var sz=count<10?38:count<50?44:50;
-          return window.L.divIcon({
-            html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:rgba(46,125,50,0.88);border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-family:Courier New,monospace;font-weight:700;font-size:'+(count<10?14:12)+'px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">'+count+'</div>',
-            className:"",iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
-          });
-        }
-      });
-      map.addLayer(clusterGroup.current);
-    }
     map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
     mapObj.current=map;
   },[]);;
@@ -392,8 +374,8 @@ function App() {
   },[splashDone]);
 
   useEffect(function(){
-    if(!mapObj.current||!clusterGroup.current) return;
-    clusterGroup.current.clearLayers();
+    if(!mapObj.current||!window.L) return;
+    Object.values(markers.current).forEach(function(m){m.remove();});
     markers.current={};
     var visible=activeFilter?pins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;}):pins;
     visible.forEach(function(pin){
@@ -403,10 +385,9 @@ function App() {
         html:'<svg width="30" height="38" viewBox="0 0 26 34"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/><circle cx="13" cy="13" r="4" fill="white"/></svg>',
         iconSize:[30,38],iconAnchor:[15,38]
       });
-      var m=window.L.marker([pin.lat,pin.lng],{icon:icon});
+      var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(mapObj.current);
       m.on("click",function(){setSelPin(pin);setOpen(false);});
       markers.current[pin.id]=m;
-      clusterGroup.current.addLayer(m);
     });
   },[pins,activeFilter]);
 

@@ -1,4 +1,4 @@
-const CACHE = "pinmap-v13";
+const CACHE = "pinmap-v14";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,9 +8,6 @@ const ASSETS = [
   "https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css",
-  "https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css",
-  "https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"
 ];
 
 self.addEventListener("install", e => {
