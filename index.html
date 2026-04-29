@@ -246,7 +246,10 @@ function PinCard(props) {
   var notOwner = !uname || pin.owner!==uname;
   return e("div",{style:S.card,onClick:props.onFocus},
     pin.photo && e("img",{src:pin.photo,style:{width:"100%",borderRadius:4,marginBottom:5,maxHeight:80,objectFit:"cover"}}),
-    e("div",{style:{fontWeight:700,fontSize:11,color:"#2c2416",marginBottom:1}},pin.name),
+    e("div",{style:{display:"flex",alignItems:"center",gap:5,marginBottom:1}},
+      e("span",{style:{width:8,height:8,borderRadius:"50%",background:pin.color||tagColor(pin.tags&&pin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
+      e("span",{style:{fontWeight:700,fontSize:11,color:"#2c2416"}},pin.name)
+    ),
     e("div",{style:{fontSize:9,color:"#9a8a70",marginBottom:2}},
       "@"+pin.owner+(pin.saved_from?" - saved from @"+pin.saved_from:"")+" - "+pin.privacy,
       props.dist!==undefined && e("span",{style:{color:"#2e7d32",marginLeft:4}},props.dist.toFixed(1)+"km")
@@ -313,7 +316,7 @@ function App() {
   var s9=useState("");       var searchTag=s9[0];      var setSearchTag=s9[1];
   var s10=useState(null);    var searchResults=s10[0]; var setSearchResults=s10[1];
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
-  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null}); var form=s12[0]; var setForm=s12[1];
+  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32"}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
   var s14=useState(null);    var selPin=s14[0];        var setSelPin=s14[1];
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
@@ -370,7 +373,7 @@ function App() {
     markers.current={};
     var visible=activeFilter?pins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;}):pins;
     visible.forEach(function(pin){
-      var color=tagColor(pin.tags&&pin.tags[0]||"x");
+      var color=pin.color||tagColor(pin.tags&&pin.tags[0]||"x");
       var icon=window.L.divIcon({
         className:"pm-pin",
         html:'<svg width="30" height="38" viewBox="0 0 26 34"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/><circle cx="13" cy="13" r="4" fill="white"/></svg>',
@@ -390,10 +393,10 @@ function App() {
       if(!form.name.trim()){flash("Name required");return;}
       if(!form.tags.trim()){flash("At least one tag required");return;}
       var tags=form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
-      var pin={id:uid(),owner:uname,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,upvotes:[],saved_by:[],saved_from:null};
+      var pin={id:uid(),owner:uname,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,color:form.color||"#2e7d32",upvotes:[],saved_by:[],saved_from:null};
       api.insert(pin).then(function(){
         setPins(function(p){return [pin].concat(p);});
-        setForm({name:"",description:"",tags:"",privacy:"public",photo:null});
+        setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32"});
         setPendingLL(null);setTab("mine");flash("Pin saved!");
       }).catch(function(){flash("Save failed");});
     });
@@ -604,6 +607,26 @@ function App() {
             e("img",{src:form.photo,style:{width:"100%",borderRadius:6,maxHeight:120,objectFit:"cover"}}),
             e("button",{onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.5)",border:"none",color:"#fff",borderRadius:"50%",width:20,height:20,cursor:"pointer",fontSize:11}},"x")
           ),
+          e("div",{style:{marginBottom:10}},
+            e("div",{style:{fontSize:9,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid #e8dcc4",paddingBottom:4}},"Pin colour"),
+            e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}},
+              ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e","#f57f17","#00838f"].map(function(col){
+                return e("div",{key:col,
+                  onClick:function(){setForm(function(f){return Object.assign({},f,{color:col});});},
+                  style:{width:26,height:26,borderRadius:"50%",background:col,cursor:"pointer",
+                    border:form.color===col?"3px solid #2c2416":"3px solid transparent",
+                    boxSizing:"border-box",flexShrink:0}
+                });
+              }),
+              e("label",{style:{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"#6a5a40",cursor:"pointer"}},
+                "Custom:",
+                e("input",{type:"color",value:form.color||"#2e7d32",
+                  onChange:function(ev){setForm(function(f){return Object.assign({},f,{color:ev.target.value});});},
+                  style:{width:26,height:26,borderRadius:"50%",border:"none",padding:0,cursor:"pointer",background:"none"}
+                })
+              )
+            )
+          ),
           e("div",{style:{display:"flex",gap:10,marginBottom:6}},
             ["public","private","shareable"].map(function(opt){
               return e("label",{key:opt,style:{fontSize:11,cursor:"pointer",color:"#6a5a40"}},
@@ -659,7 +682,10 @@ function App() {
     selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",bottom:20,left:16,right:16,background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"14px 15px",maxHeight:"62vh",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)"}},
       e("button",{style:{position:"absolute",top:8,right:10,background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:14},onClick:function(){setSelPin(null);}},"x"),
       selPin.photo&&e("img",{src:selPin.photo,style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover"}}),
-      e("div",{style:{fontWeight:700,fontSize:14,color:"#2c2416",marginBottom:2,paddingRight:20}},selPin.name),
+      e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:2,paddingRight:20}},
+      e("span",{style:{width:12,height:12,borderRadius:"50%",background:selPin.color||tagColor(selPin.tags&&selPin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
+      e("span",{style:{fontWeight:700,fontSize:14,color:"#2c2416"}},selPin.name)
+    ),
       e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:6}},
         "@"+selPin.owner,
         selPin.saved_from&&e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)
