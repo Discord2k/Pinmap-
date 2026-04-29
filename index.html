@@ -186,24 +186,22 @@ function Onboarding(props) {
   var info = ONBOARD_STEPS[step];
   var total = ONBOARD_STEPS.length;
   var isLast = step === total-1;
-  var cardPos = {};
-  if(info.pos==="bottom")      cardPos = {top:130,left:"50%",transform:"translateX(-50%)"};
-  else if(info.pos==="top")    cardPos = {bottom:110,left:"50%",transform:"translateX(-50%)"};
-  else                         cardPos = {top:"50%",left:"50%",transform:"translate(-50%,-50%)"};
-  var cardStyle = Object.assign({},{position:"absolute",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:14,padding:"20px 22px",maxWidth:290,width:"calc(100% - 48px)",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",zIndex:9001},cardPos);
-  return e("div",{style:{position:"fixed",inset:0,zIndex:9000}},
-    e("div",{style:{position:"absolute",inset:0,background:"rgba(0,0,0,0.52)"},onClick:props.onNext}),
-    e("div",{className:"onb-card",style:cardStyle},
-      e("div",{style:{display:"flex",gap:5,marginBottom:16,justifyContent:"center"}},
+  return e("div",{style:{position:"fixed",inset:0,zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}},
+    e("div",{style:{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)"},onClick:props.onNext}),
+    e("div",{className:"onb-card",style:{position:"relative",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,padding:"28px 24px",maxWidth:320,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",zIndex:9001}},
+      e("div",{style:{display:"flex",gap:5,marginBottom:20,justifyContent:"center"}},
         ONBOARD_STEPS.map(function(_,i){
-          return e("div",{key:i,style:{width:i===step?20:6,height:6,borderRadius:3,background:i===step?"#2e7d32":"#d0c4a8",transition:"width 0.2s"}});
+          return e("div",{key:i,style:{width:i===step?24:7,height:7,borderRadius:4,background:i===step?"#2e7d32":"#d0c4a8",transition:"width 0.2s"}});
         })
       ),
-      e("div",{style:{fontSize:17,fontWeight:700,color:"#2c2416",marginBottom:8,textAlign:"center"}},info.title),
-      e("div",{style:{fontSize:14,color:"#5a4a30",lineHeight:1.75,textAlign:"center",marginBottom:18}},info.body),
+      e("div",{style:{fontSize:18,fontWeight:700,color:"#2c2416",marginBottom:10,textAlign:"center"}},info.title),
+      e("div",{style:{fontSize:14,color:"#5a4a30",lineHeight:1.75,textAlign:"center",marginBottom:24}},info.body),
+      e("div",{style:{fontSize:12,color:"#b0a080",textAlign:"center",marginBottom:16}},
+        (step+1)+" of "+total
+      ),
       e("div",{style:{display:"flex",gap:8}},
-        e("button",{style:{flex:1,padding:9,background:"none",border:"1px solid #d0c4a8",borderRadius:8,fontSize:14,color:"#9a8a70",cursor:"pointer"},onClick:props.onSkip},"Skip"),
-        e("button",{style:{flex:2,padding:9,background:"#2e7d32",border:"none",borderRadius:8,fontSize:14,color:"#fff",fontWeight:700,cursor:"pointer"},onClick:props.onNext},isLast?"Get Started!":"Next")
+        e("button",{style:{flex:1,padding:"11px",background:"none",border:"1px solid #d0c4a8",borderRadius:8,fontSize:14,color:"#9a8a70",cursor:"pointer"},onClick:props.onSkip},"Skip"),
+        e("button",{style:{flex:2,padding:"11px",background:"#2e7d32",border:"none",borderRadius:8,fontSize:14,color:"#fff",fontWeight:700,cursor:"pointer"},onClick:props.onNext},isLast?"Get Started!":"Next")
       )
     )
   );
@@ -350,15 +348,16 @@ function App() {
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
-  function checkNewComments(pinsData) {
-    if(!uname) return;
-    var lastSeen = localStorage.getItem("pm-comments-seen-"+uname);
+  function checkNewComments(pinsData, nameOverride) {
+    var name = nameOverride || uname;
+    if(!name || name==="guest") return;
+    var lastSeen = localStorage.getItem("pm-comments-seen-"+name);
     var lastSeenTime = lastSeen ? new Date(lastSeen) : new Date(0);
-    var myPinIds = pinsData.filter(function(p){return p.owner===uname&&!p.saved_from;}).map(function(p){return p.id;});
+    var myPinIds = pinsData.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
     if(!myPinIds.length) return;
-    // Query comments on my pins newer than last seen
-    sb.from("comments").select("id").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
+    sb.from("comments").select("id,created_at").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
       if(r.data&&r.data.length>0) setUnreadCount(r.data.length);
+      else setUnreadCount(0);
     });
   }
 
@@ -409,6 +408,11 @@ function App() {
       }
     }).catch(function(){flash("Could not load pins");}).finally(function(){setLoading(false);});
   },[splashDone]);
+
+  // Re-check comments whenever user or pins change
+  useEffect(function(){
+    if(pins.length > 0) checkNewComments(pins);
+  },[user, pins]);
 
   useEffect(function(){
     if(!mapObj.current||!window.L) return;
@@ -582,6 +586,20 @@ function App() {
 
   var myPins=pins.filter(function(p){return p.owner===uname;});
   var myTags=[].concat.apply([],[].map.call(myPins,function(p){return p.tags||[];})).filter(function(t,i,a){return a.indexOf(t)===i;});
+
+  // Recent tags: from pins sorted by created_at desc, deduplicated, max 4
+  var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
+  var recentTagsSeen = {};
+  var recentTags = [];
+  var sortedPins = pins.slice().sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+  for(var _i=0; _i<sortedPins.length && recentTags.length<4; _i++){
+    (sortedPins[_i].tags||[]).forEach(function(t){
+      if(!recentTagsSeen[t] && recentTags.length<4){ recentTagsSeen[t]=1; recentTags.push(t); }
+    });
+  }
+  // Pad with defaults if not enough recent tags
+  var suggestTags = recentTags.slice();
+  DEFAULT_TAGS.forEach(function(t){ if(suggestTags.length<8 && !recentTagsSeen[t]){ suggestTags.push(t); } });
   var TABS=[["search","Search"],["mine","Mine"],["add","Add"],["nearby","Nearby"],["profile","Profile"]];
 
   if(!sessionChecked||!splashDone){
@@ -699,10 +717,15 @@ function App() {
                 e("div",{style:S.secHead},"#"+searchResults.tag+" - "+searchResults.results.length+" pins"),
                 searchResults.results.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
               )
-            :e("div",{style:S.hint},"Search public pins by hashtag.",
+            :e("div",null,
+            e("div",{style:S.hint},"Search public pins by hashtag."),
+            e("div",{style:{fontSize:11,color:"#9a8a70",marginTop:8,marginBottom:4}},
+              recentTags.length>0 ? "Recent tags (blue) + suggestions:" : "Suggested tags:"
+            ),
                 e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
-                  ["hiking","urbex","bikepacking","bouldering","overlanding","kayaking"].map(function(t){
-                    return e("span",{key:t,style:{fontSize:12,padding:"2px 8px",borderRadius:10,background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
+                  suggestTags.map(function(t,idx){
+                    var isRecent = idx < recentTags.length;
+                    return e("span",{key:t,style:{fontSize:12,padding:"2px 8px",borderRadius:10,background:isRecent?"#e8f0fe":"#e8f5e9",color:isRecent?"#1565c0":"#2e7d32",border:"1px solid "+(isRecent?"#90caf9":"#a5d6a7"),cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
                   })
                 )
               )
@@ -740,7 +763,7 @@ function App() {
           e("textarea",{style:Object.assign({},S.input,{height:52,resize:"none"}),placeholder:"Description (optional)",value:form.description,onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
           e("input",{style:S.input,placeholder:"#tags  space or comma separated",value:form.tags,onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
           e("label",{style:Object.assign({},S.hint,{cursor:"pointer",display:"flex",alignItems:"center",gap:6,marginBottom:8})},
-            "[photo] "+(form.photo?"Photo attached":"Attach photo (optional, max 2MB)"),
+            "📷 "+(form.photo?"Photo attached":"Attach photo (optional, max 2MB)"),
             e("input",{type:"file",accept:"image/*",style:{display:"none"},onChange:handlePhoto})
           ),
           form.photo&&e("div",{style:{position:"relative",marginBottom:8}},
@@ -748,7 +771,7 @@ function App() {
             e("button",{onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.5)",border:"none",color:"#fff",borderRadius:"50%",width:20,height:20,cursor:"pointer",fontSize:11}},"x")
           ),
           e("div",{style:{marginBottom:10}},
-            e("div",{style:{fontSize:11,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid #e8dcc4",paddingBottom:4}},"Pin colour"),
+            e("div",{style:{fontSize:11,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid #e8dcc4",paddingBottom:4}},"Pin color"),
             e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}},
               ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e","#f57f17","#00838f"].map(function(col){
                 return e("div",{key:col,
@@ -873,7 +896,7 @@ function App() {
         e("textarea",{style:Object.assign({},S.input,{height:60,resize:"none"}),placeholder:"Description",value:editForm.description,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
         e("input",{style:Object.assign({},S.input),placeholder:"#tags",value:editForm.tags,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         e("div",{style:{marginBottom:12}},
-          e("div",{style:{fontSize:11,color:"#9a8a70",marginBottom:6}},"Pin colour"),
+          e("div",{style:{fontSize:11,color:"#9a8a70",marginBottom:6}},"Pin color"),
           e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}},
             ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e","#f57f17","#00838f"].map(function(col){
               return e("div",{key:col,onClick:function(){setEditForm(function(f){return Object.assign({},f,{color:col});});},
