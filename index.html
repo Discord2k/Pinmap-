@@ -7,50 +7,23 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body, #root { height: 100%; }
-    body { background: #f0e8d0; font-family: Courier New, monospace; }
-    .fab-btn  { bottom: calc(32px + env(safe-area-inset-bottom, 0px)) !important;
-                right:  calc(20px + env(safe-area-inset-right,  0px)) !important; }
-    .pm-toast { bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important; }
-    .pm-detail{ bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
-                left:   calc(16px + env(safe-area-inset-left,   0px)) !important; }
-    .pm-search{ top:    calc(16px + env(safe-area-inset-top,    0px)) !important; }
-    .pm-filter{ top:    calc(14px + env(safe-area-inset-top,    0px)) !important; }
-    .pm-gps   { top:    calc(70px + env(safe-area-inset-top,    0px)) !important;
-                right:  calc(14px + env(safe-area-inset-right,  0px)) !important; }
-    #err {
-      display: none; position: fixed; top: 0; left: 0; right: 0;
-      background: #fff3cd; border-bottom: 2px solid #ffc107;
-      padding: 12px 16px; font-size: 12px; z-index: 99999;
-      white-space: pre-wrap; word-break: break-all; max-height: 50vh; overflow-y: auto;
-    }
+    body { background: #f0e8d0; }
+    #err { display:none; position:fixed; top:0; left:0; right:0; background:#fff3cd; border-bottom:2px solid #ffc107; padding:12px 16px; font-size:12px; z-index:99999; white-space:pre-wrap; word-break:break-all; max-height:40vh; overflow-y:auto; }
   </style>
 </head>
 <body>
   <div id="err"></div>
   <div id="root"></div>
-
   <script>
-    function showErr(msg) {
-      var el = document.getElementById("err");
-      el.style.display = "block";
-      el.textContent += msg + "\n---\n";
-    }
-    window.onerror = function(msg, src, line, col, err) {
-      showErr("JS ERROR: " + msg + "\nAt: " + src + ":" + line);
-      return false;
-    };
-    window.addEventListener("unhandledrejection", function(ev) {
-      showErr("PROMISE: " + (ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)));
-    });
-    window.addEventListener("error", function(ev) {
-      if (ev.target && ev.target.src) showErr("LOAD FAILED: " + ev.target.src);
-    }, true);
+    function showErr(msg){var el=document.getElementById("err");el.style.display="block";el.textContent+=msg+"\n---\n";}
+    window.onerror=function(msg,src,line){showErr("JS ERROR: "+msg+"\nAt: "+src+":"+line);return false;};
+    window.addEventListener("unhandledrejection",function(ev){showErr("PROMISE: "+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason)));});
+    window.addEventListener("error",function(ev){if(ev.target&&ev.target.src)showErr("LOAD FAILED: "+ev.target.src);},true);
+    setTimeout(function(){var r=document.getElementById("root");if(r&&r.children.length===0)showErr("APP DID NOT MOUNT\nReact:"+!!window.React+"\nReactDOM:"+!!window.ReactDOM+"\nSupabase:"+!!window.supabase);},5000);
   </script>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-
   <script>
 const e = React.createElement;
 const { useState, useEffect, useRef } = React;
@@ -60,20 +33,15 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 const api = {
-  list:   function()    { return sb.from("pins").select("*").order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
+  list:   function() { return sb.from("pins").select("*").order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
   insert: function(pin) { return sb.from("pins").insert(pin).select().then(function(r){return r.data;}); },
-  update: function(id,p){ return sb.from("pins").update(p).eq("id",id).then(function(r){return r.data;}); },
-  remove: function(id)  { return sb.from("pins").delete().eq("id",id); },
+  update: function(id,p) { return sb.from("pins").update(p).eq("id",id).then(function(r){return r.data;}); },
+  remove: function(id) { return sb.from("pins").delete().eq("id",id); },
   search: function(tag) { return sb.from("pins").select("*").contains("tags",[tag]).eq("privacy","public").then(function(r){return r.data||[];}); },
-  signInGoogle: function() {
-    return sb.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + window.location.pathname }
-    });
-  },
+  signInGoogle: function() { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
   signOut: function() { return sb.auth.signOut(); },
   getSession: function() { return sb.auth.getSession(); },
-  onAuthChange: function(cb) { return sb.auth.onAuthStateChange(cb); },
+  onAuthChange: function(cb) { return sb.auth.onAuthStateChange(cb); }
 };
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
@@ -82,31 +50,33 @@ function tagColor(tag) { var h=0; for(var i=0;i<tag.length;i++) h=(h*31+tag.char
 function distKm(a,b,c,d) { var R=6371,dL=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dl/2)*Math.sin(dl/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
 function dlFile(content,name,type) { var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([content],{type:type})); a.download=name; a.click(); }
 function toGeoJSON(pins) { return JSON.stringify({type:"FeatureCollection",features:pins.map(function(p){return {type:"Feature",geometry:{type:"Point",coordinates:[p.lng,p.lat]},properties:{name:p.name,description:p.description,tags:p.tags,owner:p.owner}};})},null,2); }
-function toGPX(pins) { return '<?xml version="1.0"?><gpx version="1.1" creator="PINMAP">'+pins.map(function(p){return '<wpt lat="'+p.lat+'" lon="'+p.lng+'"><n>'+p.name+'</n><desc>'+(p.description||"")+' '+(p.tags||[]).map(function(t){return "#"+t;}).join(" ")+'</desc></wpt>';}).join("")+"</gpx>"; }
+function toGPX(pins) { return '<?xml version="1.0"?><gpx version="1.1" creator="PINMAP">'+pins.map(function(p){return '<wpt lat="'+p.lat+'" lon="'+p.lng+'"><name>'+p.name+'</name><desc>'+(p.description||"")+' '+(p.tags||[]).map(function(t){return "#"+t;}).join(" ")+'</desc></wpt>';}).join("")+"</gpx>"; }
+function userName(u) { return u ? (u.user_metadata&&u.user_metadata.full_name ? u.user_metadata.full_name : u.email.split("@")[0]) : "guest"; }
+function userAvatar(u) { return u && u.user_metadata && u.user_metadata.avatar_url ? u.user_metadata.avatar_url : null; }
 
-// Inject Leaflet
 (function(){
   var css=document.createElement("link"); css.rel="stylesheet"; css.href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"; document.head.appendChild(css);
   var s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"; document.head.appendChild(s);
 })();
 
-// Styles
 var styleEl=document.createElement("style");
 styleEl.textContent=[
   "*{box-sizing:border-box;margin:0;padding:0}",
   "html,body,#root{height:100%;width:100%;overflow:hidden;background:#f0e8d0}",
   ".leaflet-container{height:100%!important;width:100%!important}",
   ".pm-pin{background:none!important;border:none!important}",
-  "input,textarea,button{font-family:'Courier New',monospace}",
+  "input,textarea,button{font-family:Courier New,monospace}",
   "@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}",
   "@keyframes pop{0%{opacity:0;transform:scale(0.85)}70%{opacity:1;transform:scale(1.03)}100%{transform:scale(1)}}",
   "@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}",
   ".bubble{animation:pop .22s cubic-bezier(.34,1.3,.64,1) both}",
   ".detail{animation:fade .15s ease both}",
-  /* Safe area rules */
   ".fab-btn{bottom:calc(32px + env(safe-area-inset-bottom,0px))!important;right:calc(20px + env(safe-area-inset-right,0px))!important}",
   ".pm-toast{bottom:calc(18px + env(safe-area-inset-bottom,0px))!important}",
-  ".pm-detail{bottom:calc(20px + env(safe-area-inset-bottom,0px))!important}"
+  ".pm-detail{bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;left:calc(16px + env(safe-area-inset-left,0px))!important}",
+  ".pm-search{top:calc(16px + env(safe-area-inset-top,0px))!important}",
+  ".pm-filter{top:calc(14px + env(safe-area-inset-top,0px))!important}",
+  ".pm-gps{top:calc(70px + env(safe-area-inset-top,0px))!important;right:calc(14px + env(safe-area-inset-right,0px))!important}"
 ].join("\n");
 document.head.appendChild(styleEl);
 
@@ -117,11 +87,46 @@ var S = {
   chip:{background:"none",border:"1px solid #c8b89a",color:"#2e7d32",padding:"3px 8px",fontSize:10,cursor:"pointer",borderRadius:12},
   secHead:{fontSize:9,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:7,borderBottom:"1px solid #e8dcc4",paddingBottom:4},
   hint:{fontSize:11,color:"#9a8a70",lineHeight:1.65},
-  card:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:5,padding:"7px 9px",marginBottom:6,cursor:"pointer",position:"relative"},
+  card:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:5,padding:"7px 9px",marginBottom:6,cursor:"pointer",position:"relative"}
 };
 
+/*    Splash Screen                                                             */
+function Splash(props) {
+  var loading = props.loading;
+  return e("div",{style:{position:"fixed",inset:0,background:"#f0e8d0",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}},
+    e("div",{style:{textAlign:"center",padding:"40px 32px",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,maxWidth:320,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.12)"}},
+      e("div",{style:{fontSize:48,marginBottom:8}},"[pin]"),
+      e("div",{style:{fontSize:26,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:6}},"PINMAP"),
+      e("div",{style:{fontSize:12,color:"#9a8a70",letterSpacing:1,marginBottom:32}},"Tag the terrain. Share the stoke."),
+      loading
+        ? e("div",{style:{fontSize:13,color:"#9a8a70"}},"Checking session...")
+        : e("div",null,
+            e("button",{
+              style:{width:"100%",padding:"12px",marginBottom:12,background:"#fff",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,fontWeight:700,color:"#2c2416",display:"flex",alignItems:"center",justifyContent:"center",gap:8},
+              onClick:props.onGoogle
+            },
+              e("svg",{width:18,height:18,viewBox:"0 0 48 48"},
+                e("path",{fill:"#EA4335",d:"M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"}),
+                e("path",{fill:"#4285F4",d:"M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"}),
+                e("path",{fill:"#FBBC05",d:"M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"}),
+                e("path",{fill:"#34A853",d:"M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"})
+              ),
+              "Continue with Google"
+            ),
+            e("button",{
+              style:{width:"100%",padding:"12px",background:"none",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,color:"#6a5a40"},
+              onClick:props.onGuest
+            },"Browse as Guest")
+          )
+    )
+  );
+}
+
+/*    PinCard                                                                    */
 function PinCard(props) {
-  var pin=props.pin, user=props.user;
+  var pin=props.pin, uname=props.uname;
+  var isOwner = uname && pin.owner===uname;
+  var notOwner = !uname || pin.owner!==uname;
   return e("div",{style:S.card,onClick:props.onFocus},
     pin.photo && e("img",{src:pin.photo,style:{width:"100%",borderRadius:4,marginBottom:5,maxHeight:80,objectFit:"cover"}}),
     e("div",{style:{fontWeight:700,fontSize:11,color:"#2c2416",marginBottom:1}},pin.name),
@@ -131,30 +136,33 @@ function PinCard(props) {
     ),
     e("div",{style:{fontSize:10,marginBottom:4}},(pin.tags||[]).map(function(t){return e("span",{key:t,style:{color:tagColor(t),marginRight:3}},"#"+t);})),
     e("div",{style:{display:"flex",gap:4},onClick:function(ev){ev.stopPropagation();}},
-      (!user||pin.owner!==user.name) && e(React.Fragment,null,
-        e("button",{style:S.miniBtn,onClick:function(){props.onUpvote(pin.id);}}, (pin.upvotes&&user&&pin.upvotes.indexOf(user.name)>=0?"*":"o")+" "+(pin.upvotes?pin.upvotes.length:0)),
+      notOwner && e(React.Fragment,null,
+        e("button",{style:S.miniBtn,onClick:function(){props.onUpvote(pin.id);}},
+          (pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?"*":"o")+" "+(pin.upvotes?pin.upvotes.length:0)),
         e("button",{style:S.miniBtn,onClick:function(){props.onSave(pin);}}, "[star] Save")
       ),
-      user && pin.owner===user.name && !pin.saved_from && e("button",{style:Object.assign({},S.miniBtn,{color:"#c05050"}),onClick:function(){props.onDelete(pin.id);}}, "[del]")
+      isOwner && !pin.saved_from && e("button",{style:Object.assign({},S.miniBtn,{color:"#c05050"}),onClick:function(){props.onDelete(pin.id);}}, "[del]")
     )
   );
 }
 
-function Profile(props) {
-  var user=props.user, myPins=props.myPins;
-  var own=myPins.filter(function(p){return !p.saved_from;});
-  var saved=myPins.filter(function(p){return p.saved_from;});
-  var upvotes=own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
-  var stats=[["[pin]",own.length,"pins"],["[globe]",own.filter(function(p){return p.privacy==="public";}).length,"public"],["[star]",saved.length,"saved"],["*",upvotes,"upvotes"]];
+/*    Profile Panel                                                              */
+function ProfilePanel(props) {
+  var user=props.user, uname=props.uname, myPins=props.myPins;
+  var own = myPins.filter(function(p){return !p.saved_from;});
+  var saved = myPins.filter(function(p){return p.saved_from;});
+  var upvotes = own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
+  var stats = [["[pin]",own.length,"pins"],["[globe]",own.filter(function(p){return p.privacy==="public";}).length,"public"],["[star]",saved.length,"saved"],["*",upvotes,"upvotes"]];
+  var avatar = userAvatar(user);
   return e("div",null,
-    e("div",{style:{textAlign:"center",marginBottom:14}},
-      user && user.avatar
-        ? e("img",{src:user.avatar,style:{width:64,height:64,borderRadius:"50%",border:"2px solid #d0c4a8",marginBottom:8,display:"block",margin:"0 auto 8px"}})
-        : e("div",{style:{fontSize:48,marginBottom:8}},"[compass]"),
-      e("div",{style:{fontWeight:700,fontSize:16,color:"#2c2416",marginBottom:2}},user?user.name:"Guest"),
-      user && e("div",{style:{fontSize:11,color:"#9a8a70",marginBottom:10}},user.email),
+    e("div",{style:{textAlign:"center",marginBottom:16}},
+      avatar
+        ? e("img",{src:avatar,style:{width:64,height:64,borderRadius:"50%",border:"2px solid #d0c4a8",marginBottom:8,display:"block",margin:"0 auto 8px"}})
+        : e("div",{style:{fontSize:40,marginBottom:8}},"[compass]"),
+      e("div",{style:{fontWeight:700,fontSize:15,color:"#2c2416",marginBottom:2}},uname),
+      user && e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:12}},user.email),
       user
-        ? e("button",{style:Object.assign({},S.miniBtn,{fontSize:11,padding:"5px 12px"}),onClick:props.onSignOut},"Sign out")
+        ? e("button",{style:Object.assign({},S.miniBtn,{padding:"5px 14px",fontSize:11}),onClick:props.onSignOut},"Sign out")
         : e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
     ),
     e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
@@ -173,74 +181,78 @@ function Profile(props) {
     )
   );
 }
+
+/*    App                                                                        */
 function App() {
   var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({});
-  var userState=useState(null); var user=userState[0]; var setUser=userState[1];
-  var sessionState=useState(false); var sessionChecked=sessionState[0]; var setSessionChecked=sessionState[1];
-  var pinsState=useState([]); var pins=pinsState[0]; var setPins=pinsState[1];
-  var loadingState=useState(false); var loading=loadingState[0]; var setLoading=loadingState[1];
-  var openState=useState(false); var open=openState[0]; var setOpen=openState[1];
-  var tabState=useState("search"); var tab=tabState[0]; var setTab=tabState[1];
-  var fabPosState=useState({bottom:32,right:20}); var fabPos=fabPosState[0]; var setFabPos=fabPosState[1];
-  var searchTagState=useState(""); var searchTag=searchTagState[0]; var setSearchTag=searchTagState[1];
-  var searchResState=useState(null); var searchResults=searchResState[0]; var setSearchResults=searchResState[1];
-  var filterState=useState(null); var activeFilter=filterState[0]; var setActiveFilter=filterState[1];
-  var formState=useState({name:"",description:"",tags:"",privacy:"public",photo:null}); var form=formState[0]; var setForm=formState[1];
-  var pendingState=useState(null); var pendingLL=pendingState[0]; var setPendingLL=pendingState[1];
-  var selPinState=useState(null); var selPin=selPinState[0]; var setSelPin=selPinState[1];
-  var toastState=useState(""); var toast=toastState[0]; var setToast=toastState[1];
-  var userLLState=useState(null); var userLL=userLLState[0]; var setUserLL=userLLState[1];
-  var locatingState=useState(false); var locating=locatingState[0]; var setLocating=locatingState[1];
-  var nearbyKmState=useState(10); var nearbyKm=nearbyKmState[0]; var setNearbyKm=nearbyKmState[1];
-  var nearbyResState=useState(null); var nearbyRes=nearbyResState[0]; var setNearbyRes=nearbyResState[1];
+
+  var s1=useState(null);     var user=s1[0];            var setUser=s1[1];
+  var s2=useState(false);    var sessionChecked=s2[0];  var setSessionChecked=s2[1];
+  var s3=useState(false);    var splashDone=s3[0];       var setSplashDone=s3[1];
+  var s4=useState([]);       var pins=s4[0];             var setPins=s4[1];
+  var s5=useState(false);    var loading=s5[0];          var setLoading=s5[1];
+  var s6=useState(false);    var open=s6[0];             var setOpen=s6[1];
+  var s7=useState("search"); var tab=s7[0];              var setTab=s7[1];
+  var s8=useState({bottom:32,right:20}); var fabPos=s8[0]; var setFabPos=s8[1];
+  var s9=useState("");       var searchTag=s9[0];        var setSearchTag=s9[1];
+  var s10=useState(null);    var searchResults=s10[0];   var setSearchResults=s10[1];
+  var s11=useState(null);    var activeFilter=s11[0];    var setActiveFilter=s11[1];
+  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null}); var form=s12[0]; var setForm=s12[1];
+  var s13=useState(null);    var pendingLL=s13[0];       var setPendingLL=s13[1];
+  var s14=useState(null);    var selPin=s14[0];          var setSelPin=s14[1];
+  var s15=useState("");      var toast=s15[0];           var setToast=s15[1];
+  var s16=useState(null);    var userLL=s16[0];          var setUserLL=s16[1];
+  var s17=useState(false);   var locating=s17[0];        var setLocating=s17[1];
+  var s18=useState(10);      var nearbyKm=s18[0];        var setNearbyKm=s18[1];
+  var s19=useState(null);    var nearbyRes=s19[0];       var setNearbyRes=s19[1];
+
+  var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
-  // Auth init
+  /* Auth init */
   useEffect(function(){
     api.getSession().then(function(res){
-      var s = res.data && res.data.session;
-      if(s && s.user){
-        var name = s.user.user_metadata && s.user.user_metadata.full_name
-          ? s.user.user_metadata.full_name
-          : s.user.email.split("@")[0];
-        setUser({id:s.user.id, name:name, email:s.user.email, avatar:s.user.user_metadata&&s.user.user_metadata.avatar_url||null});
+      var session = res.data && res.data.session;
+      if(session && session.user) {
+        setUser(session.user);
+        setSplashDone(true);
       }
       setSessionChecked(true);
     });
     var sub = api.onAuthChange(function(event, session){
-      if(session && session.user){
-        var name = session.user.user_metadata && session.user.user_metadata.full_name
-          ? session.user.user_metadata.full_name
-          : session.user.email.split("@")[0];
-        setUser({id:session.user.id, name:name, email:session.user.email, avatar:session.user.user_metadata&&session.user.user_metadata.avatar_url||null});
+      if(session && session.user) {
+        setUser(session.user);
+        setSplashDone(true);
       } else {
         setUser(null);
       }
     });
-    return function(){ if(sub && sub.data) sub.data.subscription.unsubscribe(); };
+    return function(){ if(sub&&sub.data&&sub.data.subscription) sub.data.subscription.unsubscribe(); };
   },[]);
 
-  // Map init
+  /* Map init */
   useEffect(function(){
     if(mapObj.current) return;
     function tryInit(){
-      if(!window.L||!mapDiv.current){setTimeout(tryInit,100);return;}
+      if(!window.L||!mapDiv.current){setTimeout(tryInit,150);return;}
       var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
       window.L.control.zoom({position:"bottomleft"}).addTo(map);
-      window.L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{attribution:"? OpenStreetMap contributors, ? CARTO",maxZoom:19}).addTo(map);
-      map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("[pin] Location set");});
+      window.L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{attribution:"(c) OpenStreetMap contributors, (c) CARTO",maxZoom:19}).addTo(map);
+      map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set");});
       mapObj.current=map;
     }
     tryInit();
   },[]);
 
+  /* Load pins once splash is done */
   useEffect(function(){
-    if(!sessionChecked) return;
+    if(!splashDone) return;
     setLoading(true);
-    api.list().then(function(data){if(Array.isArray(data))setPins(data);}).catch(function(){flash("(!) Couldn't load pins");}).finally(function(){setLoading(false);});
-  },[sessionChecked]);
+    api.list().then(function(data){if(Array.isArray(data))setPins(data);}).catch(function(){flash("Could not load pins");}).finally(function(){setLoading(false);});
+  },[splashDone]);
 
+  /* Sync markers */
   useEffect(function(){
     if(!mapObj.current||!window.L) return;
     Object.values(markers.current).forEach(function(m){m.remove();});
@@ -248,43 +260,65 @@ function App() {
     var visible=activeFilter?pins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;}):pins;
     visible.forEach(function(pin){
       var color=tagColor(pin.tags&&pin.tags[0]||"x");
-      var icon=window.L.divIcon({className:"pm-pin",html:'<svg width="30" height="38" viewBox="0 0 26 34"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/><circle cx="13" cy="13" r="4" fill="white"/></svg>',iconSize:[30,38],iconAnchor:[15,38]});
+      var icon=window.L.divIcon({
+        className:"pm-pin",
+        html:'<svg width="30" height="38" viewBox="0 0 26 34"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/><circle cx="13" cy="13" r="4" fill="white"/></svg>',
+        iconSize:[30,38],iconAnchor:[15,38]
+      });
       var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(mapObj.current);
       m.on("click",function(){setSelPin(pin);setOpen(false);});
       markers.current[pin.id]=m;
     });
   },[pins,activeFilter]);
 
+  function requireAuth(cb) {
+    if(!user) { api.signInGoogle(); return; }
+    cb();
+  }
+
   function savePin(){
-    if(!user){api.signInGoogle();return;}
-    if(!pendingLL){flash("(!) Click the map first");return;}
-    if(!form.name.trim()){flash("(!) Name required");return;}
-    if(!form.tags.trim()){flash("(!) At least one tag required");return;}
-    var tags=form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
-    var pin={id:uid(),owner:user.name,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,upvotes:[],saved_by:[],saved_from:null};
-    api.insert(pin).then(function(){setPins(function(p){return [pin].concat(p);});setForm({name:"",description:"",tags:"",privacy:"public",photo:null});setPendingLL(null);setTab("mine");flash("(ok) Pin saved!");}).catch(function(){flash("(!) Save failed");});
+    requireAuth(function(){
+      if(!pendingLL){flash("Click the map first");return;}
+      if(!form.name.trim()){flash("Name required");return;}
+      if(!form.tags.trim()){flash("At least one tag required");return;}
+      var tags=form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
+      var pin={id:uid(),owner:uname,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,upvotes:[],saved_by:[],saved_from:null};
+      api.insert(pin).then(function(){
+        setPins(function(p){return [pin].concat(p);});
+        setForm({name:"",description:"",tags:"",privacy:"public",photo:null});
+        setPendingLL(null);setTab("mine");flash("Pin saved!");
+      }).catch(function(){flash("Save failed");});
+    });
   }
 
   function deletePin(id){
-    api.remove(id).then(function(){setPins(function(p){return p.filter(function(x){return x.id!==id;});});if(selPin&&selPin.id===id)setSelPin(null);flash("[del] Removed");}).catch(function(){flash("(!) Delete failed");});
+    api.remove(id).then(function(){
+      setPins(function(p){return p.filter(function(x){return x.id!==id;});});
+      if(selPin&&selPin.id===id) setSelPin(null);
+      flash("Removed");
+    }).catch(function(){flash("Delete failed");});
   }
 
   function toggleUpvote(pinId){
-    var pin=pins.find(function(p){return p.id===pinId;}); if(!pin) return;
-    var has=pin.upvotes&&user&&pin.upvotes.indexOf(user.name)>=0;
-    var upvotes=has?pin.upvotes.filter(function(u){return !user||u!==user.name;}):(pin.upvotes||[]).concat([user]);
-    api.update(pinId,{upvotes:upvotes}).then(function(){
-      setPins(function(prev){return prev.map(function(p){return p.id===pinId?Object.assign({},p,{upvotes:upvotes}):p;});});
-      setSelPin(function(sp){return sp&&sp.id===pinId?Object.assign({},sp,{upvotes:upvotes}):sp;});
-    }).catch(function(){flash("(!) Failed");});
+    requireAuth(function(){
+      var pin=pins.find(function(p){return p.id===pinId;}); if(!pin) return;
+      var has=pin.upvotes&&pin.upvotes.indexOf(uname)>=0;
+      var upvotes=has?pin.upvotes.filter(function(u){return u!==uname;}):(pin.upvotes||[]).concat([uname]);
+      api.update(pinId,{upvotes:upvotes}).then(function(){
+        setPins(function(prev){return prev.map(function(p){return p.id===pinId?Object.assign({},p,{upvotes:upvotes}):p;});});
+        setSelPin(function(sp){return sp&&sp.id===pinId?Object.assign({},sp,{upvotes:upvotes}):sp;});
+      }).catch(function(){flash("Failed");});
+    });
   }
 
   function saveToCollection(pin){
-    if(user && pin.owner===user.name){flash("Already your pin");return;}
-    if(!user){api.signInGoogle();return;} var id=pin.id+"_saved_"+(user?user.name:"anon");
-    if(pins.find(function(p){return p.id===id;})){flash("Already saved");return;}
-    var saved=Object.assign({},pin,{id:id,owner:user.name,saved_from:pin.owner,privacy:"private",upvotes:[],saved_by:[]});
-    api.insert(saved).then(function(){setPins(function(p){return [saved].concat(p);});flash("[star] Saved!");}).catch(function(){flash("(!) Failed");});
+    requireAuth(function(){
+      if(pin.owner===uname){flash("Already your pin");return;}
+      var id=pin.id+"_saved_"+uname;
+      if(pins.find(function(p){return p.id===id;})){flash("Already saved");return;}
+      var saved=Object.assign({},pin,{id:id,owner:uname,saved_from:pin.owner,privacy:"private",upvotes:[],saved_by:[]});
+      api.insert(saved).then(function(){setPins(function(p){return [saved].concat(p);});flash("Saved!");}).catch(function(){flash("Failed");});
+    });
   }
 
   function doSearch(){
@@ -296,18 +330,22 @@ function App() {
       setActiveFilter(tag);
       setPins(function(prev){var ids=new Set(prev.map(function(p){return p.id;}));return prev.concat(results.filter(function(r){return !ids.has(r.id);}));});
       if(!results.length) flash("No public pins for #"+tag);
-    }).catch(function(){flash("(!) Search failed");});
+    }).catch(function(){flash("Search failed");});
   }
 
   function findNearby(){
-    if(!userLL){flash("(!) Use GPS button first");return;}
-    var results=pins.filter(function(p){return p.privacy==="public"||user && user && p.owner===user.name.name;}).map(function(p){return Object.assign({},p,{dist:distKm(userLL.lat,userLL.lng,p.lat,p.lng)});}).filter(function(p){return p.dist<=nearbyKm;}).sort(function(a,b){return a.dist-b.dist;});
+    if(!userLL){flash("Use GPS button first");return;}
+    var results=pins
+      .filter(function(p){return p.privacy==="public"||p.owner===uname;})
+      .map(function(p){return Object.assign({},p,{dist:distKm(userLL.lat,userLL.lng,p.lat,p.lng)});})
+      .filter(function(p){return p.dist<=nearbyKm;})
+      .sort(function(a,b){return a.dist-b.dist;});
     setNearbyRes(results);
     if(!results.length) flash("No pins within "+nearbyKm+"km");
   }
 
   function gpsLocate(){
-    if(!navigator.geolocation){flash("(!) Not supported");return;}
+    if(!navigator.geolocation){flash("Not supported");return;}
     setLocating(true);
     navigator.geolocation.getCurrentPosition(function(pos){
       var lat=pos.coords.latitude,lng=pos.coords.longitude;
@@ -315,13 +353,13 @@ function App() {
       if(mapObj.current) mapObj.current.setView([lat,lng],14);
       if(window._gpsM) window._gpsM.remove();
       if(window.L&&mapObj.current) window._gpsM=window.L.circleMarker([lat,lng],{radius:10,fillColor:"#1565c0",color:"#fff",weight:3,fillOpacity:0.85}).addTo(mapObj.current).bindPopup("You are here").openPopup();
-      setLocating(false); flash("[gps] Found!");
-    },function(){setLocating(false);flash("(!) Location unavailable");},{enableHighAccuracy:true,timeout:8000});
+      setLocating(false); flash("Location found!");
+    },function(){setLocating(false);flash("Location unavailable");},{enableHighAccuracy:true,timeout:8000});
   }
 
   function handlePhoto(ev){
     var file=ev.target.files[0]; if(!file) return;
-    if(file.size>2*1024*1024){flash("(!) Max 2MB");return;}
+    if(file.size>2*1024*1024){flash("Max 2MB");return;}
     var reader=new FileReader();
     reader.onload=function(e){setForm(function(f){return Object.assign({},f,{photo:e.target.result});});};
     reader.readAsDataURL(file);
@@ -330,9 +368,22 @@ function App() {
   function onFabDown(ev){
     ev.preventDefault();
     var sx=ev.clientX,sy=ev.clientY,rect=ev.currentTarget.getBoundingClientRect(),moved=false;
-    function onMove(e){var dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>5||Math.abs(dy)>5)moved=true;if(!moved)return;setFabPos({right:Math.max(8,Math.min(window.innerWidth-64,window.innerWidth-(rect.right+dx))),bottom:Math.max(8,Math.min(window.innerHeight-64,window.innerHeight-(rect.bottom+dy)))});}
-    function onUp(){window.removeEventListener("pointermove",onMove);window.removeEventListener("pointerup",onUp);if(!moved)setOpen(function(o){return !o;});}
-    window.addEventListener("pointermove",onMove);window.addEventListener("pointerup",onUp);
+    function onMove(e2){
+      var dx=e2.clientX-sx,dy=e2.clientY-sy;
+      if(Math.abs(dx)>5||Math.abs(dy)>5) moved=true;
+      if(!moved) return;
+      setFabPos({
+        right:Math.max(8,Math.min(window.innerWidth-64,window.innerWidth-(rect.right+dx))),
+        bottom:Math.max(8,Math.min(window.innerHeight-64,window.innerHeight-(rect.bottom+dy)))
+      });
+    }
+    function onUp(){
+      window.removeEventListener("pointermove",onMove);
+      window.removeEventListener("pointerup",onUp);
+      if(!moved) setOpen(function(o){return !o;});
+    }
+    window.addEventListener("pointermove",onMove);
+    window.addEventListener("pointerup",onUp);
   }
 
   function bubblePos(){
@@ -343,74 +394,116 @@ function App() {
     return {position:"absolute",right:right,bottom:bottom,width:bw,maxHeight:bh,display:"flex",flexDirection:"column",background:"rgba(255,253,248,0.98)",backdropFilter:"blur(20px)",border:"1px solid #d0c4a8",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.18)",zIndex:1000,overflow:"hidden",transformOrigin:"bottom right"};
   }
 
-  var myPins=pins.filter(function(p){return user && user && p.owner===user.name.name;});
-  var myTags=[...new Set(myPins.flatMap(function(p){return p.tags||[];}))];
-  var TABS=[["search","[search]"],["mine","[mine]"],["add","[add]"],["nearby","[gps]"],["profile","[profile]"]];
+  var myPins=pins.filter(function(p){return p.owner===uname;});
+  var myTags=[].concat.apply([],[].map.call(myPins,function(p){return p.tags||[];})).filter(function(t,i,a){return a.indexOf(t)===i;});
+  var TABS=[["search","[search]"],["mine","[mine]"],["add","[add]"],["nearby","[gps]"],["profile","[user]"]];
 
-  if(!sessionChecked) return e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#f0e8d0"}},
-    e("div",{style:{fontSize:13,color:"#9a8a70"}},"Loading...")
-  );
+  /* Show splash until session checked and user has chosen */
+  if(!sessionChecked || !splashDone) {
+    return e(Splash,{
+      loading: !sessionChecked,
+      onGoogle: api.signInGoogle,
+      onGuest: function(){ setSplashDone(true); }
+    });
+  }
 
   return e("div",{style:{position:"relative",height:"100vh",width:"100%",overflow:"hidden"}},
+
+    /* Map */
     e("div",{ref:mapDiv,style:{position:"absolute",top:0,left:0,right:0,bottom:0,zIndex:0}}),
 
+    /* Search bar */
     !activeFilter && e("div",{className:"pm-search",style:{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,width:"88%",maxWidth:380}},
-      e("input",{style:{width:"100%",padding:"11px 20px",borderRadius:25,border:"none",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",fontSize:14,outline:"none",background:"rgba(255,255,255,0.97)",color:"#2c2416"},placeholder:"Search #hashtags...",value:searchTag,onChange:function(ev){setSearchTag(ev.target.value);},onKeyDown:function(ev){if(ev.key==="Enter"&&searchTag.trim()){doSearch();setOpen(true);setTab("search");}}})
+      e("input",{style:{width:"100%",padding:"11px 20px",borderRadius:25,border:"none",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",fontSize:14,outline:"none",background:"rgba(255,255,255,0.97)",color:"#2c2416"},
+        placeholder:"Search #hashtags...",value:searchTag,onChange:function(ev){setSearchTag(ev.target.value);},
+        onKeyDown:function(ev){if(ev.key==="Enter"&&searchTag.trim()){doSearch();setOpen(true);setTab("search");}}})
     ),
 
+    /* Active filter pill */
     activeFilter && e("div",{className:"pm-filter",style:{position:"absolute",top:14,left:"50%",transform:"translateX(-50%)",background:"rgba(255,255,255,0.97)",borderRadius:25,padding:"6px 14px",fontSize:12,zIndex:999,display:"flex",alignItems:"center",gap:7,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
       e("span",{style:{color:tagColor(activeFilter),fontWeight:700}},"#"+activeFilter),
       e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:12,padding:0},onClick:function(){setActiveFilter(null);setSearchResults(null);setSearchTag("");}}, "x")
     ),
 
+    /* GPS button */
     e("button",{onClick:gpsLocate,className:"pm-gps",style:{position:"absolute",top:70,right:14,width:42,height:42,borderRadius:"50%",background:"rgba(255,253,248,0.96)",backdropFilter:"blur(12px)",border:"1.5px solid "+(locating?"#1565c0":"#c8b89a"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:999,boxShadow:"0 4px 14px rgba(0,0,0,0.13)"}},
-      locating ? e("span",{style:{fontSize:16,display:"inline-block",animation:"spin 1s linear infinite"}},"...") : "[gps]"
+      locating
+        ? e("span",{style:{fontSize:16,display:"inline-block",animation:"spin 1s linear infinite"}},"~")
+        : "[gps]"
     ),
 
-    loading && e("div",{style:{position:"absolute",top:70,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:20,padding:"5px 14px",fontSize:11,zIndex:999,color:"#9a8a70"}},"... Loading..."),
+    /* Loading indicator */
+    loading && e("div",{style:{position:"absolute",top:70,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:20,padding:"5px 14px",fontSize:11,zIndex:999,color:"#9a8a70"}},"Loading..."),
 
+    /* Bubble menu */
     open && e("div",{className:"bubble",style:bubblePos()},
+
+      /* Header */
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 13px",borderBottom:"1px solid #e8dcc4",background:"rgba(245,238,218,0.9)",flexShrink:0}},
         e("span",{style:{fontSize:12,fontWeight:700,letterSpacing:2,color:"#2e7d32"}},"[pin] PINMAP"),
         e("div",{style:{display:"flex",alignItems:"center",gap:7}},
-          e("span",{style:{fontSize:10,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d0c4a8"}},"@"+(user?user.name:"guest"),
-          e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:14},onClick:function(){setOpen(false);}},"x")
+          user && userAvatar(user)
+            ? e("img",{src:userAvatar(user),style:{width:22,height:22,borderRadius:"50%",border:"1px solid #d0c4a8"}})
+            : null,
+          e("span",{style:{fontSize:10,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d0c4a8"}},uname),
+          user
+            ? null
+            : e("button",{style:{fontSize:10,background:"#2e7d32",color:"#fff",border:"none",padding:"3px 8px",borderRadius:3,cursor:"pointer"},onClick:api.signInGoogle},"Sign in"),
+          e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:16,lineHeight:1,padding:"0 2px"},onClick:function(){setOpen(false);}},"x")
         )
       ),
+
+      /* Tabs */
       e("div",{style:{display:"flex",borderBottom:"1px solid #e8dcc4",flexShrink:0,background:"rgba(250,246,236,0.8)"}},
-        TABS.map(function(t){return e("button",{key:t[0],onClick:function(){setTab(t[0]);},style:{flex:1,padding:"8px 2px",background:"none",border:"none",cursor:"pointer",fontSize:16,color:tab===t[0]?"#2e7d32":"#9a8a70",borderBottom:tab===t[0]?"2px solid #2e7d32":"2px solid transparent"}},t[1]);})
+        TABS.map(function(t){
+          return e("button",{key:t[0],onClick:function(){setTab(t[0]);},
+            style:{flex:1,padding:"8px 2px",background:"none",border:"none",cursor:"pointer",fontSize:10,color:tab===t[0]?"#2e7d32":"#9a8a70",borderBottom:tab===t[0]?"2px solid #2e7d32":"2px solid transparent",fontFamily:"Courier New,monospace"}},
+            t[1]);
+        })
       ),
+
+      /* Panel body */
       e("div",{style:{padding:11,flex:1,overflowY:"auto"}},
 
+        /* SEARCH */
         tab==="search" && e("div",null,
           e("div",{style:{display:"flex",gap:5,marginBottom:7}},
             e("input",{style:S.input,placeholder:"#hashtag",value:searchTag,onChange:function(ev){setSearchTag(ev.target.value);},onKeyDown:function(ev){if(ev.key==="Enter")doSearch();}}),
             e("button",{style:S.btn,onClick:doSearch},"GO")
           ),
-          activeFilter && e("button",{style:Object.assign({},S.chip,{marginBottom:7}),onClick:function(){setActiveFilter(null);setSearchResults(null);setSearchTag("");}},"x #"+activeFilter),
-          searchResults ? e("div",null,
-            e("div",{style:S.secHead},"#"+searchResults.tag+" - "+searchResults.results.length+" pins"),
-            searchResults.results.map(function(p){return e(PinCard,{key:p.id,pin:p,user:user,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
-          ) : e("div",{style:S.hint},"Search public pins by hashtag.",
-            e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
-              ["hiking","urbex","bikepacking","bouldering","overlanding","kayaking"].map(function(t){return e("span",{key:t,style:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);})
-            )
-          )
+          activeFilter && e("button",{style:Object.assign({},S.chip,{marginBottom:7}),onClick:function(){setActiveFilter(null);setSearchResults(null);setSearchTag("");}}, "x #"+activeFilter),
+          searchResults
+            ? e("div",null,
+                e("div",{style:S.secHead},"#"+searchResults.tag+" - "+searchResults.results.length+" pins"),
+                searchResults.results.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,
+                  onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},
+                  onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
+              )
+            : e("div",{style:S.hint},"Search public pins by hashtag.",
+                e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
+                  ["hiking","urbex","bikepacking","bouldering","overlanding","kayaking"].map(function(t){
+                    return e("span",{key:t,style:{fontSize:10,padding:"2px 8px",borderRadius:10,background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
+                  })
+                )
+              )
         ),
 
+        /* MINE */
         tab==="mine" && e("div",null,
-          myTags.length===0 && e("div",{style:S.hint},"No pins yet ? close this, click the map, then [add]."),
+          myTags.length===0 && e("div",{style:S.hint},"No pins yet - close this, click the map, then [add]."),
           myTags.map(function(tag){
             var tp=myPins.filter(function(p){return p.tags&&p.tags.indexOf(tag)>=0;});
             return e("div",{key:tag,style:{marginBottom:12}},
               e("div",{style:{display:"flex",alignItems:"center",gap:4,marginBottom:4}},
                 e("span",{style:{color:tagColor(tag),fontWeight:700,fontSize:12}},"#"+tag),
                 e("span",{style:{fontSize:9,background:"#ddd5bb",padding:"1px 5px",borderRadius:8,color:"#2e7d32"}},tp.length),
-                e("button",{style:Object.assign({},S.miniBtn,{marginLeft:"auto"}),onClick:function(){setActiveFilter(activeFilter===tag?null:tag);}},activeFilter===tag?"[map]v":"[map]"),
+                e("button",{style:Object.assign({},S.miniBtn,{marginLeft:"auto"}),onClick:function(){setActiveFilter(activeFilter===tag?null:tag);}},activeFilter===tag?"map-on":"map"),
                 e("button",{style:S.miniBtn,onClick:function(){dlFile(toGeoJSON(tp),"pins.geojson","application/json");}},"GeoJSON"),
                 e("button",{style:S.miniBtn,onClick:function(){dlFile(toGPX(tp),"pins.gpx","application/gpx+xml");}},"GPX")
               ),
-              tp.map(function(p){return e(PinCard,{key:p.id,pin:p,user:user,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
+              tp.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,
+                onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},
+                onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
             );
           }),
           myPins.length>0 && e("div",{style:{display:"flex",gap:6,marginTop:8}},
@@ -419,70 +512,121 @@ function App() {
           )
         ),
 
+        /* ADD */
         tab==="add" && e("div",null,
           e("div",{style:S.secHead},"Drop a pin"),
-          !user && e("div",{style:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:12,marginBottom:10,textAlign:"center"}},
-            e("div",{style:{fontSize:12,color:"#5a4a30",marginBottom:8}},"Sign in to save pins"),
+          !user && e("div",{style:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:10,marginBottom:10,textAlign:"center"}},
+            e("div",{style:{fontSize:11,color:"#5a4a30",marginBottom:8}},"Sign in to save pins to your account"),
             e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
           ),
-          e("div",{style:Object.assign({},S.hint,{marginBottom:8})},pendingLL?"[pin] "+pendingLL.lat.toFixed(4)+", "+pendingLL.lng.toFixed(4):"Close this and click the map to set location"),
+          e("div",{style:Object.assign({},S.hint,{marginBottom:8})},pendingLL?"Location: "+pendingLL.lat.toFixed(4)+", "+pendingLL.lng.toFixed(4):"Close this and click the map to set location"),
           e("input",{style:S.input,placeholder:"Name / Place",value:form.name,onChange:function(ev){setForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
           e("textarea",{style:Object.assign({},S.input,{height:46,resize:"none"}),placeholder:"Description (optional)",value:form.description,onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
           e("input",{style:S.input,placeholder:"#tags space or comma separated",value:form.tags,onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
-          e("label",{style:Object.assign({},S.hint,{cursor:"pointer",display:"flex",alignItems:"center",gap:6,marginBottom:8})},"[photo] "+(form.photo?"Photo attached v":"Attach photo (optional, max 2MB)"),e("input",{type:"file",accept:"image/*",style:{display:"none"},onChange:handlePhoto})),
+          e("label",{style:Object.assign({},S.hint,{cursor:"pointer",display:"flex",alignItems:"center",gap:6,marginBottom:8})},
+            "[photo] "+(form.photo?"Photo attached":"Attach photo (optional, max 2MB)"),
+            e("input",{type:"file",accept:"image/*",style:{display:"none"},onChange:handlePhoto})
+          ),
           form.photo && e("div",{style:{position:"relative",marginBottom:8}},
             e("img",{src:form.photo,style:{width:"100%",borderRadius:6,maxHeight:120,objectFit:"cover"}}),
-            e("button",{onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.5)",border:"none",color:"#fff",borderRadius:"50%",width:20,height:20,cursor:"pointer",fontSize:11}},"x")
+            e("button",{onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},
+              style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.5)",border:"none",color:"#fff",borderRadius:"50%",width:20,height:20,cursor:"pointer",fontSize:11}},"x")
           ),
           e("div",{style:{display:"flex",gap:10,marginBottom:6}},
-            ["public","private","shareable"].map(function(opt){return e("label",{key:opt,style:{fontSize:11,cursor:"pointer",color:"#6a5a40"}},e("input",{type:"radio",name:"priv",checked:form.privacy===opt,onChange:function(){setForm(function(f){return Object.assign({},f,{privacy:opt});});}}), " "+opt);})
+            ["public","private","shareable"].map(function(opt){
+              return e("label",{key:opt,style:{fontSize:11,cursor:"pointer",color:"#6a5a40"}},
+                e("input",{type:"radio",name:"priv",checked:form.privacy===opt,onChange:function(){setForm(function(f){return Object.assign({},f,{privacy:opt});});}}),
+                " "+opt
+              );
+            })
           ),
-          e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:10,fontStyle:"italic"}},form.privacy==="public"?"Searchable by everyone":form.privacy==="private"?"Only visible to you":"Link-only"),
+          e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:10,fontStyle:"italic"}},
+            form.privacy==="public"?"Searchable by everyone":form.privacy==="private"?"Only visible to you":"Link-only"
+          ),
           e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:savePin},"SAVE PIN")
         ),
 
+        /* NEARBY */
         tab==="nearby" && e("div",null,
           e("div",{style:S.secHead},"Nearby pins"),
-          e("div",{style:Object.assign({},S.hint,{marginBottom:10})},userLL?"[pin] Location known":"Tap the GPS button first"),
+          e("div",{style:Object.assign({},S.hint,{marginBottom:10})},userLL?"Location known":"Tap the GPS button on the map first"),
           e("div",{style:{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}},
             e("span",{style:{fontSize:11,color:"#6a5a40"}},"Radius:"),
-            [5,10,25,50].map(function(r){return e("button",{key:r,style:Object.assign({},S.chip,{background:nearbyKm===r?"#2e7d32":"none",color:nearbyKm===r?"#fff":"#2e7d32"}),onClick:function(){setNearbyKm(r);}},r+"km");})
+            [5,10,25,50].map(function(r){
+              return e("button",{key:r,style:Object.assign({},S.chip,{background:nearbyKm===r?"#2e7d32":"none",color:nearbyKm===r?"#fff":"#2e7d32"}),onClick:function(){setNearbyKm(r);}},r+"km");
+            })
           ),
           e("button",{style:Object.assign({},S.btn,{width:"100%",marginBottom:10}),onClick:findNearby},"Find Nearby"),
           nearbyRes && (nearbyRes.length===0
             ? e("div",{style:S.hint},"No pins within "+nearbyKm+"km.")
-            : nearbyRes.map(function(p){return e(PinCard,{key:p.id,pin:p,user:user,dist:p.dist,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
+            : nearbyRes.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,dist:p.dist,
+                onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);},
+                onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
           )
         ),
 
-        tab==="profile" && e(Profile,{user:user,myPins:myPins,onSignOut:function(){api.signOut().then(function(){setUser(null);flash("Signed out");});},onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}})
-      )
+        /* PROFILE */
+        tab==="profile" && e(ProfilePanel,{
+          user:user, uname:uname, myPins:myPins,
+          onSignOut:function(){api.signOut().then(function(){setUser(null);flash("Signed out");});},
+          onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
+          onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
+        })
+
+      ) /* end panel body */
+    ), /* end bubble */
+
+    /* FAB */
+    e("button",{
+      onPointerDown:onFabDown,
+      className:"fab-btn",
+      style:{position:"absolute",bottom:fabPos.bottom,right:fabPos.right,width:50,height:50,borderRadius:"50%",background:"rgba(255,253,248,0.96)",backdropFilter:"blur(12px)",border:"1.5px solid "+(open?"#2e7d32":"#c8b89a"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"grab",zIndex:1001,boxShadow:"0 4px 18px rgba(0,0,0,0.15)",touchAction:"none",userSelect:"none"}
+    },
+      open
+        ? e("span",{style:{fontSize:18,color:"#2e7d32",lineHeight:1}},"x")
+        : e("svg",{width:20,height:15,viewBox:"0 0 20 15",fill:"none"},
+            e("rect",{width:20,height:2.4,rx:1.2,fill:"#2e7d32"}),
+            e("rect",{y:6.3,width:20,height:2.4,rx:1.2,fill:"#2e7d32"}),
+            e("rect",{y:12.6,width:20,height:2.4,rx:1.2,fill:"#2e7d32"})
+          )
     ),
 
-    e("button",{onPointerDown:onFabDown,className:"fab-btn",className:"fab-btn",style:{position:"absolute",bottom:fabPos.bottom,right:fabPos.right,width:50,height:50,borderRadius:"50%",background:"rgba(255,253,248,0.96)",backdropFilter:"blur(12px)",border:"1.5px solid "+(open?"#2e7d32":"#c8b89a"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"grab",zIndex:1001,boxShadow:"0 4px 18px rgba(0,0,0,0.15)",touchAction:"none",userSelect:"none"}},
-      open ? e("span",{style:{fontSize:17,color:"#2e7d32"}},"x") : e("svg",{width:20,height:15,viewBox:"0 0 20 15",fill:"none"},e("rect",{width:20,height:2.4,rx:1.2,fill:"#2e7d32"}),e("rect",{y:6.3,width:20,height:2.4,rx:1.2,fill:"#2e7d32"}),e("rect",{y:12.6,width:20,height:2.4,rx:1.2,fill:"#2e7d32"}))
-    ),
-
-    selPin && e("div",{className:"detail pm-detail pm-detail",style:{position:"absolute",bottom:20,left:16,background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"13px 15px",minWidth:220,maxWidth:290,zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)"}},
-      e("button",{style:{position:"absolute",top:8,right:10,background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:12},onClick:function(){setSelPin(null);}},"x"),
+    /* Pin detail popup */
+    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",bottom:20,left:16,background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"13px 15px",minWidth:220,maxWidth:290,zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)"}},
+      e("button",{style:{position:"absolute",top:8,right:10,background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:14},onClick:function(){setSelPin(null);}},"x"),
       selPin.photo && e("img",{src:selPin.photo,style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:140,objectFit:"cover"}}),
-      e("div",{style:{fontWeight:700,fontSize:14,color:"#2c2416",marginBottom:2,paddingRight:16}},selPin.name),
-      e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:6}},"@"+selPin.owner,selPin.saved_from&&e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)),
+      e("div",{style:{fontWeight:700,fontSize:14,color:"#2c2416",marginBottom:2,paddingRight:20}},selPin.name),
+      e("div",{style:{fontSize:10,color:"#9a8a70",marginBottom:6}},
+        "@"+selPin.owner,
+        selPin.saved_from && e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)
+      ),
       selPin.description && e("div",{style:{fontSize:11,color:"#5a4a30",marginBottom:6,lineHeight:1.5}},selPin.description),
-      e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}},(selPin.tags||[]).map(function(t){return e("span",{key:t,style:{fontSize:10,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);})),
+      e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}},
+        (selPin.tags||[]).map(function(t){
+          return e("span",{key:t,style:{fontSize:10,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
+        })
+      ),
       e("div",{style:{fontSize:9,color:"#b0a080",fontFamily:"monospace",marginBottom:8}},selPin.lat.toFixed(5)+", "+selPin.lng.toFixed(5)),
       e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
-        (!user || selPin.owner!==user.name) && e(React.Fragment,null,
-          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:11,cursor:"pointer",borderRadius:10},onClick:function(){toggleUpvote(selPin.id);}},(selPin.upvotes&&user&&selPin.upvotes.indexOf(user.name)>=0?"*":"o")+" "+(selPin.upvotes?selPin.upvotes.length:0)),
-          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:11,cursor:"pointer",borderRadius:10},onClick:function(){saveToCollection(selPin);}},"[star] Save")
+        (uname && selPin.owner!==uname) && e(React.Fragment,null,
+          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:11,cursor:"pointer",borderRadius:10},
+            onClick:function(){toggleUpvote(selPin.id);}},
+            (selPin.upvotes&&selPin.upvotes.indexOf(uname)>=0?"*":"o")+" "+(selPin.upvotes?selPin.upvotes.length:0)
+          ),
+          e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:11,cursor:"pointer",borderRadius:10},
+            onClick:function(){saveToCollection(selPin);}},"[star] Save")
         ),
-        (user && selPin.owner===user.name) && e("button",{style:{background:"none",border:"1px solid #c08080",color:"#c05050",padding:"4px 10px",cursor:"pointer",fontSize:10,borderRadius:3},onClick:function(){deletePin(selPin.id);}},"[del] Delete")
+        (uname && selPin.owner===uname) && e("button",{
+          style:{background:"none",border:"1px solid #c08080",color:"#c05050",padding:"4px 10px",cursor:"pointer",fontSize:10,borderRadius:3},
+          onClick:function(){deletePin(selPin.id);}},"[del] Delete")
       )
     ),
 
+    /* Toast */
     toast && e("div",{className:"pm-toast",style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",color:"#2e7d32",padding:"7px 16px",borderRadius:20,fontSize:11,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast)
-  ));
-}
+
+  ); /* end App return */
+} /* end App */
 
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
 
@@ -491,6 +635,5 @@ if("serviceWorker" in navigator){
 }
 
   </script>
-
 </body>
 </html>
