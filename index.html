@@ -377,7 +377,7 @@ function App() {
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
     map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
     mapObj.current=map;
-  },[]);;
+  },[splashDone]);
 
   useEffect(function(){
     if(!splashDone) return;
