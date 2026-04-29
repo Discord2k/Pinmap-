@@ -296,7 +296,7 @@ function App() {
   var s5=useState(false);    var loading=s5[0];        var setLoading=s5[1];
   var s6=useState(false);    var open=s6[0];           var setOpen=s6[1];
   var s7=useState("search"); var tab=s7[0];            var setTab=s7[1];
-  var fabInit={bottom:Math.max(32,(window.screen&&window.screen.height?(window.screen.height-window.innerHeight):0)+32),right:20}; var s8=useState(fabInit); var fabPos=s8[0]; var setFabPos=s8[1];
+  var s8=useState({bottom:32,right:20}); var fabPos=s8[0]; var setFabPos=s8[1];
   var s9=useState("");       var searchTag=s9[0];      var setSearchTag=s9[1];
   var s10=useState(null);    var searchResults=s10[0]; var setSearchResults=s10[1];
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
