@@ -93,16 +93,36 @@ var S = {
 /*    Splash Screen                                                             */
 function Splash(props) {
   var loading = props.loading;
-  return e("div",{style:{position:"fixed",inset:0,background:"#f0e8d0",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}},
-    e("div",{style:{textAlign:"center",padding:"40px 32px",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,maxWidth:320,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.12)"}},
-      e("div",{style:{fontSize:48,marginBottom:8}},"[pin]"),
-      e("div",{style:{fontSize:26,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:6}},"PINMAP"),
-      e("div",{style:{fontSize:12,color:"#9a8a70",letterSpacing:1,marginBottom:32}},"Tag the terrain. Share the stoke."),
+  var expanded = useState(false); var isExpanded = expanded[0]; var setExpanded = expanded[1];
+  return e("div",{style:{position:"fixed",inset:0,background:"#f0e8d0",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px"}},
+    e("div",{style:{textAlign:"center",padding:"36px 28px",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,maxWidth:340,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.12)"}},
+      e("div",{style:{fontSize:44,marginBottom:6}},"[pin]"),
+      e("div",{style:{fontSize:26,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:4}},"PINMAP"),
+      e("div",{style:{fontSize:12,color:"#9a8a70",letterSpacing:1,marginBottom:20}},"Tag the terrain. Share the stoke."),
+
+      /* About toggle */
+      e("button",{
+        onClick:function(){setExpanded(function(v){return !v;});},
+        style:{background:"none",border:"1px solid #d0c4a8",borderRadius:8,padding:"8px 16px",fontSize:11,color:"#6a5a40",cursor:"pointer",marginBottom:14,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6}
+      },
+        e("span",null, isExpanded ? "Hide" : "What is PINMAP?"),
+        e("span",{style:{fontSize:9,marginTop:1}}, isExpanded ? "(close)" : "(learn more)")
+      ),
+
+      /* Expandable description */
+      isExpanded && e("div",{style:{textAlign:"left",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:"14px 16px",marginBottom:16,fontSize:11,color:"#4a3a28",lineHeight:1.75}},
+        e("p",{style:{marginBottom:10,fontWeight:700,color:"#2e7d32"}},"A lightweight social map for the things that matter to you."),
+        e("p",{style:{marginBottom:10}},"PINMAP lets you drop a pin on any location and tag it with hashtags - then share it publicly or keep it just for yourself."),
+        e("p",{style:{marginBottom:10}},"Search any hashtag to discover pins saved by others. Follow a tag like #murals and find hidden street art in your city, or browse #wildflowers to see where others have spotted rare blooms."),
+        e("p",{style:{marginBottom:10}},"Save pins from other users to your own collections. Upvote the ones you love. Export your collections to GPX or GeoJSON to use in other apps."),
+        e("p",{style:{marginBottom:4,fontStyle:"italic",color:"#7a6a50"}},"Great pubs, unique murals, favourite flowers, secret trails, hidden gems - if it has a location, it belongs on PINMAP.")
+      ),
+
       loading
-        ? e("div",{style:{fontSize:13,color:"#9a8a70"}},"Checking session...")
+        ? e("div",{style:{fontSize:13,color:"#9a8a70",padding:"16px 0"}},"Checking session...")
         : e("div",null,
             e("button",{
-              style:{width:"100%",padding:"12px",marginBottom:12,background:"#fff",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,fontWeight:700,color:"#2c2416",display:"flex",alignItems:"center",justifyContent:"center",gap:8},
+              style:{width:"100%",padding:"12px",marginBottom:10,background:"#fff",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,fontWeight:700,color:"#2c2416",display:"flex",alignItems:"center",justifyContent:"center",gap:8},
               onClick:props.onGoogle
             },
               e("svg",{width:18,height:18,viewBox:"0 0 48 48"},
@@ -114,7 +134,7 @@ function Splash(props) {
               "Continue with Google"
             ),
             e("button",{
-              style:{width:"100%",padding:"12px",background:"none",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,color:"#6a5a40"},
+              style:{width:"100%",padding:"11px",background:"none",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:13,color:"#6a5a40"},
               onClick:props.onGuest
             },"Browse as Guest")
           )
