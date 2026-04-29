@@ -31,14 +31,21 @@
 </head>
 <body>
   <div id="err"></div>
+  <div id="dbg" style="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);color:#0f0;font-size:11px;padding:8px;z-index:99998;white-space:pre;max-height:30vh;overflow-y:auto;font-family:monospace"></div>
   <div id="root"></div>
 
   <script>
+    var dbg = [];
+    function log(msg){ dbg.push(msg); var el=document.getElementById("dbg"); if(el) el.textContent=dbg.join("\n"); }
     function showErr(msg){var el=document.getElementById("err");el.style.display="block";el.textContent+=msg+"\n---\n";}
     window.onerror=function(msg,src,line){showErr("JS ERROR: "+msg+"\nAt: "+src+":"+line);return false;};
     window.addEventListener("unhandledrejection",function(ev){showErr("PROMISE: "+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason)));});
     window.addEventListener("error",function(ev){if(ev.target&&ev.target.src)showErr("LOAD FAILED: "+ev.target.src);},true);
-    setTimeout(function(){var r=document.getElementById("root");if(r&&r.children.length===0)showErr("APP DID NOT MOUNT\nReact:"+!!window.React+"\nLeaflet:"+!!window.L);},5000);
+    log("page loaded");
+    log("React: "+!!window.React);
+    log("L: "+!!window.L);
+    setTimeout(function(){ log("L after 1s: "+!!window.L); },1000);
+    setTimeout(function(){ log("L after 3s: "+!!window.L); var r=document.getElementById("root"); log("root children: "+(r?r.children.length:0)); },3000);
   </script>
 
   <script>
