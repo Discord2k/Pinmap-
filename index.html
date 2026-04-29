@@ -364,7 +364,7 @@ function App() {
   },[]);
 
   useEffect(function(){
-    if(mapObj.current||!mapDiv.current) return;
+    if(!splashDone||mapObj.current||!mapDiv.current) return;
     var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
     window.L.control.zoom({position:"bottomleft"}).addTo(map);
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
