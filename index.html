@@ -467,7 +467,9 @@ function App() {
             : null,
           e("span",{style:{fontSize:10,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d0c4a8"}},uname),
           user
-            ? null
+            ? e("button",{style:{fontSize:10,background:"none",border:"1px solid #d0c4a8",color:"#9a8a70",padding:"2px 7px",borderRadius:3,cursor:"pointer"},
+                onClick:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});}
+              },"Sign out")
             : e("button",{style:{fontSize:10,background:"#2e7d32",color:"#fff",border:"none",padding:"3px 8px",borderRadius:3,cursor:"pointer"},onClick:api.signInGoogle},"Sign in"),
           e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:16,lineHeight:1,padding:"0 2px"},onClick:function(){setOpen(false);}},"x")
         )
@@ -588,7 +590,7 @@ function App() {
         /* PROFILE */
         tab==="profile" && e(ProfilePanel,{
           user:user, uname:uname, myPins:myPins,
-          onSignOut:function(){api.signOut().then(function(){setUser(null);flash("Signed out");});},
+          onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
         })
