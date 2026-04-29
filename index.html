@@ -82,6 +82,21 @@ var ONBOARD_STEPS = [
 ];
 
 function uid() { return Math.random().toString(36).slice(2,10); }
+
+async function uploadPhoto(dataUrl, pinId) {
+  // Convert base64 data URL to blob
+  var parts = dataUrl.split(',');
+  var mime = parts[0].match(/:(.*?);/)[1];
+  var binary = atob(parts[1]);
+  var array = new Uint8Array(binary.length);
+  for(var i=0;i<binary.length;i++) array[i]=binary.charCodeAt(i);
+  var blob = new Blob([array], {type:mime});
+  var filename = 'pins/' + pinId + '_' + Date.now() + '.jpg';
+  var res = await sb.storage.from('pin-images').upload(filename, blob, {contentType:'image/jpeg',upsert:true});
+  if(res.error) throw res.error;
+  var urlRes = sb.storage.from('pin-images').getPublicUrl(filename);
+  return urlRes.data.publicUrl;
+}
 function tagColor(tag) { var h=0; for(var i=0;i<tag.length;i++) h=(h*31+tag.charCodeAt(i))>>>0; return COLORS[h%COLORS.length]; }
 function distKm(a,b,c,d) { var R=6371,dL=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dl/2)*Math.sin(dl/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
 function dlFile(content,name,type) { var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([content],{type:type})); a.download=name; a.click(); }
@@ -449,12 +464,24 @@ function App() {
   function saveEdit(){
     if(!editForm.name.trim()){flash("Name required");return;}
     var tags=editForm.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
-    var patch={name:editForm.name.trim(),description:editForm.description.trim(),tags:tags,color:editForm.color,photo:editForm.photo||null};
-    api.update(editPin.id,patch,uname).then(function(){
-      setPins(function(prev){return prev.map(function(p){return p.id===editPin.id?Object.assign({},p,patch):p;});});
-      setEditPin(null);
-      flash("Pin updated!");
-    }).catch(function(){flash("Update failed");});
+    var doUpdate = function(photoUrl) {
+      var patch={name:editForm.name.trim(),description:editForm.description.trim(),tags:tags,color:editForm.color,photo:photoUrl};
+      api.update(editPin.id,patch,uname).then(function(){
+        setPins(function(prev){return prev.map(function(p){return p.id===editPin.id?Object.assign({},p,patch):p;});});
+        setEditPin(null);
+        flash("Pin updated!");
+      }).catch(function(){flash("Update failed");});
+    };
+    if(editForm.photo && editForm.photo.startsWith('data:')) {
+      flash("Uploading photo...");
+      uploadPhoto(editForm.photo, editPin.id).then(function(url){
+        doUpdate(url);
+      }).catch(function(){
+        doUpdate(editForm.photo);
+      });
+    } else {
+      doUpdate(editForm.photo||null);
+    }
   }
 
   function savePin(){
@@ -464,11 +491,27 @@ function App() {
       if(!form.tags.trim()){flash("At least one tag required");return;}
       var tags=form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
       var pin={id:uid(),owner:uname,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,color:form.color||"#2e7d32",upvotes:[],saved_by:[],saved_from:null};
-      api.insert(pin).then(function(){
-        setPins(function(p){return [pin].concat(p);});
-        setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32"});
-        setPendingLL(null);setTab("mine");flash("Pin saved!");
-      }).catch(function(){flash("Save failed");});
+      var photoData = pin.photo;
+      var doInsert = function(photoUrl) {
+        var pinToSave = Object.assign({}, pin, {photo: photoUrl});
+        api.insert(pinToSave).then(function(){
+          setPins(function(p){return [pinToSave].concat(p);});
+          setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32"});
+          setPendingLL(null);setTab("mine");flash("Pin saved!");
+        }).catch(function(){flash("Save failed");});
+      };
+      if(photoData && photoData.startsWith('data:')) {
+        flash("Uploading photo...");
+        uploadPhoto(photoData, pin.id).then(function(url){
+          doInsert(url);
+        }).catch(function(){
+          // Fall back to base64 if upload fails
+          doInsert(photoData);
+          flash("Pin saved (photo stored locally)");
+        });
+      } else {
+        doInsert(photoData);
+      }
     });
   }
 
