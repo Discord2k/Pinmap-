@@ -989,12 +989,21 @@ function App() {
           )
         ),
 
-        tab==="profile" && e(ProfilePanel,{
+        tab==="profile" && e("div",null,
+          pins.length>0 && e("div",{style:{background:"#fff3cd",border:"1px solid #ffc107",borderRadius:8,padding:"10px 12px",marginBottom:10,fontSize:11}},
+            e("div",null,"Your uname: "+JSON.stringify(uname)),
+            e("div",null,"First pin owner: "+JSON.stringify(pins[0]&&pins[0].owner)),
+            e("div",null,"Match: "+String(uname===pins[0].owner)),
+            e("div",null,"Total pins: "+pins.length),
+            e("div",null,"mapLayer: "+mapLayer)
+          ),
+          e(ProfilePanel,{
           user:user,uname:uname,myPins:myPins,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
         })
+        )
 
       )
     ),
