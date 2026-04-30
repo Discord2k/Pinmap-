@@ -83,6 +83,31 @@ var ONBOARD_STEPS = [
 
 function uid() { return Math.random().toString(36).slice(2,10); }
 
+function getPinIcon(tags) {
+  var t = (tags||[]).join(" ").toLowerCase();
+  if(/pub|bar|brewery|beer|tavern/.test(t))          return "🍺";
+  if(/trail|hike|hiking|trailhead|trek/.test(t))     return "🥾";
+  if(/flower|wildflower|flora|bloom|garden/.test(t)) return "🌸";
+  if(/mural|art|graffiti|street art/.test(t))        return "🎨";
+  if(/fish|fishing|fishingspot|angling/.test(t))     return "🎣";
+  if(/geocache|cache/.test(t))                       return "📦";
+  if(/kayak|canoe|paddle|rowing/.test(t))            return "🚣";
+  if(/camp|camping|campsite/.test(t))                return "⛺";
+  if(/photo|viewpoint|vista|lookout/.test(t))        return "📷";
+  if(/waterfall|lake|river|creek|swim/.test(t))      return "💧";
+  if(/bike|cycling|mtb|cycle/.test(t))               return "🚴";
+  if(/climb|boulder|crag/.test(t))                   return "🧗";
+  if(/coffee|cafe|bakery/.test(t))                   return "☕";
+  if(/food|restaurant|eat|diner/.test(t))            return "🍽";
+  if(/museum|gallery|history|heritage/.test(t))      return "🏛";
+  if(/beach|coast|sea|ocean|surf/.test(t))           return "🏖";
+  if(/urban|urbex|abandoned/.test(t))                return "🏚";
+  if(/bird|wildlife|nature|animal/.test(t))          return "🦜";
+  if(/snow|ski|winter|mountain/.test(t))             return "🏔";
+  if(/overlanding|4wd|offroad/.test(t))              return "🚙";
+  return "📍";
+}
+
 async function uploadPhoto(dataUrl, pinId) {
   // Convert base64 data URL to blob
   var parts = dataUrl.split(',');
@@ -277,6 +302,7 @@ function PinCard(props) {
     pin.photo && e("img",{src:pin.photo,style:{width:"100%",borderRadius:4,marginBottom:5,maxHeight:80,objectFit:"cover"}}),
     e("div",{style:{display:"flex",alignItems:"center",gap:5,marginBottom:1}},
       e("span",{style:{width:8,height:8,borderRadius:"50%",background:pin.color||tagColor(pin.tags&&pin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
+      e("span",{style:{fontSize:14,lineHeight:1}},getPinIcon(pin.tags)),
       e("span",{style:{fontWeight:700,fontSize:13,color:"#2c2416"}},pin.name)
     ),
     e("div",{style:{fontSize:11,color:"#9a8a70",marginBottom:2}},
@@ -466,10 +492,18 @@ function App() {
     var visible=activeFilter?layerPins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;}):layerPins;
     visible.forEach(function(pin){
       var color=pin.color||tagColor(pin.tags&&pin.tags[0]||"x");
+      var pinEmoji=getPinIcon(pin.tags);
+      var hasEmoji = pinEmoji !== "📍";
       var icon=window.L.divIcon({
         className:"pm-pin",
-        html:'<svg width="30" height="38" viewBox="0 0 26 34"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/><circle cx="13" cy="13" r="4" fill="white"/></svg>',
-        iconSize:[30,38],iconAnchor:[15,38]
+        html: hasEmoji
+          ? '<div style="position:relative;width:36px;height:44px">'
+            + '<svg width="36" height="44" viewBox="0 0 26 34" style="position:absolute;top:0;left:0"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/></svg>'
+            + '<div style="position:absolute;top:4px;left:0;width:36px;text-align:center;font-size:13px;line-height:1">'+pinEmoji+'</div>'
+            + '</div>'
+          : '<svg width="30" height="38" viewBox="0 0 26 34"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/><circle cx="13" cy="13" r="4" fill="white"/></svg>',
+        iconSize: hasEmoji?[36,44]:[30,38],
+        iconAnchor: hasEmoji?[18,44]:[15,38]
       });
       var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(mapObj.current);
       m.on("click",function(){setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
@@ -1023,6 +1057,7 @@ function App() {
       selPin.photo&&e("img",{src:selPin.photo,style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover"}}),
       e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:2,paddingRight:20}},
       e("span",{style:{width:12,height:12,borderRadius:"50%",background:selPin.color||tagColor(selPin.tags&&selPin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
+      e("span",{style:{fontSize:20,lineHeight:1}},getPinIcon(selPin.tags)),
       e("span",{style:{fontWeight:700,fontSize:16,color:"#2c2416"}},selPin.name)
     ),
       e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:6}},
