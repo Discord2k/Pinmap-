@@ -333,7 +333,7 @@ function ProfilePanel(props) {
 
 /*    App                                                                         */
 function App() {
-  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({});
+  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null);
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
   var s2=useState(false);    var sessionChecked=s2[0]; var setSessionChecked=s2[1];
   var s3=useState(false);    var splashDone=s3[0];     var setSplashDone=s3[1];
@@ -357,6 +357,8 @@ function App() {
   var s19=useState(null);    var nearbyRes=s19[0];     var setNearbyRes=s19[1];
   var s20=useState(localStorage.getItem(ONBOARD_KEY)?-1:0); var onboardStep=s20[0]; var setOnboardStep=s20[1];
   var s23=useState("mine"); var mapLayer=s23[0]; var setMapLayer=s23[1];
+  var s25=useState("osm"); var baseLayer=s25[0]; var setBaseLayer=s25[1];
+  var s26=useState(false); var layerMenuOpen=s26[0]; var setLayerMenuOpen=s26[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
 
   var uname = userName(user);
@@ -405,7 +407,9 @@ function App() {
       if(mapObj.current) return;
       var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
       window.L.control.zoom({position:"bottomleft"}).addTo(map);
-      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19}).addTo(map);
+      var initTile = window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19});
+      initTile.addTo(map);
+      currentBase.current = [initTile];
       setTimeout(function(){map.invalidateSize();},300);
       map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
       mapObj.current=map;
@@ -423,6 +427,26 @@ function App() {
       }
     }).catch(function(){flash("Could not load pins");}).finally(function(){setLoading(false);});
   },[splashDone]);
+
+  // Switch base layer when baseLayer state changes
+  useEffect(function(){
+    if(!mapObj.current||!window.L) return;
+    var def = BASE_LAYERS.find(function(b){return b.id===baseLayer;});
+    if(!def) return;
+    // Remove current base and overlay
+    if(currentBase.current){ currentBase.current.forEach(function(l){l.remove();}); }
+    // Add new base
+    var layers = [];
+    var base = window.L.tileLayer(def.url,{attribution:def.attr,maxZoom:19});
+    base.addTo(mapObj.current);
+    layers.push(base);
+    if(def.overlay){
+      var ov = window.L.tileLayer(def.overlay,{attribution:def.attr,maxZoom:19,opacity:0.85});
+      ov.addTo(mapObj.current);
+      layers.push(ov);
+    }
+    currentBase.current = layers;
+  },[baseLayer]);
 
   // Re-check comments whenever user or pins change
   useEffect(function(){
@@ -454,6 +478,11 @@ function App() {
   },[pins,activeFilter,mapLayer,uname]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
+
+  function switchBaseLayer(id){
+    setBaseLayer(id);
+    setLayerMenuOpen(false);
+  }
 
   function openEdit(pin){
     setEditPin(pin);
@@ -580,30 +609,77 @@ function App() {
     },function(){setLocating(false);flash("Location unavailable");},{enableHighAccuracy:true,timeout:8000});
   }
 
+  function compressAndSet(dataUrl, setter) {
+    var img = new Image();
+    img.onload = function(){
+      var MAX=800, w=img.width, h=img.height;
+      if(w>MAX||h>MAX){ if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;} }
+      var canvas=document.createElement("canvas");
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      var compressed=canvas.toDataURL("image/jpeg",0.75);
+      setter(compressed);
+      flash("Photo added ("+(Math.round(compressed.length*0.75/1024))+"KB)");
+    };
+    img.src = dataUrl;
+  }
+
   function handlePhoto(ev){
     var file=ev.target.files[0]; if(!file) return;
     if(file.size>10*1024*1024){flash("Max 10MB");return;}
     var reader=new FileReader();
     reader.onload=function(ev2){
-      var img=new Image();
-      img.onload=function(){
-        var MAX=800;
-        var w=img.width, h=img.height;
-        if(w>MAX||h>MAX){
-          if(w>h){ h=Math.round(h*MAX/w); w=MAX; }
-          else    { w=Math.round(w*MAX/h); h=MAX; }
-        }
-        var canvas=document.createElement("canvas");
-        canvas.width=w; canvas.height=h;
-        var ctx=canvas.getContext("2d");
-        ctx.drawImage(img,0,0,w,h);
-        var compressed=canvas.toDataURL("image/jpeg",0.75);
+      compressAndSet(ev2.target.result, function(compressed){
         setForm(function(f){return Object.assign({},f,{photo:compressed});});
-        flash("Photo added ("+(Math.round(compressed.length*0.75/1024))+"KB)");
-      };
-      img.src=ev2.target.result;
+      });
     };
     reader.readAsDataURL(file);
+  }
+
+  function handlePhotoEdit(ev){
+    var file=ev.target.files[0]; if(!file) return;
+    if(file.size>10*1024*1024){flash("Max 10MB");return;}
+    var reader=new FileReader();
+    reader.onload=function(ev2){
+      compressAndSet(ev2.target.result, function(compressed){
+        setEditForm(function(f){return Object.assign({},f,{photo:compressed});});
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function takePhoto(setter) {
+    // Use Capacitor Camera if available, otherwise trigger file input
+    if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      try {
+        var Camera = window.Capacitor.Plugins.Camera;
+        var image = await Camera.getPhoto({
+          quality: 75,
+          allowEditing: false,
+          resultType: "base64",
+          source: "PROMPT"  // shows camera + gallery choice
+        });
+        var dataUrl = "data:image/jpeg;base64," + image.base64String;
+        compressAndSet(dataUrl, setter);
+      } catch(err) {
+        if(err.message !== "User cancelled photos app") flash("Camera unavailable");
+      }
+    } else {
+      // Web/PWA fallback - trigger file input with camera option
+      var input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.capture = "environment"; // opens rear camera directly on mobile
+      input.onchange = function(){
+        var file = input.files[0]; if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev2){
+          compressAndSet(ev2.target.result, setter);
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    }
   }
 
   function onFabDown(ev){
@@ -631,6 +707,14 @@ function App() {
   var myTags=[].concat.apply([],[].map.call(myPins,function(p){return p.tags||[];})).filter(function(t,i,a){return a.indexOf(t)===i;});
 
   // Recent tags: from pins sorted by created_at desc, deduplicated, max 4
+  var BASE_LAYERS = [
+    {id:"osm",       label:"Standard",  icon:"🗺", url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors"},
+    {id:"topo",      label:"Topo",      icon:"▲",  url:"https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",                                               attr:"(c) OpenTopoMap contributors"},
+    {id:"satellite", label:"Satellite", icon:"🛰",  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",  attr:"(c) Esri"},
+    {id:"trails",    label:"Trails",    icon:"🥾",  url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors", overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
+    {id:"seamap",    label:"Sea",       icon:"⚓",  url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenSeaMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
+  ];
+
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
   var recentTagsSeen = {};
   var recentTags = [];
@@ -694,6 +778,48 @@ function App() {
       ),
       e("span",{style:{fontSize:8,color:mapLayer==="none"?"#c8b89a":"#2e7d32",lineHeight:1,marginTop:1}},
         mapLayer==="mine"?"mine":mapLayer==="public"?"all":"off"
+      )
+    ),
+
+    e("div",{style:{position:"absolute",top:"calc(170px + env(safe-area-inset-top,0px))",right:14,zIndex:999}},
+      e("button",{
+        onClick:function(){setLayerMenuOpen(function(v){return !v;});},
+        title:"Map layers",
+        style:{
+          width:42,height:42,borderRadius:"50%",
+          background:baseLayer!=="osm"?"#2e7d32":"rgba(255,253,248,0.96)",
+          backdropFilter:"blur(12px)",
+          border:"1.5px solid "+(baseLayer!=="osm"?"#2e7d32":"#c8b89a"),
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+          cursor:"pointer",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",gap:1
+        }
+      },
+        e("span",{style:{fontSize:16,lineHeight:1}},BASE_LAYERS.find(function(b){return b.id===baseLayer;})?BASE_LAYERS.find(function(b){return b.id===baseLayer;}).icon:"🗺"),
+        e("span",{style:{fontSize:7,color:baseLayer!=="osm"?"#fff":"#9a8a70",lineHeight:1,marginTop:1}},"Layers")
+      ),
+      layerMenuOpen && e("div",{style:{
+        position:"absolute",right:50,top:0,
+        background:"rgba(255,253,248,0.98)",backdropFilter:"blur(20px)",
+        border:"1px solid #d0c4a8",borderRadius:12,
+        boxShadow:"0 8px 32px rgba(0,0,0,0.18)",
+        padding:"8px 6px",display:"flex",flexDirection:"column",gap:4,minWidth:120
+      }},
+        BASE_LAYERS.map(function(layer){
+          var active = baseLayer===layer.id;
+          return e("button",{
+            key:layer.id,
+            onClick:function(){switchBaseLayer(layer.id);},
+            style:{
+              display:"flex",alignItems:"center",gap:8,
+              padding:"8px 10px",borderRadius:8,border:"none",
+              background:active?"#2e7d32":"transparent",
+              cursor:"pointer",textAlign:"left",width:"100%"
+            }
+          },
+            e("span",{style:{fontSize:18,width:24,textAlign:"center"}},layer.icon),
+            e("span",{style:{fontSize:13,fontWeight:active?700:400,color:active?"#fff":"#2c2416",fontFamily:"Courier New,monospace"}},layer.label)
+          );
+        })
       )
     ),
 
@@ -805,10 +931,10 @@ function App() {
           e("input",{style:S.input,placeholder:"Name / Place",value:form.name,onChange:function(ev){setForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
           e("textarea",{style:Object.assign({},S.input,{height:52,resize:"none"}),placeholder:"Description (optional)",value:form.description,onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
           e("input",{style:S.input,placeholder:"#tags  space or comma separated",value:form.tags,onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
-          e("label",{style:Object.assign({},S.hint,{cursor:"pointer",display:"flex",alignItems:"center",gap:6,marginBottom:8})},
-            "📷 "+(form.photo?"Photo attached":"Attach photo (optional, max 2MB)"),
-            e("input",{type:"file",accept:"image/*",style:{display:"none"},onChange:handlePhoto})
-          ),
+          e("button",{
+            style:{background:"none",border:"1px solid #d0c4a8",borderRadius:6,padding:"7px 12px",fontSize:13,color:"#6a5a40",cursor:"pointer",display:"flex",alignItems:"center",gap:6,marginBottom:8,width:"100%"},
+            onClick:function(){takePhoto(function(compressed){setForm(function(f){return Object.assign({},f,{photo:compressed});});});}
+          }, "📷 "+(form.photo?"Photo attached - tap to change":"Add photo (optional)")),
           form.photo&&e("div",{style:{position:"relative",marginBottom:8}},
             e("img",{src:form.photo,style:{width:"100%",borderRadius:6,maxHeight:120,objectFit:"cover"}}),
             e("button",{onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.5)",border:"none",color:"#fff",borderRadius:"50%",width:20,height:20,cursor:"pointer",fontSize:11}},"x")
@@ -962,25 +1088,10 @@ function App() {
             : null,
           e("label",{style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,color:"#6a5a40",cursor:"pointer",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:6,padding:"6px 10px"}},
             editForm.photo ? "Replace photo" : "Add photo (max 10MB)",
-            e("input",{type:"file",accept:"image/*",style:{display:"none"},
-              onChange:function(ev){
-                var file=ev.target.files[0]; if(!file) return;
-                if(file.size>10*1024*1024){return;}
-                var reader=new FileReader();
-                reader.onload=function(ev2){
-                  var img=new Image();
-                  img.onload=function(){
-                    var MAX=800, w=img.width, h=img.height;
-                    if(w>MAX||h>MAX){ if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;} }
-                    var canvas=document.createElement("canvas"); canvas.width=w; canvas.height=h;
-                    canvas.getContext("2d").drawImage(img,0,0,w,h);
-                    setEditForm(function(f){return Object.assign({},f,{photo:canvas.toDataURL("image/jpeg",0.75)});});
-                  };
-                  img.src=ev2.target.result;
-                };
-                reader.readAsDataURL(file);
-              }
-            })
+e("button",{
+              style:{background:"none",border:"none",fontSize:13,color:"#6a5a40",cursor:"pointer",padding:0},
+              onClick:function(){takePhoto(function(compressed){setEditForm(function(f){return Object.assign({},f,{photo:compressed});});});}
+            }, editForm.photo?"Replace photo":"Add photo")
           )
         ),
         e("div",{style:{display:"flex",gap:8}},
