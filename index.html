@@ -57,12 +57,12 @@ function sbWithUser(uname) {
 
 const api = {
   list:           function()           { return sb.from("pins").select("*").order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
-  insert:         function(pin)        { return sb.from("pins").insert(pin).select().then(function(r){return r.data;}); },
+  insert:         function(pin,uname)  { return sbWithUser(uname).from("pins").insert(pin).select().then(function(r){return r.data;}); },
   update:         function(id,p,uname) { return sbWithUser(uname).from("pins").update(p).eq("id",id).then(function(r){return r.data;}); },
   remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).eq("privacy","public").then(function(r){return r.data||[];}); },
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
-  addComment:     function(c)          { return sb.from("comments").insert(c).select().then(function(r){return r.data;}); },
+  addComment:     function(c,uname)    { return sbWithUser(uname).from("comments").insert(c).select().then(function(r){return r.data;}); },
   deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id); },
   signInGoogle:   function()           { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
   signOut:        function()           { return sb.auth.signOut(); },
@@ -239,7 +239,7 @@ function Comments(props) {
     if(!uname){api.signInGoogle();return;}
     setSending(true);
     var c={id:uid(),pin_id:pinId,owner:uname,body:draft.trim(),created_at:new Date().toISOString()};
-    api.addComment(c).then(function(){setComments(function(prev){return prev.concat([c]);});setDraft("");setSending(false);}).catch(function(){setSending(false);});
+    api.addComment(c,props.uname).then(function(){setComments(function(prev){return prev.concat([c]);});setDraft("");setSending(false);}).catch(function(){setSending(false);});
   }
   function del(id){ api.deleteComment(id,props.uname).then(function(){setComments(function(prev){return prev.filter(function(c){return c.id!==id;});});}); }
   return e("div",{style:{borderTop:"1px solid #e8dcc4",marginTop:10,paddingTop:10}},
@@ -523,7 +523,7 @@ function App() {
       var photoData = pin.photo;
       var doInsert = function(photoUrl) {
         var pinToSave = Object.assign({}, pin, {photo: photoUrl});
-        api.insert(pinToSave).then(function(){
+        api.insert(pinToSave,uname).then(function(){
           setPins(function(p){return [pinToSave].concat(p);});
           setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32"});
           setPendingLL(null);setTab("mine");flash("Pin saved!");
@@ -570,7 +570,7 @@ function App() {
       var id=pin.id+"_saved_"+uname;
       if(pins.find(function(p){return p.id===id;})){flash("Already saved");return;}
       var saved=Object.assign({},pin,{id:id,owner:uname,saved_from:pin.owner,privacy:"private",upvotes:[],saved_by:[]});
-      api.insert(saved).then(function(){setPins(function(p){return [saved].concat(p);});flash("Saved!");}).catch(function(){flash("Failed");});
+      api.insert(saved,uname).then(function(){setPins(function(p){return [saved].concat(p);});flash("Saved!");}).catch(function(){flash("Failed");});
     });
   }
 
