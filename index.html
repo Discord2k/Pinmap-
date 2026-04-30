@@ -385,11 +385,20 @@ function App() {
   var s23=useState("mine"); var mapLayer=s23[0]; var setMapLayer=s23[1];
   var s25=useState("osm"); var baseLayer=s25[0]; var setBaseLayer=s25[1];
   var s26=useState(false); var layerMenuOpen=s26[0]; var setLayerMenuOpen=s26[1];
+  var s27=useState(false); var updateReady=s27[0]; var setUpdateReady=s27[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
 
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
+
+  useEffect(function(){
+    // Wire SW update flag to React state
+    window._setUpdateReady = setUpdateReady;
+    // Check if update was already detected before React mounted
+    if(window._swUpdateReady) setUpdateReady(true);
+    return function(){ window._setUpdateReady = null; };
+  },[]);
 
   function checkNewComments(pinsData, nameOverride) {
     var name = nameOverride || uname;
@@ -769,6 +778,29 @@ function App() {
 
     e("div",{ref:mapDiv,style:{position:"absolute",top:0,left:0,right:0,bottom:0,width:"100%",height:"100%",zIndex:0}}),
 
+    updateReady && e("div",{style:{
+      position:"fixed",
+      bottom:"calc(100px + env(safe-area-inset-bottom,0px))",
+      left:16,right:16,
+      background:"#2e7d32",color:"#fff",
+      padding:"12px 16px",borderRadius:12,
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      zIndex:9998,boxShadow:"0 4px 20px rgba(0,0,0,0.25)",
+      fontSize:13,gap:10
+    }},
+      e("span",{style:{flex:1,lineHeight:1.4}},"New version of PINMAP is ready"),
+      e("div",{style:{display:"flex",gap:8,flexShrink:0}},
+        e("button",{
+          style:{background:"rgba(255,255,255,0.2)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"6px 10px",fontSize:12,cursor:"pointer"},
+          onClick:function(){setUpdateReady(false);}
+        },"Later"),
+        e("button",{
+          style:{background:"#fff",color:"#2e7d32",border:"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"},
+          onClick:function(){window.location.reload();}
+        },"Update")
+      )
+    ),
+
     !activeFilter && e("div",{className:"pm-search",style:{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,width:"88%",maxWidth:380}},
       e("input",{style:{width:"100%",padding:"11px 20px",borderRadius:25,border:"none",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",fontSize:16,outline:"none",background:"rgba(255,255,255,0.97)",color:"#2c2416"},
         placeholder:"Search #hashtags...",value:searchTag,onChange:function(ev){setSearchTag(ev.target.value);},
@@ -1143,7 +1175,23 @@ e("button",{
 
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
 if("serviceWorker" in navigator){
-  window.addEventListener("load",function(){navigator.serviceWorker.register("./sw.js").catch(function(){});});
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("./sw.js").then(function(reg){
+      // Check for updates every time the page loads
+      reg.addEventListener("updatefound",function(){
+        var newWorker = reg.installing;
+        newWorker.addEventListener("statechange",function(){
+          if(newWorker.state==="installed" && navigator.serviceWorker.controller){
+            // New version available - notify the app
+            window._swUpdateReady = true;
+            if(window._setUpdateReady) window._setUpdateReady(true);
+          }
+        });
+      });
+      // Also check for updates on focus
+      window.addEventListener("focus",function(){ reg.update(); });
+    }).catch(function(){});
+  });
 }
 
   </script>
