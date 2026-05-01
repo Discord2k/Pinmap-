@@ -503,6 +503,9 @@ function App() {
   var s28=useState(null); var viewUser=s28[0]; var setViewUser=s28[1];
   var s29=useState([]); var userPins=s29[0]; var setUserPins=s29[1];
   var s30=useState(false); var userPinsLoading=s30[0]; var setUserPinsLoading=s30[1];
+  var s31=useState([]); var follows=s31[0]; var setFollows=s31[1];
+  var s32=useState([]); var trending=s32[0]; var setTrending=s32[1];
+  var s33=useState(false); var trendingLoading=s33[0]; var setTrendingLoading=s33[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
 
   var uname = userName(user);
@@ -578,7 +581,15 @@ function App() {
         checkNewComments(data);
       }
     }).catch(function(){flash("Could not load pins");}).finally(function(){setLoading(false);});
+    // Load trending tags
+    setTrendingLoading(true);
+    api.getTrending().then(function(data){setTrending(data);setTrendingLoading(false);});
   },[splashDone]);
+
+  useEffect(function(){
+    if(!user||!uname||uname==="guest") return;
+    api.getFollows(uname).then(function(data){setFollows(data||[]);});
+  },[user]);
 
   // Switch base layer when baseLayer state changes
   useEffect(function(){
@@ -657,6 +668,24 @@ function App() {
           mapObj.current.fitBounds(bounds,{padding:[60,60]});
         }
       });
+  }
+
+  function toggleFollow(tag){
+    requireAuth(function(){
+      var existing = follows.find(function(f){return f.tag===tag;});
+      if(existing){
+        api.unfollow(existing.id,uname).then(function(){
+          setFollows(function(prev){return prev.filter(function(f){return f.id!==existing.id;});});
+          flash("Unfollowed #"+tag);
+        });
+      } else {
+        var id = uid();
+        api.follow(id,uname,tag).then(function(){
+          setFollows(function(prev){return prev.concat([{id:id,owner:uname,tag:tag}]);});
+          flash("Following #"+tag);
+        });
+      }
+    });
   }
 
   function switchBaseLayer(id){
@@ -1110,21 +1139,60 @@ function App() {
           activeFilter&&e("button",{style:Object.assign({},S.chip,{marginBottom:7}),onClick:function(){setActiveFilter(null);setSearchResults(null);setSearchTag("");}},"x #"+activeFilter),
           searchResults
             ?e("div",null,
-                e("div",{style:S.secHead},"#"+searchResults.tag+" - "+searchResults.results.length+" pins"),
+                e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7,borderBottom:"1px solid #e8dcc4",paddingBottom:4}},
+                e("div",{style:{fontSize:11,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase"}},"#"+searchResults.tag+" - "+searchResults.results.length+" pins"),
+                e("button",{
+                  style:{fontSize:11,padding:"3px 10px",borderRadius:8,border:"1px solid "+(follows.some(function(f){return f.tag===searchResults.tag;})?"#2e7d32":"#d0c4a8"),background:follows.some(function(f){return f.tag===searchResults.tag;})?"#e8f5e9":"none",color:follows.some(function(f){return f.tag===searchResults.tag;})?"#2e7d32":"#9a8a70",cursor:"pointer",fontFamily:"Courier New,monospace"},
+                  onClick:function(){toggleFollow(searchResults.tag);}
+                }, follows.some(function(f){return f.tag===searchResults.tag;})?"Following":"Follow")
+              ),
                 searchResults.results.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
               )
             :e("div",null,
             e("div",{style:S.hint},"Search public pins by hashtag."),
-            e("div",{style:{fontSize:11,color:"#9a8a70",marginTop:8,marginBottom:4}},
-              recentTags.length>0 ? "Recent tags (blue) + suggestions:" : "Suggested tags:"
-            ),
-                e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
-                  suggestTags.map(function(t,idx){
-                    var isRecent = idx < recentTags.length;
-                    return e("span",{key:t,style:{fontSize:12,padding:"2px 8px",borderRadius:10,background:isRecent?"#e8f0fe":"#e8f5e9",color:isRecent?"#1565c0":"#2e7d32",border:"1px solid "+(isRecent?"#90caf9":"#a5d6a7"),cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
-                  })
-                )
+
+            trending.length>0&&e("div",null,
+              e("div",{style:{fontSize:11,color:"#9a8a70",marginTop:10,marginBottom:6,fontWeight:700}},"🔥 Trending this week"),
+              e("div",{style:{display:"flex",flexDirection:"column",gap:4}},
+                trending.slice(0,5).map(function(t){
+                  var isFollowing=follows.some(function(f){return f.tag===t.tag;});
+                  return e("div",{key:t.tag,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc"}},
+                    e("div",{style:{display:"flex",alignItems:"center",gap:8,cursor:"pointer"},onClick:function(){setSearchTag(t.tag);doSearch();}},
+                      e("span",{style:{fontSize:16}},getPinIcon([t.tag])),
+                      e("span",{style:{color:"#2e7d32",fontWeight:700,fontSize:13}},"#"+t.tag),
+                      e("span",{style:{fontSize:11,color:"#9a8a70"}},t.count+" pins")
+                    ),
+                    e("button",{
+                      style:{fontSize:10,padding:"3px 8px",borderRadius:8,border:"1px solid "+(isFollowing?"#2e7d32":"#d0c4a8"),background:isFollowing?"#e8f5e9":"none",color:isFollowing?"#2e7d32":"#9a8a70",cursor:"pointer",fontFamily:"Courier New,monospace"},
+                      onClick:function(){toggleFollow(t.tag);}
+                    },isFollowing?"Following":"Follow")
+                  );
+                })
               )
+            ),
+
+            e("div",{style:{fontSize:11,color:"#9a8a70",marginTop:10,marginBottom:4}},
+              recentTags.length>0?"Recent (blue) + suggestions:":"Suggested tags:"
+            ),
+            e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}},
+              suggestTags.map(function(t,idx){
+                var isRecent=idx<recentTags.length;
+                return e("span",{key:t,style:{fontSize:12,padding:"2px 8px",borderRadius:10,background:isRecent?"#e8f0fe":"#e8f5e9",color:isRecent?"#1565c0":"#2e7d32",border:"1px solid "+(isRecent?"#90caf9":"#a5d6a7"),cursor:"pointer"},onClick:function(){setSearchTag(t);}},"#"+t);
+              })
+            ),
+
+            follows.length>0&&e("div",null,
+              e("div",{style:{fontSize:11,color:"#9a8a70",marginTop:10,marginBottom:6,fontWeight:700}},"Tags you follow"),
+              e("div",{style:{display:"flex",flexWrap:"wrap",gap:4}},
+                follows.map(function(f){
+                  return e("div",{key:f.id,style:{display:"flex",alignItems:"center",gap:4,background:"#e8f5e9",border:"1px solid #a5d6a7",borderRadius:10,padding:"2px 4px 2px 8px"}},
+                    e("span",{style:{fontSize:12,color:"#2e7d32",cursor:"pointer"},onClick:function(){setSearchTag(f.tag);doSearch();}},"#"+f.tag),
+                    e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:11,padding:"0 2px",lineHeight:1},onClick:function(){toggleFollow(f.tag);}},"x")
+                  );
+                })
+              )
+            )
+          )
         ),
 
         tab==="mine" && e(MineTab,{
