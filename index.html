@@ -810,11 +810,11 @@ function App() {
         if(err.message !== "User cancelled photos app") flash("Camera unavailable");
       }
     } else {
-      // Web/PWA fallback - trigger file input with camera option
+      // Web/PWA fallback - trigger file input (shows gallery + camera option)
       var input = document.createElement("input");
       input.type = "file";
       input.accept = "image/*";
-      input.capture = "environment"; // opens rear camera directly on mobile
+      // No capture attribute - lets the user choose between gallery and camera
       input.onchange = function(){
         var file = input.files[0]; if(!file) return;
         var reader = new FileReader();
@@ -1243,13 +1243,10 @@ function App() {
                 },"x")
               )
             : null,
-          e("label",{style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,color:"#6a5a40",cursor:"pointer",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:6,padding:"6px 10px"}},
-            editForm.photo ? "Replace photo" : "Add photo (max 10MB)",
-e("button",{
-              style:{background:"none",border:"none",fontSize:13,color:"#6a5a40",cursor:"pointer",padding:0},
-              onClick:function(){takePhoto(function(compressed){setEditForm(function(f){return Object.assign({},f,{photo:compressed});});});}
-            }, editForm.photo?"Replace photo":"Add photo")
-          )
+          e("button",{
+            style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,color:"#6a5a40",cursor:"pointer",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:6,padding:"8px 12px",fontFamily:"Courier New,monospace"},
+            onClick:function(){takePhoto(function(compressed){setEditForm(function(f){return Object.assign({},f,{photo:compressed});});});}
+          }, editForm.photo?"📷 Replace photo":"📷 Add photo")
         ),
         e("div",{style:{display:"flex",gap:8}},
           e("button",{style:{flex:1,padding:"9px",background:"none",border:"1px solid #d0c4a8",borderRadius:8,fontSize:13,color:"#9a8a70",cursor:"pointer"},onClick:function(){setEditPin(null);}},"Cancel"),
