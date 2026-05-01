@@ -1,4 +1,4 @@
-const CACHE = "pinmap-v60";
+const CACHE = "pinmap-v61";
 const ASSETS = [
   "./",
   "./index.html",

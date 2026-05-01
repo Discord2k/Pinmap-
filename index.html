@@ -197,6 +197,11 @@ styleEl.textContent=[
   ".pm-search{top:calc(16px + env(safe-area-inset-top,0px))!important}",
   ".pm-filter{top:calc(14px + env(safe-area-inset-top,0px))!important}",
   ".pm-gps{top:calc(70px + env(safe-area-inset-top,0px))!important;right:calc(14px + env(safe-area-inset-right,0px))!important}",
+  "@media(min-width:768px){",
+  ".pm-detail{max-width:420px!important}",
+  ".fab-btn{bottom:40px!important;right:40px!important}",
+  ".pm-toast{bottom:32px!important}",
+  "}",
   ".marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background-clip:padding-box}",
   ".marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background-color:rgba(46,125,50,0.85);color:#fff;font-family:Courier New,monospace;font-weight:700;line-height:30px}",
   ".marker-cluster-small{background-color:rgba(46,125,50,0.25)}",
@@ -862,7 +867,10 @@ function App() {
   }
 
   function bubblePos(){
-    var vw=window.innerWidth,vh=window.innerHeight,bw=Math.min(340,vw-16),bh=Math.min(vh*0.82,600);
+    var vw=window.innerWidth,vh=window.innerHeight;
+    var isDesktop=vw>=768;
+    var bw=isDesktop?380:Math.min(340,vw-16);
+    var bh=isDesktop?Math.min(vh*0.75,640):Math.min(vh*0.82,600);
     var right=fabPos.right,bottom=fabPos.bottom+58;
     if(bottom+bh>vh-12) bottom=Math.max(12,vh-bh-12);
     if(vw-right-bw<8) right=Math.max(8,vw-bw-8);
@@ -926,7 +934,7 @@ function App() {
       )
     ),
 
-    !activeFilter && e("div",{className:"pm-search",style:{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,width:"88%",maxWidth:380}},
+    !activeFilter && e("div",{className:"pm-search",style:{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,width:"88%",maxWidth:480}},
       e("input",{style:{width:"100%",padding:"11px 20px",borderRadius:25,border:"none",boxShadow:"0 4px 14px rgba(0,0,0,0.13)",fontSize:16,outline:"none",background:"rgba(255,255,255,0.97)",color:"#2c2416"},
         placeholder:"Search #hashtags...",value:searchTag,onChange:function(ev){setSearchTag(ev.target.value);},
         onKeyDown:function(ev){if(ev.key==="Enter"&&searchTag.trim()){doSearch();setOpen(true);setTab("search");}}})
