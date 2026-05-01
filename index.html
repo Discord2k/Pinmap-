@@ -810,20 +810,41 @@ function App() {
         if(err.message !== "User cancelled photos app") flash("Camera unavailable");
       }
     } else {
-      // Web/PWA fallback - trigger file input (shows gallery + camera option)
-      var input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      // No capture attribute - lets the user choose between gallery and camera
-      input.onchange = function(){
-        var file = input.files[0]; if(!file) return;
-        var reader = new FileReader();
-        reader.onload = function(ev2){
-          compressAndSet(ev2.target.result, setter);
+      // Web/PWA - show choice between camera and gallery
+      var choice = document.createElement("div");
+      choice.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-end;justify-content:center";
+      var sheet = document.createElement("div");
+      sheet.style.cssText = "background:#faf6ed;border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:480px;font-family:Courier New,monospace";
+      function makeBtn(label, capture) {
+        var btn = document.createElement("button");
+        btn.textContent = label;
+        btn.style.cssText = "display:block;width:100%;padding:14px;margin-bottom:10px;background:#f0e8d4;border:1px solid #d0c4a8;border-radius:8px;font-size:15px;cursor:pointer;font-family:Courier New,monospace;color:#2c2416;text-align:left";
+        btn.onclick = function(){
+          document.body.removeChild(choice);
+          var input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/*";
+          if(capture) input.capture = capture;
+          input.onchange = function(){
+            var file = input.files[0]; if(!file) return;
+            var reader = new FileReader();
+            reader.onload = function(ev2){ compressAndSet(ev2.target.result, setter); };
+            reader.readAsDataURL(file);
+          };
+          input.click();
         };
-        reader.readAsDataURL(file);
-      };
-      input.click();
+        return btn;
+      }
+      var cancelBtn = document.createElement("button");
+      cancelBtn.textContent = "Cancel";
+      cancelBtn.style.cssText = "display:block;width:100%;padding:14px;background:none;border:none;font-size:14px;cursor:pointer;font-family:Courier New,monospace;color:#9a8a70";
+      cancelBtn.onclick = function(){ document.body.removeChild(choice); };
+      sheet.appendChild(makeBtn("📷  Take a photo", "environment"));
+      sheet.appendChild(makeBtn("🖼  Choose from gallery", ""));
+      sheet.appendChild(cancelBtn);
+      choice.appendChild(sheet);
+      choice.onclick = function(ev){ if(ev.target===choice) document.body.removeChild(choice); };
+      document.body.appendChild(choice);
     }
   }
 
