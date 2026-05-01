@@ -356,7 +356,12 @@ function PinCard(props) {
       e("span",{style:{fontWeight:700,fontSize:13,color:"#2c2416"}},pin.name)
     ),
     e("div",{style:{fontSize:11,color:"#9a8a70",marginBottom:2}},
-      "@"+pin.owner+(pin.saved_from?" - saved from @"+pin.saved_from:"")+" - "+pin.privacy,
+      e("span",{
+        style:{color:"#2e7d32",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"},
+        onClick:function(ev){ev.stopPropagation();props.onViewUser&&props.onViewUser(pin.owner);}
+      },"@"+pin.owner),
+      pin.saved_from&&e("span",null," - saved from @"+pin.saved_from),
+      " - "+pin.privacy,
       props.dist!==undefined && e("span",{style:{color:"#2e7d32",marginLeft:4}},props.dist.toFixed(1)+"km")
     ),
     e("div",{style:{fontSize:12,marginBottom:4}},(pin.tags||[]).map(function(t){return e("span",{key:t,style:{color:tagColor(t),marginRight:3}},"#"+t);})),
@@ -434,7 +439,7 @@ function MineTab(props) {
       tp.map(function(p){
         return e(PinCard,{key:p.id,pin:p,uname:uname,
           onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},
-          onDelete:props.deletePin,onUpvote:props.toggleUpvote,onSave:props.saveToCollection});
+          onDelete:props.deletePin,onUpvote:props.toggleUpvote,onSave:props.saveToCollection,onViewUser:props.loadUserProfile});
       })
     );
   }
@@ -495,6 +500,9 @@ function App() {
   var s25=useState("osm"); var baseLayer=s25[0]; var setBaseLayer=s25[1];
   var s26=useState(false); var layerMenuOpen=s26[0]; var setLayerMenuOpen=s26[1];
   var s27=useState(false); var updateReady=s27[0]; var setUpdateReady=s27[1];
+  var s28=useState(null); var viewUser=s28[0]; var setViewUser=s28[1];
+  var s29=useState([]); var userPins=s29[0]; var setUserPins=s29[1];
+  var s30=useState(false); var userPinsLoading=s30[0]; var setUserPinsLoading=s30[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
 
   var uname = userName(user);
@@ -628,6 +636,28 @@ function App() {
   },[pins,activeFilter,mapLayer,uname]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
+
+  function loadUserProfile(owner) {
+    if(owner === uname) { setOpen(true); setTab("profile"); return; }
+    setViewUser(owner);
+    setUserPins([]);
+    setUserPinsLoading(true);
+    sb.from("pins").select("*").eq("owner",owner).eq("privacy","public").order("created_at",{ascending:false})
+      .then(function(r){
+        setUserPins(r.data||[]);
+        setUserPinsLoading(false);
+        // Fly map to show their pins
+        if(r.data&&r.data.length>0&&mapObj.current&&window.L){
+          var lats=r.data.map(function(p){return p.lat;});
+          var lngs=r.data.map(function(p){return p.lng;});
+          var bounds=window.L.latLngBounds(
+            [Math.min.apply(null,lats),Math.min.apply(null,lngs)],
+            [Math.max.apply(null,lats),Math.max.apply(null,lngs)]
+          );
+          mapObj.current.fitBounds(bounds,{padding:[60,60]});
+        }
+      });
+  }
 
   function switchBaseLayer(id){
     setBaseLayer(id);
@@ -1101,7 +1131,7 @@ function App() {
           myPins:myPins,myTags:myTags,uname:uname,
           activeFilter:activeFilter,setActiveFilter:setActiveFilter,
           mapObj:mapObj,setSelPin:setSelPin,setOpen:setOpen,
-          deletePin:deletePin,toggleUpvote:toggleUpvote,saveToCollection:saveToCollection
+          deletePin:deletePin,toggleUpvote:toggleUpvote,saveToCollection:saveToCollection,loadUserProfile:loadUserProfile
         }),
 
         tab==="add" && e("div",null,
@@ -1210,7 +1240,10 @@ function App() {
       e("span",{style:{fontWeight:700,fontSize:16,color:"#2c2416"}},selPin.name)
     ),
       e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:6}},
-        "@"+selPin.owner,
+        e("span",{
+          style:{color:"#2e7d32",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"},
+          onClick:function(){loadUserProfile(selPin.owner);}
+        },"@"+selPin.owner),
         selPin.saved_from&&e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)
       ),
       selPin.description&&e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
@@ -1243,6 +1276,27 @@ function App() {
     ),
 
     onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard}),
+
+    viewUser&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}},
+      e("div",{style:{background:"#faf6ed",borderRadius:"16px 16px 0 0",width:"100%",maxWidth:480,maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 -8px 40px rgba(0,0,0,0.2)"}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid #e8dcc4",flexShrink:0}},
+          e("div",null,
+            e("div",{style:{fontWeight:700,fontSize:17,color:"#2c2416"}},"@"+viewUser),
+            e("div",{style:{fontSize:12,color:"#9a8a70"}},userPinsLoading?"Loading...":(userPins.length+" public pins"))
+          ),
+          e("button",{style:{background:"none",border:"none",fontSize:22,color:"#9a8a70",cursor:"pointer"},onClick:function(){setViewUser(null);setUserPins([]);}},"x")
+        ),
+        e("div",{style:{overflowY:"auto",flex:1,padding:"12px 14px"}},
+          userPinsLoading&&e("div",{style:{textAlign:"center",padding:24,color:"#9a8a70",fontSize:14}},"Loading pins..."),
+          !userPinsLoading&&userPins.length===0&&e("div",{style:{textAlign:"center",padding:24,color:"#9a8a70",fontSize:14}},"No public pins yet."),
+          !userPinsLoading&&userPins.map(function(p){
+            return e(PinCard,{key:p.id,pin:p,uname:uname,
+              onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setViewUser(null);},
+              onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection,onViewUser:loadUserProfile});
+          })
+        )
+      )
+    ),
 
     editPin&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
       e("div",{style:{background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:14,padding:"22px 20px",width:"100%",maxWidth:340,boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}},
