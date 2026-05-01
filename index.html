@@ -65,10 +65,24 @@ const api = {
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
   addComment:     function(c)          { return sb.from("comments").insert(c).select().then(function(r){return r.data;}); },
   deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id); },
-  signInGoogle:   function()           { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
-  signOut:        function()           { return sb.auth.signOut(); },
-  getSession:     function()           { return sb.auth.getSession(); },
-  onAuthChange:   function(cb)         { return sb.auth.onAuthStateChange(cb); }
+  signInGoogle:   function()            { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
+  signOut:        function()            { return sb.auth.signOut(); },
+  getSession:     function()            { return sb.auth.getSession(); },
+  onAuthChange:   function(cb)          { return sb.auth.onAuthStateChange(cb); },
+  getFollows:     function(owner)       { return sb.from("follows").select("*").eq("owner",owner).then(function(r){return r.data||[];}); },
+  follow:         function(id,owner,tag){ return sb.from("follows").insert({id:id,owner:owner,tag:tag}).select().then(function(r){return r.data;}); },
+  unfollow:       function(id,owner)    { return sbWithUser(owner).from("follows").delete().eq("id",id); },
+  getTrending:    function(){
+    var since=new Date(Date.now()-7*24*60*60*1000).toISOString();
+    return sb.from("pins").select("tags").eq("privacy","public").gte("created_at",since).then(function(r){
+      var counts={};
+      (r.data||[]).forEach(function(p){(p.tags||[]).forEach(function(t){counts[t]=(counts[t]||0)+1;});});
+      var result=[];
+      Object.keys(counts).forEach(function(k){result.push({tag:k,count:counts[k]});});
+      result.sort(function(a,b){return b.count-a.count;});
+      return result.slice(0,10);
+    });
+  }
 };
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
