@@ -403,6 +403,65 @@ function ProfilePanel(props) {
 }
 
 /*    App                                                                         */
+function MineTab(props) {
+  var myPins=props.myPins, myTags=props.myTags, uname=props.uname;
+  var activeFilter=props.activeFilter, setActiveFilter=props.setActiveFilter;
+  var mapObj=props.mapObj, setSelPin=props.setSelPin, setOpen=props.setOpen;
+  var st=useState(null); var selTag=st[0]; var setSelTag=st[1];
+
+  if(selTag){
+    var tp=myPins.filter(function(p){return p.tags&&p.tags.indexOf(selTag)>=0;});
+    return e("div",null,
+      e("button",{
+        style:{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#2e7d32",cursor:"pointer",fontSize:13,marginBottom:12,padding:0,fontFamily:"Courier New,monospace"},
+        onClick:function(){setSelTag(null);}
+      }, e("span",null,"← Back to tags")),
+      e("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:12}},
+        e("span",{style:{fontSize:22}},getPinIcon([selTag])),
+        e("span",{style:{color:tagColor(selTag),fontWeight:700,fontSize:16}},"#"+selTag),
+        e("span",{style:{fontSize:11,background:"#ddd5bb",padding:"1px 6px",borderRadius:8,color:"#2e7d32"}},tp.length+" pins")
+      ),
+      e("div",{style:{display:"flex",gap:6,marginBottom:12}},
+        e("button",{style:Object.assign({},S.miniBtn,{fontSize:11}),onClick:function(){setActiveFilter(activeFilter===selTag?null:selTag);}},activeFilter===selTag?"Remove filter":"Show on map"),
+        e("button",{style:Object.assign({},S.miniBtn,{fontSize:11}),onClick:function(){dlFile(toGeoJSON(tp),"pins-"+selTag+".geojson","application/json");}},"GeoJSON"),
+        e("button",{style:Object.assign({},S.miniBtn,{fontSize:11}),onClick:function(){dlFile(toGPX(tp),"pins-"+selTag+".gpx","application/gpx+xml");}},"GPX")
+      ),
+      tp.map(function(p){
+        return e(PinCard,{key:p.id,pin:p,uname:uname,
+          onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},
+          onDelete:props.deletePin,onUpvote:props.toggleUpvote,onSave:props.saveToCollection});
+      })
+    );
+  }
+
+  return e("div",null,
+    myTags.length===0 && e("div",{style:S.hint},"No pins yet. Close this, tap the map, then use Add."),
+    myTags.map(function(tag){
+      var tp=myPins.filter(function(p){return p.tags&&p.tags.indexOf(tag)>=0;});
+      return e("div",{key:tag,
+        onClick:function(){setSelTag(tag);},
+        style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 14px",borderBottom:"0.5px solid #e8dcc4",cursor:"pointer"}
+      },
+        e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+          e("span",{style:{fontSize:22,width:28,textAlign:"center"}},getPinIcon([tag])),
+          e("div",null,
+            e("span",{style:{color:tagColor(tag),fontWeight:700,fontSize:15}},"#"+tag),
+            activeFilter===tag && e("span",{style:{fontSize:10,color:"#2e7d32",marginLeft:6,background:"#e8f5e9",padding:"1px 6px",borderRadius:8}},"on map")
+          )
+        ),
+        e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+          e("span",{style:{background:"#ddd5bb",color:"#5a4a30",borderRadius:10,padding:"2px 8px",fontSize:12,fontWeight:700}},tp.length),
+          e("span",{style:{color:"#c8b89a",fontSize:18}},"›")
+        )
+      );
+    }),
+    myPins.length>0 && e("div",{style:{display:"flex",gap:6,marginTop:12,paddingTop:12,borderTop:"1px solid #e8dcc4"}},
+      e("button",{style:Object.assign({},S.btn,{flex:1,fontSize:11}),onClick:function(){dlFile(toGeoJSON(myPins),"all-pins.geojson","application/json");}},"Export All GeoJSON"),
+      e("button",{style:Object.assign({},S.btn,{flex:1,fontSize:11}),onClick:function(){dlFile(toGPX(myPins),"all-pins.gpx","application/gpx+xml");}},"Export All GPX")
+    )
+  );
+}
+
 function App() {
   var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null);
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
@@ -1009,26 +1068,12 @@ function App() {
               )
         ),
 
-        tab==="mine" && e("div",null,
-          myTags.length===0&&e("div",{style:S.hint},"No pins yet. Close this, tap the map, then use Add."),
-          myTags.map(function(tag){
-            var tp=myPins.filter(function(p){return p.tags&&p.tags.indexOf(tag)>=0;});
-            return e("div",{key:tag,style:{marginBottom:12}},
-              e("div",{style:{display:"flex",alignItems:"center",gap:4,marginBottom:4}},
-                e("span",{style:{color:tagColor(tag),fontWeight:700,fontSize:12}},"#"+tag),
-                e("span",{style:{fontSize:11,background:"#ddd5bb",padding:"1px 5px",borderRadius:8,color:"#2e7d32"}},tp.length),
-                e("button",{style:Object.assign({},S.miniBtn,{marginLeft:"auto"}),onClick:function(){setActiveFilter(activeFilter===tag?null:tag);}},activeFilter===tag?"map on":"map"),
-                e("button",{style:S.miniBtn,onClick:function(){dlFile(toGeoJSON(tp),"pins.geojson","application/json");}},"GeoJSON"),
-                e("button",{style:S.miniBtn,onClick:function(){dlFile(toGPX(tp),"pins.gpx","application/gpx+xml");}},"GPX")
-              ),
-              tp.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
-            );
-          }),
-          myPins.length>0&&e("div",{style:{display:"flex",gap:6,marginTop:8}},
-            e("button",{style:Object.assign({},S.btn,{flex:1,fontSize:10}),onClick:function(){dlFile(toGeoJSON(myPins),"all-pins.geojson","application/json");}},"Export All GeoJSON"),
-            e("button",{style:Object.assign({},S.btn,{flex:1,fontSize:10}),onClick:function(){dlFile(toGPX(myPins),"all-pins.gpx","application/gpx+xml");}},"Export All GPX")
-          )
-        ),
+        tab==="mine" && e(MineTab,{
+          myPins:myPins,myTags:myTags,uname:uname,
+          activeFilter:activeFilter,setActiveFilter:setActiveFilter,
+          mapObj:mapObj,setSelPin:setSelPin,setOpen:setOpen,
+          deletePin:deletePin,toggleUpvote:toggleUpvote,saveToCollection:saveToCollection
+        }),
 
         tab==="add" && e("div",null,
           e("div",{style:S.secHead},"Drop a pin"),
@@ -1234,8 +1279,8 @@ if("serviceWorker" in navigator){
         });
       });
       // Also check for updates on focus
-      window.addEventListener("focus",function(){ reg.update(); });
-    }).catch(function(){});
+      window.addEventListener("focus",function(){ reg.update().catch(function(){}); });
+    }).catch(function(err){ console.log('SW registration failed (non-critical):', err); });
   });
 }
 
