@@ -72,14 +72,58 @@ const api = {
 };
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
-var ONBOARD_KEY = "pm-onboarded";
+var ONBOARD_KEY = "pm-onboarded-v2";
 var ONBOARD_STEPS = [
-  {title:"Welcome to PINMAP!", body:"A lightweight social map for saving and sharing the places that matter to you. Let's show you around.", pos:"center"},
-  {title:"Search by Hashtag",  body:"Use the search bar to find public pins from other users. Try #murals, #pubs, or #hiking.", pos:"bottom"},
-  {title:"Drop a Pin",         body:"Tap anywhere on the map to set a location. Then open the menu and tap Add to save it with a hashtag.", pos:"center"},
-  {title:"The Menu Button",    body:"This button opens the full menu. Drag it anywhere on screen to reposition it so it never gets in the way.", pos:"top"},
-  {title:"Find Nearby Pins",   body:"Tap the GPS button to jump to your location, then use the Nearby tab to discover pins close to you.", pos:"bottom"},
-  {title:"You are all set!",   body:"Explore, save, and share your favourite spots. Sign in with Google to save your pins across devices.", pos:"center"}
+  {
+    title:"Welcome to PINMAP!",
+    body:"A lightweight social map for saving and sharing the places that matter to you. Drop pins, add hashtags, and discover locations shared by others. Let's show you around.",
+    pos:"center"
+  },
+  {
+    title:"The Menu Button",
+    body:"Tap the hamburger button to open the full menu. You can drag it anywhere on screen so it never gets in the way. A red badge appears when someone comments on your pins.",
+    pos:"top"
+  },
+  {
+    title:"Drop a Pin",
+    body:"Tap anywhere on the map to set a location, then open the menu and go to Add. Give your pin a name, hashtags, a color, and an optional photo. Choose public, private, or shareable.",
+    pos:"center"
+  },
+  {
+    title:"Smart Search",
+    body:"The Search tab shows suggested hashtags based on the most recently added pins - so you always see what is trending. Tap any chip to search instantly, or type your own hashtag.",
+    pos:"bottom"
+  },
+  {
+    title:"Pin Icons",
+    body:"Pins automatically show an emoji based on their hashtag - a beer mug for #pub, a boot for #hiking, a fish for #fishingspot and more. Your chosen pin color is always shown too.",
+    pos:"center"
+  },
+  {
+    title:"Map Layers",
+    body:"Use the Layers button on the right side of the map to switch between Standard, Topographic, Satellite, Hiking Trails, and Nautical chart views.",
+    pos:"center"
+  },
+  {
+    title:"Pin Visibility",
+    body:"The middle button on the right controls what pins are shown. Switch between your pins only, all public pins from everyone, or a clean map with no pins at all.",
+    pos:"center"
+  },
+  {
+    title:"GPS and Nearby",
+    body:"Tap the GPS button to jump to your current location. Then open the menu and use the Nearby tab to discover public pins within a chosen radius of where you are.",
+    pos:"bottom"
+  },
+  {
+    title:"Comments and Notifications",
+    body:"Tap any pin to see its details and leave a comment. When someone comments on your pin you will see a red badge on the menu button next time you open the app.",
+    pos:"center"
+  },
+  {
+    title:"You are all set!",
+    body:"Sign in with Google to save pins across all your devices. Your pins, comments and saved locations are all stored securely. Happy exploring!",
+    pos:"center"
+  }
 ];
 
 function uid() { return Math.random().toString(36).slice(2,10); }
