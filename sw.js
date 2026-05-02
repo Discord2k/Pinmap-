@@ -1,4 +1,4 @@
-const CACHE = "pinmap-v115";
+const CACHE = "pinmap-v116";
 const ASSETS = [
   "./",
   "./index.html",
@@ -68,12 +68,17 @@ self.addEventListener("push", function(event) {
 
 self.addEventListener("notificationclick", function(event) {
   event.notification.close();
-  var url = (event.notification.data && event.notification.data.url) || "/";
+  var url = (event.notification.data && event.notification.data.url) || "https://pin-map.com";
   event.waitUntil(
-    clients.matchAll({type:"window"}).then(function(clientList) {
+    clients.matchAll({type:"window", includeUncontrolled:true}).then(function(clientList) {
+      // If app is already open, navigate it to the pin URL
       for (var i = 0; i < clientList.length; i++) {
-        if (clientList[i].url === url && "focus" in clientList[i]) return clientList[i].focus();
+        var client = clientList[i];
+        if (client.url.includes("pin-map.com") && "navigate" in client) {
+          return client.navigate(url).then(function(c){ return c.focus(); });
+        }
       }
+      // Otherwise open a new window
       if (clients.openWindow) return clients.openWindow(url);
     })
   );
