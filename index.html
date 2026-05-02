@@ -218,14 +218,24 @@ async function subscribeToPush(uname) {
 
 async function savePushSubscription(sub, uname) {
   var json = sub.toJSON();
-  var id = uid();
-  await sb.from("push_subscriptions").upsert({
-    id: id,
+  // Try insert - if it fails due to conflict just ignore
+  var result = await sb.from("push_subscriptions").insert({
+    id: uid(),
     owner: uname,
     endpoint: json.endpoint,
     p256dh: json.keys.p256dh,
     auth: json.keys.auth
-  }, {onConflict: "endpoint"});
+  });
+  if(result.error && result.error.code === "23505") {
+    // Duplicate endpoint - update p256dh and auth instead
+    await sb.from("push_subscriptions").update({
+      owner: uname,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth
+    }).eq("endpoint", json.endpoint);
+  }
+  console.log("savePushSubscription done, error:", result.error);
+  return result;
 }
 
 var BANNED_TAGS = [
