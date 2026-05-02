@@ -171,6 +171,62 @@ var ONBOARD_STEPS = [
 
 function uid() { return Math.random().toString(36).slice(2,10); }
 
+var VAPID_PUBLIC_KEY = "BPoen_AN-pimyj0ChkbFQybVATvnu1KBdntypfR9YOHbGbLUAe9h6oKixV52HobZyHF3dh5cEVT4Puvci-L1Qj0";
+
+function urlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var rawData = window.atob(base64);
+  var outputArray = new Uint8Array(rawData.length);
+  for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function callEdgeFunction(type, data) {
+  try {
+    await fetch("https://uuxggoydnjvsssbenkkt.supabase.co/functions/v1/send-push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eGdnb3lkbmp2c3NzYmVua2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODg4OTgsImV4cCI6MjA5MjY2NDg5OH0.VniG6qm6Z9spdezyw-85k4liEuyC9i3B_T2Pxo-9nK0" },
+      body: JSON.stringify(Object.assign({ type: type }, data))
+    });
+  } catch(e) { /* non-critical */ }
+}
+
+async function subscribeToPush(uname) {
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  try {
+    var reg = await navigator.serviceWorker.ready;
+    var existing = await reg.pushManager.getSubscription();
+    if(existing) {
+      // Already subscribed - save to DB in case it's new device
+      await savePushSubscription(existing, uname);
+      return;
+    }
+    var permission = await Notification.requestPermission();
+    if(permission !== "granted") return;
+    var sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    await savePushSubscription(sub, uname);
+    console.log("Push subscription saved");
+  } catch(e) {
+    console.log("Push subscription failed:", e);
+  }
+}
+
+async function savePushSubscription(sub, uname) {
+  var json = sub.toJSON();
+  var id = uid();
+  await sb.from("push_subscriptions").upsert({
+    id: id,
+    owner: uname,
+    endpoint: json.endpoint,
+    p256dh: json.keys.p256dh,
+    auth: json.keys.auth
+  }, {onConflict: "endpoint"});
+}
+
 var BANNED_TAGS = [
   "porn","pornography","xxx","sex","nsfw","nude","nudity","naked","adult",
   "cocaine","heroin","meth","drugs","weed","marijuana","cannabis","crack",
@@ -393,6 +449,15 @@ function Comments(props) {
     api.addComment(c).then(function(){
       setComments(function(prev){return prev.concat([c]);});
       setDraft(""); setReplyTo(null); setSending(false);
+      // Notify pin owner if it's not their own comment
+      if(props.pinOwner && props.pinOwner !== props.uname) {
+        callEdgeFunction("new_comment", {
+          pinOwner: props.pinOwner,
+          commenterName: props.uname,
+          pinName: props.pinName || "a pin",
+          pinId: props.pinId
+        });
+      }
     }).catch(function(){setSending(false);});
   }
 
@@ -515,6 +580,11 @@ function PinCard(props) {
 /*    Profile Panel                                                               */
 function ProfilePanel(props) {
   var user=props.user, uname=props.uname, myPins=props.myPins;
+  var userFollows=props.userFollows||[];
+  var toggleUserFollow=props.toggleUserFollow||function(){};
+  var loadUserProfile=props.loadUserProfile||function(){};
+  var pushEnabled=props.pushEnabled||false;
+  var setPushEnabled=props.setPushEnabled||function(){};
   var own=myPins.filter(function(p){return !p.saved_from;});
   var saved=myPins.filter(function(p){return p.saved_from;});
   var upvotes=own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
@@ -553,6 +623,27 @@ function ProfilePanel(props) {
             },"Unfollow")
           );
         })
+      )
+    ),
+    user && e("div",null,
+      e("div",{style:S.secHead},"Notifications"),
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc",marginBottom:14}},
+        e("div",null,
+          e("div",{style:{fontSize:13,fontWeight:700,color:"#2c2416"}},"Push notifications"),
+          e("div",{style:{fontSize:11,color:"#9a8a70"}},"New comments on your pins")
+        ),
+        e("button",{
+          style:{fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Courier New,monospace",fontWeight:700,
+            background:pushEnabled?"#2e7d32":"none",
+            color:pushEnabled?"#fff":"#9a8a70",
+            border:"1px solid "+(pushEnabled?"#2e7d32":"#d0c4a8")
+          },
+          onClick:function(){
+            if(!pushEnabled){
+              subscribeToPush(props.uname).then(function(){setPushEnabled(true);});
+            }
+          }
+        }, pushEnabled?"Enabled":"Enable")
       )
     ),
     e("div",{style:S.secHead},"Export your data"),
@@ -720,6 +811,7 @@ function App() {
   var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
   var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
+  var s45=useState(false); var pushEnabled=s45[0]; var setPushEnabled=s45[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
@@ -839,6 +931,10 @@ function App() {
     if(!user||!uname||uname==="guest") return;
     api.getFollows(uname).then(function(data){setFollows(data||[]);});
     api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
+    // Subscribe to push notifications
+    subscribeToPush(uname).then(function(){
+      if("PushManager" in window) setPushEnabled(true);
+    });
   },[user]);
 
   // Switch base layer when baseLayer state changes
@@ -1125,6 +1221,14 @@ function App() {
           setPins(function(p){return [pinToSave].concat(p);});
           setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32"});
           setPendingLL(null);setTab("mine");flash("Pin saved!");
+          // Notify followers if pin is public
+          if(pinToSave.privacy==="public") {
+            callEdgeFunction("new_pin", {
+              pinOwner: uname,
+              pinName: pinToSave.name,
+              pinId: pinToSave.id
+            });
+          }
         }).catch(function(){flash("Save failed");});
       };
       if(photoData && photoData.startsWith('data:')) {
@@ -1797,6 +1901,8 @@ function App() {
         tab==="profile" && e("div",null,
           e(ProfilePanel,{
           user:user,uname:uname,myPins:myPins,
+          userFollows:userFollows,toggleUserFollow:toggleUserFollow,
+          loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
@@ -1872,7 +1978,7 @@ function App() {
           }
         },"Open in Maps")
       ),
-      e(Comments,{pinId:selPin.id,uname:uname})
+      e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name})
     ),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew}),
