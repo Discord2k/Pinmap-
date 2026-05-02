@@ -74,6 +74,9 @@ const api = {
   getFollows:     function(owner)       { return sb.from("follows").select("*").eq("owner",owner).then(function(r){return r.data||[];}); },
   follow:         function(id,owner,tag){ return sb.from("follows").insert({id:id,owner:owner,tag:tag}).select().then(function(r){return r.data;}); },
   unfollow:       function(id,owner)    { return sbWithUser(owner).from("follows").delete().eq("id",id); },
+  getUserFollows:   function(owner)        { return sb.from("user_follows").select("*").eq("owner",owner).then(function(r){return r.data||[];}); },
+  followUser:      function(id,owner,following){ return sb.from("user_follows").insert({id:id,owner:owner,following:following}).select().then(function(r){return r.data;}); },
+  unfollowUser:    function(id,owner)         { return sbWithUser(owner).from("user_follows").delete().eq("id",id); },
   getTrending:    function(){
     var since=new Date(Date.now()-7*24*60*60*1000).toISOString();
     return sb.from("pins").select("tags").eq("privacy","public").gte("created_at",since).then(function(r){
@@ -89,14 +92,14 @@ const api = {
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 var ONBOARD_KEY = "pm-onboarded-v3";
-var WHATSNEW_KEY = "pm-whatsnew-v5";
+var WHATSNEW_KEY = "pm-whatsnew-v6";
 var WHATSNEW = [
-  {emoji:"📲", title:"Install PINMAP", body:"You can now install PINMAP directly to your home screen. Look for the install banner when you visit the site."},
+  {emoji:"👤", title:"Follow users", body:"You can now follow other users. Tap their username on any pin to open their profile and hit Follow. Your followed users appear in your Profile tab."},
+  {emoji:"📲", title:"Install PINMAP", body:"Install PINMAP to your home screen. Look for the install banner when you visit the site."},
   {emoji:"✨", title:"New splash screen", body:"PINMAP has a fresh new branded splash screen with a blurred map background."},
   {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle. Tap to zoom in and see them individually."},
   {emoji:"💬", title:"Threaded comments", body:"Reply to comments on pins. Tap '↩ Reply' on any comment to respond."},
-  {emoji:"👍", title:"Comment upvotes", body:"Tap 👍 on any comment to upvote it. Tap again to remove your upvote."},
-  {emoji:"🗺", title:"Smart pin visibility", body:"Searching a hashtag now automatically switches the map to show all public pins."}
+  {emoji:"👍", title:"Comment upvotes", body:"Tap 👍 on any comment to upvote it. Tap again to remove your upvote."}
 ];
 var ONBOARD_STEPS = [
   {
@@ -536,6 +539,22 @@ function ProfilePanel(props) {
         );
       })
     ),
+    userFollows.length>0&&e("div",null,
+      e("div",{style:S.secHead},"Following"),
+      e("div",{style:{display:"flex",flexDirection:"column",gap:4,marginBottom:14}},
+        userFollows.map(function(f){
+          return e("div",{key:f.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc"}},
+            e("span",{style:{fontSize:13,color:"#2e7d32",fontWeight:700,cursor:"pointer"},
+              onClick:function(){loadUserProfile(f.following);}
+            },"@"+f.following),
+            e("button",{
+              style:{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid #d0c4a8",background:"none",color:"#9a8a70",cursor:"pointer",fontFamily:"Courier New,monospace"},
+              onClick:function(){toggleUserFollow(f.following);}
+            },"Unfollow")
+          );
+        })
+      )
+    ),
     e("div",{style:S.secHead},"Export your data"),
     e("div",{style:{display:"flex",gap:6}},
       e("button",{style:Object.assign({},S.btn,{flex:1,fontSize:10}),onClick:props.onGeoJSON},"GeoJSON"),
@@ -699,6 +718,7 @@ function App() {
   var s39=useState([]); var unreadPinIds=s39[0]; var setUnreadPinIds=s39[1];
   var s41=useState(13); var mapZoom=s41[0]; var setMapZoom=s41[1];
   var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
+  var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
@@ -818,6 +838,7 @@ function App() {
   useEffect(function(){
     if(!user||!uname||uname==="guest") return;
     api.getFollows(uname).then(function(data){setFollows(data||[]);});
+    api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
   },[user]);
 
   // Switch base layer when baseLayer state changes
@@ -1014,6 +1035,24 @@ function App() {
           mapObj.current.fitBounds(bounds,{padding:[60,60]});
         }
       });
+  }
+
+  function toggleUserFollow(targetUser){
+    requireAuth(function(){
+      var existing=userFollows.find(function(f){return f.following===targetUser;});
+      if(existing){
+        api.unfollowUser(existing.id,uname).then(function(){
+          setUserFollows(function(prev){return prev.filter(function(f){return f.id!==existing.id;});});
+          flash("Unfollowed @"+targetUser);
+        });
+      } else {
+        var id=uid();
+        api.followUser(id,uname,targetUser).then(function(){
+          setUserFollows(function(prev){return prev.concat([{id:id,owner:uname,following:targetUser}]);});
+          flash("Following @"+targetUser);
+        });
+      }
+    });
   }
 
   function toggleFollow(tag){
@@ -1797,6 +1836,14 @@ function App() {
           style:{color:"#2e7d32",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"},
           onClick:function(){loadUserProfile(selPin.owner);}
         },"@"+selPin.owner),
+        selPin.owner!==uname&&e("span",{
+          style:{fontSize:10,marginLeft:6,padding:"1px 6px",borderRadius:6,cursor:"pointer",
+            background:userFollows.some(function(f){return f.following===selPin.owner;})?"#e8f5e9":"#f0e8d4",
+            color:userFollows.some(function(f){return f.following===selPin.owner;})?"#2e7d32":"#9a8a70",
+            border:"1px solid "+(userFollows.some(function(f){return f.following===selPin.owner;})?"#a5d6a7":"#d0c4a8")
+          },
+          onClick:function(){toggleUserFollow(selPin.owner);}
+        }, userFollows.some(function(f){return f.following===selPin.owner;})?"Following":"+ Follow"),
         selPin.saved_from&&e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)
       ),
       selPin.description&&e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
@@ -1838,7 +1885,18 @@ function App() {
             e("div",{style:{fontWeight:700,fontSize:17,color:"#2c2416"}},"@"+viewUser),
             e("div",{style:{fontSize:12,color:"#9a8a70"}},userPinsLoading?"Loading...":(userPins.length+" public pins"))
           ),
-          e("button",{style:{background:"none",border:"none",fontSize:22,color:"#9a8a70",cursor:"pointer"},onClick:function(){setViewUser(null);setUserPins([]);}},"x")
+          e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+            viewUser!==uname && e("button",{
+              style:{
+                fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Courier New,monospace",fontWeight:700,
+                background:userFollows.some(function(f){return f.following===viewUser;})?"#2e7d32":"none",
+                color:userFollows.some(function(f){return f.following===viewUser;})?"#fff":"#2e7d32",
+                border:"1px solid #2e7d32"
+              },
+              onClick:function(){toggleUserFollow(viewUser);}
+            }, userFollows.some(function(f){return f.following===viewUser;})?"Following":"Follow"),
+            e("button",{style:{background:"none",border:"none",fontSize:22,color:"#9a8a70",cursor:"pointer"},onClick:function(){setViewUser(null);setUserPins([]);}},"x")
+          )
         ),
         e("div",{style:{overflowY:"auto",flex:1,padding:"12px 14px"}},
           userPinsLoading&&e("div",{style:{textAlign:"center",padding:24,color:"#9a8a70",fontSize:14}},"Loading pins..."),
