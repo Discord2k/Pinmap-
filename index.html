@@ -264,6 +264,8 @@ styleEl.textContent=[
   ".pm-search{top:calc(16px + env(safe-area-inset-top,0px))!important}",
   ".pm-filter{top:calc(14px + env(safe-area-inset-top,0px))!important}",
   ".pm-gps{top:calc(70px + env(safe-area-inset-top,0px))!important;right:calc(14px + env(safe-area-inset-right,0px))!important}",
+  "@keyframes pinpulse{0%{transform:scale(1);filter:drop-shadow(0 0 0px rgba(255,255,255,0))}50%{transform:scale(1.35);filter:drop-shadow(0 0 8px rgba(255,255,100,0.9))}100%{transform:scale(1);filter:drop-shadow(0 0 0px rgba(255,255,255,0))}}",
+  ".pin-focused{animation:pinpulse 0.7s ease-in-out 3}",
   "@media(min-width:768px){",
   ".pm-detail{max-width:420px!important}",
   ".fab-btn{bottom:40px!important;right:40px!important}",
@@ -578,7 +580,7 @@ function MineTab(props) {
 }
 
 function App() {
-  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("mine");
+  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("mine"), focusedMarker=useRef(null);
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
   var s2=useState(false);    var sessionChecked=s2[0]; var setSessionChecked=s2[1];
   var s3=useState(false);    var splashDone=s3[0];     var setSplashDone=s3[1];
@@ -778,13 +780,30 @@ function App() {
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
   function focusPin(pin) {
-    if(pin.owner!==uname && (mapLayer==="mine"||mapLayer==="none")){
+    if(pin.owner!==uname && (mapLayerRef.current==="mine"||mapLayerRef.current==="none")){
       setMapLayer("public");
-      flash("Switched to show all public pins");
     }
-    if(mapObj.current) mapObj.current.setView([pin.lat,pin.lng],15);
+    // Zoom in close
+    if(mapObj.current) mapObj.current.setView([pin.lat,pin.lng],18);
+    // Auto-open detail popup
     setSelPin(pin);
     setOpen(false);
+    // Pulse the marker after a short delay (markers re-render after layer switch)
+    setTimeout(function(){
+      var m = markers.current[pin.id];
+      if(m && m._icon){
+        // Remove pulse from previous focused marker
+        if(focusedMarker.current && focusedMarker.current._icon){
+          focusedMarker.current._icon.classList.remove("pin-focused");
+        }
+        m._icon.classList.add("pin-focused");
+        focusedMarker.current = m;
+        // Remove pulse after animation completes
+        setTimeout(function(){
+          if(m._icon) m._icon.classList.remove("pin-focused");
+        }, 2200);
+      }
+    }, 400);
   }
 
   function loadUserProfile(owner) {
