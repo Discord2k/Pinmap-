@@ -967,7 +967,14 @@ function App() {
       setSearchResults({tag:tag,results:results});
       setActiveFilter(tag);
       setPins(function(prev){var ids=new Set(prev.map(function(p){return p.id;}));return prev.concat(results.filter(function(r){return !ids.has(r.id);}));});
-      if(!results.length) flash("No public pins for #"+tag);
+      // If results contain other users' pins and layer would hide them, switch to public
+      var hasOtherPins=results.some(function(r){return r.owner!==uname;});
+      if(hasOtherPins&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none")){
+        setMapLayer("public");
+        flash("Switched to show all public pins");
+      } else if(!results.length) {
+        flash("No public pins for #"+tag);
+      }
     }).catch(function(){flash("Search failed");});
   }
 
