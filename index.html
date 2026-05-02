@@ -501,7 +501,9 @@ function PinCard(props) {
           "👍 "+(pin.upvotes?pin.upvotes.length:0)),
         e("button",{style:S.miniBtn,onClick:function(){props.onSave(pin);}}, "⭐ Save")
       ),
-      isOwner && !pin.saved_from && e("button",{style:Object.assign({},S.miniBtn,{color:"#c05050"}),onClick:function(){props.onDelete(pin.id);}}, "🗑")
+      isOwner && !pin.saved_from && e("button",{style:Object.assign({},S.miniBtn,{color:"#c05050"}),onClick:function(){
+        if(window.confirm("Delete \""+pin.name+"\"? This cannot be undone.")) props.onDelete(pin.id);
+      }}, "🗑")
     )
   );
 }
@@ -1593,7 +1595,7 @@ function App() {
 
       e("div",{style:{padding:11,flex:1,overflowY:"auto"}},
         unreadCount>0 && e("div",{
-          onClick:function(){setTab("mine");markCommentsSeen();},
+          onClick:function(){setTab("mine");},
           style:{background:"#fff3cd",border:"1px solid #ffc107",borderRadius:8,padding:"10px 12px",marginBottom:10,cursor:"pointer",display:"flex",alignItems:"center",gap:8}
         },
           e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#c62828",flexShrink:0}}),
@@ -1808,7 +1810,7 @@ function App() {
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
           e("button",{style:{background:"none",border:"1px solid #2e7d32",color:"#2e7d32",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){openEdit(selPin);}},"Edit"),
-          e("button",{style:{background:"none",border:"1px solid #c08080",color:"#c05050",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){deletePin(selPin.id);}},"Delete")
+          e("button",{style:{background:"none",border:"1px solid #c08080",color:"#c05050",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){if(window.confirm("Delete \""+selPin.name+"\"? This cannot be undone.")){deletePin(selPin.id);setSelPin(null);}}},"Delete")
         ),
         e("button",{
           style:{background:"none",border:"1px solid #1565c0",color:"#1565c0",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},
