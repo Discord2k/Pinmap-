@@ -711,7 +711,7 @@ function App() {
     sb.from("comments").select("id,pin_id,created_at").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
       if(r.data&&r.data.length>0){
         setUnreadCount(r.data.length);
-        var ids=[...new Set(r.data.map(function(c){return c.pin_id;}))];
+        var ids=r.data.map(function(c){return c.pin_id;}).filter(function(v,i,a){return a.indexOf(v)===i;});
         setUnreadPinIds(ids);
       } else {
         setUnreadCount(0);
@@ -804,10 +804,10 @@ function App() {
     currentBase.current = layers;
   },[baseLayer]);
 
-  // Re-check comments whenever user or pins change
+  // Re-check comments whenever user, pins or tab changes
   useEffect(function(){
-    if(pins.length > 0) checkNewComments(pins);
-  },[user, pins]);
+    if(pins.length > 0 && uname && uname !== "guest") checkNewComments(pins);
+  },[user, pins, tab]);
 
   useEffect(function(){
     if(!mapObj.current||!window.L) return;
