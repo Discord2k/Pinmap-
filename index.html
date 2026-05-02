@@ -586,6 +586,7 @@ function ProfilePanel(props) {
   var loadUserProfile=props.loadUserProfile||function(){};
   var pushEnabled=props.pushEnabled||false;
   var setPushEnabled=props.setPushEnabled||function(){};
+  var flash=props.flash||function(){};
   var own=myPins.filter(function(p){return !p.saved_from;});
   var saved=myPins.filter(function(p){return p.saved_from;});
   var upvotes=own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
@@ -1918,6 +1919,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,
           userFollows:userFollows,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
+          flash:flash,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
