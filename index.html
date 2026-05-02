@@ -63,6 +63,7 @@ const api = {
   remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).eq("privacy","public").then(function(r){return r.data||[];}); },
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
+  upvoteComment:  function(id,upvotes) { return sb.from("comments").update({upvotes:upvotes}).eq("id",id); },
   addComment:     function(c)          { return sb.from("comments").insert(c).select().then(function(r){return r.data;}); },
   deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id); },
   signInGoogle:   function()            { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
