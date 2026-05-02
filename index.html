@@ -87,15 +87,14 @@ const api = {
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 var ONBOARD_KEY = "pm-onboarded-v3";
-var WHATSNEW_KEY = "pm-whatsnew-v1";
+var WHATSNEW_KEY = "pm-whatsnew-v2";
 var WHATSNEW = [
+  {emoji:"🗺", title:"Smart pin visibility", body:"Tapping another user's pin now automatically switches the map to show all public pins so it's always visible."},
   {emoji:"🔍", title:"Dual search bar", body:"Tap '# Tags' or '📍 Places' to switch between hashtag search and address/location search."},
   {emoji:"👤", title:"User profiles", body:"Tap any username on a pin to see all their public pins on the map."},
   {emoji:"🔥", title:"Trending hashtags", body:"The Search tab now shows the most active hashtags from the last 7 days."},
   {emoji:"❤️", title:"Follow hashtags", body:"Follow any hashtag to track it. Your followed tags appear as quick-access chips in Search."},
-  {emoji:"🗂", title:"Mine tab redesign", body:"Your pins are now grouped by tag. Tap a tag to drill into its pins."},
-  {emoji:"🗺", title:"Map layers", body:"Switch between Standard, Topo, Satellite, Trails and Nautical chart views using the Layers button."},
-  {emoji:"📍", title:"FAB position saved", body:"Drag the menu button anywhere — its position is now remembered when you return."}
+  {emoji:"🗂", title:"Mine tab redesign", body:"Your pins are now grouped by tag. Tap a tag to drill into its pins."}
 ];
 var ONBOARD_STEPS = [
   {
@@ -751,12 +750,22 @@ function App() {
         iconAnchor:[15,38]
       });
       var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(mapObj.current);
-      m.on("click",function(){setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
+      m.on("click",function(){if(pin.owner!==uname&&(mapLayer==="mine"||mapLayer==="none"))setMapLayer("public");setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
       markers.current[pin.id]=m;
     });
   },[pins,activeFilter,mapLayer,uname]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
+
+  function focusPin(pin) {
+    if(pin.owner!==uname && (mapLayer==="mine"||mapLayer==="none")){
+      setMapLayer("public");
+      flash("Switched to show all public pins");
+    }
+    if(mapObj.current) mapObj.current.setView([pin.lat,pin.lng],15);
+    setSelPin(pin);
+    setOpen(false);
+  }
 
   function loadUserProfile(owner) {
     if(owner === uname) { setOpen(true); setTab("profile"); return; }
@@ -1549,7 +1558,7 @@ function App() {
           !userPinsLoading&&userPins.length===0&&e("div",{style:{textAlign:"center",padding:24,color:"#9a8a70",fontSize:14}},"No public pins yet."),
           !userPinsLoading&&userPins.map(function(p){
             return e(PinCard,{key:p.id,pin:p,uname:uname,
-              onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setViewUser(null);},
+              onFocus:function(){setViewUser(null);focusPin(p);},
               onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection,onViewUser:loadUserProfile});
           })
         )
