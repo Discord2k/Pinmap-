@@ -513,6 +513,7 @@ function MineTab(props) {
   var myPins=props.myPins, myTags=props.myTags, uname=props.uname;
   var activeFilter=props.activeFilter, setActiveFilter=props.setActiveFilter;
   var mapObj=props.mapObj, setSelPin=props.setSelPin, setOpen=props.setOpen;
+  var unreadPinIds=props.unreadPinIds||[];
   var st=useState(null); var selTag=st[0]; var setSelTag=st[1];
 
   if(selTag){
@@ -533,9 +534,15 @@ function MineTab(props) {
         e("button",{style:Object.assign({},S.miniBtn,{fontSize:11}),onClick:function(){dlFile(toGPX(tp),"pins-"+selTag+".gpx","application/gpx+xml");}},"GPX")
       ),
       tp.map(function(p){
-        return e(PinCard,{key:p.id,pin:p,uname:uname,
-          onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);},
-          onDelete:props.deletePin,onUpvote:props.toggleUpvote,onSave:props.saveToCollection,onViewUser:props.loadUserProfile});
+        var pinHasUnread = unreadPinIds.indexOf(p.id)>=0;
+        return e("div",{key:p.id,style:{position:"relative"}},
+          pinHasUnread && e("div",{style:{position:"absolute",top:8,right:8,zIndex:1,display:"flex",alignItems:"center",gap:4,background:"#c62828",color:"#fff",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:700}},
+            "💬 New comment"
+          ),
+          e(PinCard,{pin:p,uname:uname,
+            onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);if(props.markCommentsSeen)props.markCommentsSeen();},
+            onDelete:props.deletePin,onUpvote:props.toggleUpvote,onSave:props.saveToCollection,onViewUser:props.loadUserProfile})
+        );
       })
     );
   }
@@ -544,9 +551,10 @@ function MineTab(props) {
     myTags.length===0 && e("div",{style:S.hint},"No pins yet. Close this, tap the map, then use Add."),
     myTags.map(function(tag){
       var tp=myPins.filter(function(p){return p.tags&&p.tags.indexOf(tag)>=0;});
+      var tagHasUnread = tp.some(function(p){return unreadPinIds.indexOf(p.id)>=0;});
       return e("div",{key:tag,
         onClick:function(){setSelTag(tag);},
-        style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 14px",borderBottom:"0.5px solid #e8dcc4",cursor:"pointer"}
+        style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 14px",borderBottom:"0.5px solid #e8dcc4",cursor:"pointer",background:tagHasUnread?"#fff9f0":"#faf6ed"}
       },
         e("div",{style:{display:"flex",alignItems:"center",gap:10}},
           e("span",{style:{fontSize:22,width:28,textAlign:"center"}},getPinIcon([tag])),
@@ -556,6 +564,7 @@ function MineTab(props) {
           )
         ),
         e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+          tagHasUnread && e("div",{style:{width:10,height:10,borderRadius:"50%",background:"#c62828",flexShrink:0}}),
           e("span",{style:{background:"#ddd5bb",color:"#5a4a30",borderRadius:10,padding:"2px 8px",fontSize:12,fontWeight:700}},tp.length),
           e("span",{style:{color:"#c8b89a",fontSize:18}},"›")
         )
@@ -569,7 +578,7 @@ function MineTab(props) {
 }
 
 function App() {
-  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null);
+  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("mine");
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
   var s2=useState(false);    var sessionChecked=s2[0]; var setSessionChecked=s2[1];
   var s3=useState(false);    var splashDone=s3[0];     var setSplashDone=s3[1];
@@ -611,10 +620,14 @@ function App() {
   var s32=useState([]); var trending=s32[0]; var setTrending=s32[1];
   var s33=useState(false); var trendingLoading=s33[0]; var setTrendingLoading=s33[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
+  var s39=useState([]); var unreadPinIds=s39[0]; var setUnreadPinIds=s39[1];
 
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
+
+  // Keep mapLayerRef in sync so marker closures always see current value
+  useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
 
   useEffect(function(){
     // Wire SW update flag to React state
@@ -631,15 +644,22 @@ function App() {
     var lastSeenTime = lastSeen ? new Date(lastSeen) : new Date(0);
     var myPinIds = pinsData.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
     if(!myPinIds.length) return;
-    sb.from("comments").select("id,created_at").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
-      if(r.data&&r.data.length>0) setUnreadCount(r.data.length);
-      else setUnreadCount(0);
+    sb.from("comments").select("id,pin_id,created_at").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
+      if(r.data&&r.data.length>0){
+        setUnreadCount(r.data.length);
+        var ids=[...new Set(r.data.map(function(c){return c.pin_id;}))];
+        setUnreadPinIds(ids);
+      } else {
+        setUnreadCount(0);
+        setUnreadPinIds([]);
+      }
     });
   }
 
   function markCommentsSeen() {
     localStorage.setItem("pm-comments-seen-"+uname, new Date().toISOString());
     setUnreadCount(0);
+    setUnreadPinIds([]);
   }
   function dismissWhatsNew() {
     localStorage.setItem(WHATSNEW_KEY,"1");
@@ -750,7 +770,7 @@ function App() {
         iconAnchor:[15,38]
       });
       var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(mapObj.current);
-      m.on("click",function(){if(pin.owner!==uname&&(mapLayer==="mine"||mapLayer==="none"))setMapLayer("public");setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
+      m.on("click",function(){if(pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none")){setMapLayer("public");flash("Switched to show all public pins");}setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
       markers.current[pin.id]=m;
     });
   },[pins,activeFilter,mapLayer,uname]);
@@ -1392,7 +1412,9 @@ function App() {
           myPins:myPins,myTags:myTags,uname:uname,
           activeFilter:activeFilter,setActiveFilter:setActiveFilter,
           mapObj:mapObj,setSelPin:setSelPin,setOpen:setOpen,
-          deletePin:deletePin,toggleUpvote:toggleUpvote,saveToCollection:saveToCollection,loadUserProfile:loadUserProfile
+          deletePin:deletePin,toggleUpvote:toggleUpvote,saveToCollection:saveToCollection,
+          loadUserProfile:loadUserProfile,unreadPinIds:unreadPinIds,
+          markCommentsSeen:markCommentsSeen
         }),
 
         tab==="add" && e("div",null,
