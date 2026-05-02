@@ -800,7 +800,19 @@ function App() {
       setMapLayer("public");
     }
     // Zoom in close
-    if(mapObj.current) mapObj.current.setView([pin.lat,pin.lng],18);
+    if(mapObj.current){
+      // Pan pin to upper third so detail popup has room below
+      var map=mapObj.current;
+      map.setView([pin.lat,pin.lng],18);
+      // Offset the center point down so pin appears in upper portion
+      setTimeout(function(){
+        var px=map.latLngToContainerPoint([pin.lat,pin.lng]);
+        var offset=map.getSize().y*0.18; // shift pin up by 18% of screen height
+        var newPx=window.L.point(px.x,px.y+offset);
+        var newLatLng=map.containerPointToLatLng(newPx);
+        map.setView(newLatLng,18,{animate:true});
+      },100);
+    }
     // Auto-open detail popup
     setSelPin(pin);
     setOpen(false);
@@ -1560,7 +1572,7 @@ function App() {
       )
     ),
 
-    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"10%",bottom:"calc(20px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"14px 15px",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
+    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"45%",bottom:"calc(16px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d0c4a8",borderRadius:12,padding:"14px 15px",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
       e("button",{style:{position:"absolute",top:8,right:10,background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:14},onClick:function(){setSelPin(null);}},"x"),
       selPin.photo&&e("img",{src:selPin.photo,style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover"}}),
       e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:2,paddingRight:20}},
