@@ -87,14 +87,14 @@ const api = {
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 var ONBOARD_KEY = "pm-onboarded-v3";
-var WHATSNEW_KEY = "pm-whatsnew-v2";
+var WHATSNEW_KEY = "pm-whatsnew-v3";
 var WHATSNEW = [
-  {emoji:"🗺", title:"Smart pin visibility", body:"Tapping another user's pin now automatically switches the map to show all public pins so it's always visible."},
+  {emoji:"💬", title:"Threaded comments", body:"You can now reply to comments on pins. Replies appear indented below the original comment. Tap '↩ Reply' on any comment to respond."},
+  {emoji:"👍", title:"Comment upvotes", body:"Tap 👍 on any comment to upvote it. Tap again to remove your upvote."},
+  {emoji:"🗺", title:"Smart pin visibility", body:"Searching a hashtag or tapping another user's pin now automatically switches the map to show all public pins."},
   {emoji:"🔍", title:"Dual search bar", body:"Tap '# Tags' or '📍 Places' to switch between hashtag search and address/location search."},
   {emoji:"👤", title:"User profiles", body:"Tap any username on a pin to see all their public pins on the map."},
-  {emoji:"🔥", title:"Trending hashtags", body:"The Search tab now shows the most active hashtags from the last 7 days."},
-  {emoji:"❤️", title:"Follow hashtags", body:"Follow any hashtag to track it. Your followed tags appear as quick-access chips in Search."},
-  {emoji:"🗂", title:"Mine tab redesign", body:"Your pins are now grouped by tag. Tap a tag to drill into its pins."}
+  {emoji:"🔥", title:"Trending hashtags", body:"The Search tab now shows the most active hashtags from the last 7 days."}
 ];
 var ONBOARD_STEPS = [
   {
@@ -368,41 +368,103 @@ function Onboarding(props) {
 
 /*    Comments                                                                    */
 function Comments(props) {
-  var pinId = props.pinId;
-  var uname = props.uname;
+  var pinId=props.pinId, uname=props.uname;
   var c1=useState([]); var comments=c1[0]; var setComments=c1[1];
   var c2=useState(true); var cLoading=c2[0]; var setCLoading=c2[1];
   var c3=useState(""); var draft=c3[0]; var setDraft=c3[1];
   var c4=useState(false); var sending=c4[0]; var setSending=c4[1];
+  var c5=useState(null); var replyTo=c5[0]; var setReplyTo=c5[1];
+
   useEffect(function(){
     setCLoading(true);
     api.getComments(pinId).then(function(data){setComments(data);setCLoading(false);});
   },[pinId]);
+
   function submit(){
     if(!draft.trim()) return;
     if(!uname){api.signInGoogle();return;}
     setSending(true);
-    var c={id:uid(),pin_id:pinId,owner:uname,body:draft.trim(),created_at:new Date().toISOString()};
-    api.addComment(c).then(function(){setComments(function(prev){return prev.concat([c]);});setDraft("");setSending(false);}).catch(function(){setSending(false);});
+    var c={id:uid(),pin_id:pinId,owner:uname,body:draft.trim(),
+      reply_to:replyTo?replyTo.id:null,
+      upvotes:[],
+      created_at:new Date().toISOString()};
+    api.addComment(c).then(function(){
+      setComments(function(prev){return prev.concat([c]);});
+      setDraft(""); setReplyTo(null); setSending(false);
+    }).catch(function(){setSending(false);});
   }
-  function del(id){ api.deleteComment(id,props.uname).then(function(){setComments(function(prev){return prev.filter(function(c){return c.id!==id;});});}); }
+
+  function del(id){
+    api.deleteComment(id,uname).then(function(){
+      setComments(function(prev){return prev.filter(function(c){return c.id!==id&&c.reply_to!==id;});});
+    });
+  }
+
+  function toggleUpvote(comment){
+    if(!uname){api.signInGoogle();return;}
+    var ups=comment.upvotes||[];
+    var newUps=ups.indexOf(uname)>=0
+      ?ups.filter(function(u){return u!==uname;})
+      :[].concat(ups,[uname]);
+    api.upvoteComment(comment.id,newUps).then(function(){
+      setComments(function(prev){return prev.map(function(c){return c.id===comment.id?Object.assign({},c,{upvotes:newUps}):c;});});
+    });
+  }
+
+  var topLevel=comments.filter(function(c){return !c.reply_to;});
+  var replies=comments.filter(function(c){return !!c.reply_to;});
+
+  function renderComment(c,isReply){
+    var myUpvote=(c.upvotes||[]).indexOf(uname)>=0;
+    var cReplies=!isReply?replies.filter(function(r){return r.reply_to===c.id;}):[];
+    var parentOwner=isReply?(comments.find(function(x){return x.id===c.reply_to;})||{}).owner:"";
+    return e("div",{key:c.id},
+      e("div",{style:{
+        marginBottom:isReply?4:6,padding:"8px 10px",
+        background:isReply?"#e8e0cc":"#f0e8d4",
+        borderRadius:6,
+        border:"1px solid "+(isReply?"#d8cbb0":"#e0d4bc"),
+        position:"relative",
+        marginLeft:isReply?16:0,
+        borderLeft:isReply?"3px solid #2e7d32":""
+      }},
+        isReply&&e("div",{style:{fontSize:10,color:"#2e7d32",marginBottom:2}},"↩ replying to @"+parentOwner),
+        e("div",{style:{fontSize:12,fontWeight:700,color:"#2e7d32",marginBottom:2}},"@"+c.owner),
+        e("div",{style:{fontSize:13,color:"#2c2416",lineHeight:1.5,paddingRight:20}},c.body),
+        e("div",{style:{display:"flex",alignItems:"center",gap:8,marginTop:5}},
+          e("button",{
+            style:{background:"none",border:"none",fontSize:11,color:myUpvote?"#2e7d32":"#9a8a70",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:3},
+            onClick:function(){toggleUpvote(c);}
+          },"👍 "+((c.upvotes||[]).length||"")),
+          !isReply&&uname&&e("button",{
+            style:{background:"none",border:"none",fontSize:11,color:"#9a8a70",cursor:"pointer",padding:0},
+            onClick:function(){setReplyTo(replyTo&&replyTo.id===c.id?null:c);setDraft("");}
+          },"↩ Reply"),
+          c.owner===uname&&e("button",{
+            style:{position:"absolute",top:6,right:6,background:"none",border:"none",fontSize:11,color:"#c05050",cursor:"pointer"},
+            onClick:function(){del(c.id);}
+          },"x")
+        )
+      ),
+      cReplies.map(function(r){return renderComment(r,true);})
+    );
+  }
+
   return e("div",{style:{borderTop:"1px solid #e8dcc4",marginTop:10,paddingTop:10}},
     e("div",{style:S.secHead},"Comments ("+(cLoading?"...":comments.length)+")"),
     cLoading
       ? e("div",{style:{fontSize:13,color:"#9a8a70"}},"Loading...")
       : e("div",null,
-          comments.length===0 && e("div",{style:{fontSize:13,color:"#b0a080",fontStyle:"italic",marginBottom:8}},"No comments yet. Be the first!"),
-          comments.map(function(c){
-            return e("div",{key:c.id,style:{marginBottom:7,padding:"7px 9px",background:"#f0e8d4",borderRadius:6,border:"1px solid #e0d4bc",position:"relative"}},
-              e("div",{style:{fontSize:12,fontWeight:700,color:"#2e7d32",marginBottom:2}},"@"+c.owner),
-              e("div",{style:{fontSize:13,color:"#2c2416",lineHeight:1.5,paddingRight:c.owner===uname?16:0}},c.body),
-              c.owner===uname && e("button",{style:{position:"absolute",top:6,right:6,background:"none",border:"none",fontSize:12,color:"#c05050",cursor:"pointer"},onClick:function(){del(c.id);}},"x")
-            );
-          }),
+          topLevel.length===0&&e("div",{style:{fontSize:13,color:"#b0a080",fontStyle:"italic",marginBottom:8}},"No comments yet. Be the first!"),
+          topLevel.map(function(c){return renderComment(c,false);}),
+          replyTo&&e("div",{style:{fontSize:11,color:"#2e7d32",marginBottom:4,marginTop:8,padding:"4px 8px",background:"#e8f5e9",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+            e("span",null,"Replying to @"+replyTo.owner),
+            e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:13},onClick:function(){setReplyTo(null);setDraft("");}},"x")
+          ),
           e("div",{style:{display:"flex",gap:5,marginTop:8}},
             e("input",{
               style:{flex:1,background:"#f0e8d4",border:"1px solid #d0c4a8",color:"#2c2416",padding:"7px 9px",fontSize:13,borderRadius:4,outline:"none"},
-              placeholder:uname?"Add a comment...":"Sign in to comment",
+              placeholder:replyTo?"Reply to @"+replyTo.owner+"...":(uname?"Add a comment...":"Sign in to comment"),
               value:draft,onChange:function(ev){setDraft(ev.target.value);},
               onKeyDown:function(ev){if(ev.key==="Enter")submit();}
             }),
@@ -412,7 +474,6 @@ function Comments(props) {
   );
 }
 
-/*    PinCard                                                                     */
 function PinCard(props) {
   var pin=props.pin, uname=props.uname;
   var isOwner = uname && pin.owner===uname;
