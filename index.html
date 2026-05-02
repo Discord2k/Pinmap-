@@ -1116,8 +1116,11 @@ function App() {
       var pin=pins.find(function(p){return p.id===pinId;}); if(!pin) return;
       var has=pin.upvotes&&pin.upvotes.indexOf(uname)>=0;
       var upvotes=has?pin.upvotes.filter(function(u){return u!==uname;}):(pin.upvotes||[]).concat([uname]);
+      // Update local state immediately (optimistic update)
+      setPins(function(prev){return prev.map(function(p){return p.id===pinId?Object.assign({},p,{upvotes:upvotes}):p;});});
+      // Also update selPin so the open popup reflects immediately
+      setSelPin(function(prev){return prev&&prev.id===pinId?Object.assign({},prev,{upvotes:upvotes}):prev;});
       api.upvotePin(pinId,upvotes).then(function(){
-        setPins(function(prev){return prev.map(function(p){return p.id===pinId?Object.assign({},p,{upvotes:upvotes}):p;});});
         setSelPin(function(sp){return sp&&sp.id===pinId?Object.assign({},sp,{upvotes:upvotes}):sp;});
       }).catch(function(){flash("Failed");});
     });
