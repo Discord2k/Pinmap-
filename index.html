@@ -60,6 +60,7 @@ const api = {
   list:           function()           { return sb.from("pins").select("*").order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
   insert:         function(pin)        { return sb.from("pins").insert(pin).select().then(function(r){return r.data;}); },
   update:         function(id,p,uname) { return sbWithUser(uname).from("pins").update(p).eq("id",id).then(function(r){return r.data;}); },
+  upvotePin:      function(id,upvotes)  { return sb.from("pins").update({upvotes:upvotes}).eq("id",id); },
   remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).eq("privacy","public").then(function(r){return r.data||[];}); },
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
@@ -1115,7 +1116,7 @@ function App() {
       var pin=pins.find(function(p){return p.id===pinId;}); if(!pin) return;
       var has=pin.upvotes&&pin.upvotes.indexOf(uname)>=0;
       var upvotes=has?pin.upvotes.filter(function(u){return u!==uname;}):(pin.upvotes||[]).concat([uname]);
-      api.update(pinId,{upvotes:upvotes},uname).then(function(){
+      api.upvotePin(pinId,upvotes).then(function(){
         setPins(function(prev){return prev.map(function(p){return p.id===pinId?Object.assign({},p,{upvotes:upvotes}):p;});});
         setSelPin(function(sp){return sp&&sp.id===pinId?Object.assign({},sp,{upvotes:upvotes}):sp;});
       }).catch(function(){flash("Failed");});
