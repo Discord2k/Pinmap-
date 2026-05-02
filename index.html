@@ -90,7 +90,7 @@ var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c628
 var ONBOARD_KEY = "pm-onboarded-v3";
 var WHATSNEW_KEY = "pm-whatsnew-v4";
 var WHATSNEW = [
-  {emoji:"✨", title:"New splash screen", body:"PINMAP has a new branded splash screen when you open the app."},
+  {emoji:"✨", title:"New splash screen", body:"PINMAP has a fresh new branded splash screen when you open the app."},
   {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle showing their count. Tap any cluster to zoom in and see the individual pins."},
   {emoji:"💬", title:"Threaded comments", body:"Reply to comments on pins. Tap '↩ Reply' on any comment to respond."},
   {emoji:"👍", title:"Comment upvotes", body:"Tap 👍 on any comment to upvote it. Tap again to remove your upvote."},
@@ -1506,9 +1506,7 @@ function App() {
         e("div",{style:{display:"flex",alignItems:"center",gap:6}},
           user&&userAvatar(user)?e("img",{src:userAvatar(user),style:{width:22,height:22,borderRadius:"50%",border:"1px solid #d0c4a8"}}):null,
           e("span",{style:{fontSize:12,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d0c4a8"}},uname),
-          user
-            ?e("button",{style:{fontSize:12,background:"none",border:"1px solid #d0c4a8",color:"#9a8a70",padding:"2px 7px",borderRadius:3,cursor:"pointer"},onClick:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});}},"Sign out")
-            :e("button",{style:{fontSize:12,background:"#2e7d32",color:"#fff",border:"none",padding:"3px 8px",borderRadius:3,cursor:"pointer"},onClick:api.signInGoogle},"Sign in"),
+          !user && e("button",{style:{fontSize:12,background:"#2e7d32",color:"#fff",border:"none",padding:"3px 8px",borderRadius:3,cursor:"pointer"},onClick:api.signInGoogle},"Sign in"),
           e("button",{style:{background:"none",border:"none",color:"#9a8a70",cursor:"pointer",fontSize:20,lineHeight:1,padding:"0 2px"},onClick:function(){setOpen(false);}},"x")
         )
       ),
