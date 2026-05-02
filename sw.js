@@ -1,4 +1,4 @@
-const CACHE = "pinmap-v108";
+const CACHE = "pinmap-v111";
 const ASSETS = [
   "./",
   "./index.html",
@@ -48,6 +48,33 @@ self.addEventListener("fetch", e => {
         }
         return res;
       });
+    })
+  );
+});
+
+self.addEventListener("push", function(event) {
+  var data = {};
+  try { data = event.data.json(); } catch(e) { data = {title:"PINMAP", body:event.data ? event.data.text() : "New notification"}; }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "PINMAP", {
+      body: data.body || "",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: data.url ? {url: data.url} : {},
+      vibrate: [100, 50, 100]
+    })
+  );
+});
+
+self.addEventListener("notificationclick", function(event) {
+  event.notification.close();
+  var url = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    clients.matchAll({type:"window"}).then(function(clientList) {
+      for (var i = 0; i < clientList.length; i++) {
+        if (clientList[i].url === url && "focus" in clientList[i]) return clientList[i].focus();
+      }
+      if (clients.openWindow) return clients.openWindow(url);
     })
   );
 });
