@@ -521,7 +521,8 @@ function ProfilePanel(props) {
         : e("div",{style:{fontSize:40,marginBottom:8}},"🧭"),
       e("div",{style:{fontWeight:700,fontSize:17,color:"#2c2416",marginBottom:2}},uname),
       user && e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:12}},user.email),
-      !user && e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
+      !user && e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google"),
+      user && e("button",{style:{marginTop:4,padding:"6px 14px",background:"none",border:"1px solid #d0c4a8",borderRadius:6,fontSize:12,color:"#9a8a70",cursor:"pointer",width:"100%"},onClick:props.onSignOut},"Sign out")
     ),
     e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
       stats.map(function(s){
