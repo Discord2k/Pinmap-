@@ -193,26 +193,27 @@ async function callEdgeFunction(type, data) {
 }
 
 async function subscribeToPush(uname) {
-  if(!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-  try {
-    var reg = await navigator.serviceWorker.ready;
-    var existing = await reg.pushManager.getSubscription();
-    if(existing) {
-      // Already subscribed - save to DB in case it's new device
-      await savePushSubscription(existing, uname);
-      return;
-    }
-    var permission = await Notification.requestPermission();
-    if(permission !== "granted") return;
-    var sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    });
-    await savePushSubscription(sub, uname);
-    console.log("Push subscription saved");
-  } catch(e) {
-    console.log("Push subscription failed:", e);
+  if(!("serviceWorker" in navigator)){throw new Error("Service worker not supported");}
+  if(!("PushManager" in window)){throw new Error("Push not supported on this browser");}
+  console.log("subscribeToPush called for:", uname);
+  var reg = await navigator.serviceWorker.ready;
+  console.log("SW ready:", reg);
+  var existing = await reg.pushManager.getSubscription();
+  if(existing){
+    console.log("Already subscribed, saving to DB");
+    await savePushSubscription(existing, uname);
+    return;
   }
+  var permission = await Notification.requestPermission();
+  console.log("Permission:", permission);
+  if(permission !== "granted") throw new Error("Permission denied");
+  var sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+  });
+  console.log("Subscribed:", sub.endpoint);
+  await savePushSubscription(sub, uname);
+  console.log("Saved to DB");
 }
 
 async function savePushSubscription(sub, uname) {
@@ -640,7 +641,21 @@ function ProfilePanel(props) {
           },
           onClick:function(){
             if(!pushEnabled){
-              subscribeToPush(props.uname).then(function(){setPushEnabled(true);});
+              if(!("Notification" in window)){flash("Notifications not supported on this browser");return;}
+              if(Notification.permission==="denied"){flash("Notifications blocked - check browser settings");return;}
+              flash("Requesting permission...");
+              subscribeToPush(props.uname).then(function(result){
+                if(Notification.permission==="granted"){
+                  setPushEnabled(true);
+                  flash("Notifications enabled!");
+                } else {
+                  flash("Permission not granted");
+                }
+              }).catch(function(e){
+                flash("Error: "+e.message);
+              });
+            } else {
+              flash("Notifications already enabled");
             }
           }
         }, pushEnabled?"Enabled":"Enable")
