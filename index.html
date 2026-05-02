@@ -578,6 +578,7 @@ function MineTab(props) {
   var activeFilter=props.activeFilter, setActiveFilter=props.setActiveFilter;
   var mapObj=props.mapObj, setSelPin=props.setSelPin, setOpen=props.setOpen;
   var unreadPinIds=props.unreadPinIds||[];
+  var commentCounts=props.commentCounts||{};
   var st=useState(null); var selTag=st[0]; var setSelTag=st[1];
 
   if(selTag){
@@ -599,9 +600,19 @@ function MineTab(props) {
       ),
       tp.map(function(p){
         var pinHasUnread = unreadPinIds.indexOf(p.id)>=0;
+        var commentCount = commentCounts[p.id]||0;
+        var upvoteCount = (p.upvotes||[]).length;
         return e("div",{key:p.id,style:{position:"relative"}},
-          pinHasUnread && e("div",{style:{position:"absolute",top:8,right:8,zIndex:1,display:"flex",alignItems:"center",gap:4,background:"#c62828",color:"#fff",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:700}},
-            "💬 New comment"
+          e("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"3px 10px 0",fontSize:11,color:"#9a8a70"}},
+            commentCount>0&&e("span",{style:{display:"flex",alignItems:"center",gap:3,color:pinHasUnread?"#c62828":"#9a8a70",fontWeight:pinHasUnread?700:400}},
+              "💬",commentCount,(pinHasUnread?" new":"")
+            ),
+            upvoteCount>0&&e("span",{style:{display:"flex",alignItems:"center",gap:3}},
+              "👍",upvoteCount
+            )
+          ),
+          pinHasUnread && e("div",{style:{position:"absolute",top:6,right:8,zIndex:1,display:"flex",alignItems:"center",gap:4,background:"#c62828",color:"#fff",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:700}},
+            "💬 New"
           ),
           e(PinCard,{pin:p,uname:uname,
             onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);if(props.markCommentsSeen)props.markCommentsSeen();},
@@ -685,6 +696,7 @@ function App() {
   var s33=useState(false); var trendingLoading=s33[0]; var setTrendingLoading=s33[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
   var s39=useState([]); var unreadPinIds=s39[0]; var setUnreadPinIds=s39[1];
+  var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
 
@@ -808,6 +820,17 @@ function App() {
   useEffect(function(){
     var name = user ? (user.user_metadata&&user.user_metadata.full_name ? user.user_metadata.full_name : (user.email?user.email.split("@")[0]:"")) : "";
     if(pins.length > 0 && name && name !== "guest") checkNewComments(pins, name);
+    // Load comment counts for all my pins when Mine tab opens
+    if(tab==="mine" && pins.length>0 && name && name!=="guest"){
+      var myPinIds=pins.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
+      if(myPinIds.length){
+        sb.from("comments").select("pin_id").in("pin_id",myPinIds).then(function(r){
+          var counts={};
+          (r.data||[]).forEach(function(c){counts[c.pin_id]=(counts[c.pin_id]||0)+1;});
+          setCommentCounts(counts);
+        });
+      }
+    }
   },[user, pins, tab]);
 
   useEffect(function(){
@@ -1536,7 +1559,7 @@ function App() {
           mapObj:mapObj,setSelPin:setSelPin,setOpen:setOpen,
           deletePin:deletePin,toggleUpvote:toggleUpvote,saveToCollection:saveToCollection,
           loadUserProfile:loadUserProfile,unreadPinIds:unreadPinIds,
-          markCommentsSeen:markCommentsSeen
+          markCommentsSeen:markCommentsSeen,commentCounts:commentCounts
         }),
 
         tab==="add" && e("div",null,
