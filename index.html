@@ -847,16 +847,25 @@ function App() {
   // Handle #pin= hash from push notification click
   useEffect(function(){
     if(!splashDone||!pins.length) return;
-    var hash = window.location.hash;
-    if(hash && hash.startsWith("#pin=")){
-      var pinId = hash.replace("#pin=","");
+    // Check current hash and also stored hash
+    var hash = window.location.hash || window._pendingPinHash || "";
+    if(hash && hash.includes("pin=")){
+      var pinId = hash.split("pin=")[1].split("&")[0];
       var pin = pins.find(function(p){return p.id===pinId;});
       if(pin){
-        focusPin(pin);
+        setTimeout(function(){focusPin(pin);},500);
         window.location.hash = "";
+        window._pendingPinHash = "";
       }
     }
   },[splashDone, pins]);
+
+  // Store hash immediately on load before app is ready
+  useEffect(function(){
+    if(window.location.hash && window.location.hash.includes("pin=")){
+      window._pendingPinHash = window.location.hash;
+    }
+  },[]);
 
   // Keep mapLayerRef in sync so marker closures always see current value
   useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
