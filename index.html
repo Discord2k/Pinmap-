@@ -603,13 +603,13 @@ function MineTab(props) {
       tp.map(function(p){
         var pinHasUnread = unreadPinIds.indexOf(p.id)>=0;
         var commentCount = commentCounts[p.id]||0;
-        var upvoteCount = (p.upvotes||[]).length;
+        var upvoteCount = (p.upvotes&&Array.isArray(p.upvotes))?p.upvotes.length:0;
         return e("div",{key:p.id,style:{position:"relative"}},
           e("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"3px 10px 0",fontSize:11,color:"#9a8a70"}},
             commentCount>0&&e("span",{style:{display:"flex",alignItems:"center",gap:3,color:pinHasUnread?"#c62828":"#9a8a70",fontWeight:pinHasUnread?700:400}},
               "💬",commentCount,(pinHasUnread?" new":"")
             ),
-            upvoteCount>0&&e("span",{style:{display:"flex",alignItems:"center",gap:3}},
+            e("span",{style:{display:"flex",alignItems:"center",gap:3,color:upvoteCount>0?"#2e7d32":"#c8b89a"}},
               "👍",upvoteCount
             )
           ),
