@@ -498,8 +498,10 @@ function PinCard(props) {
     e("div",{style:{fontSize:12,marginBottom:4}},(pin.tags||[]).map(function(t){return e("span",{key:t,style:{color:tagColor(t),marginRight:3}},"#"+t);})),
     e("div",{style:{display:"flex",gap:4},onClick:function(ev){ev.stopPropagation();}},
       notOwner && e(React.Fragment,null,
-        e("button",{style:S.miniBtn,onClick:function(){props.onUpvote(pin.id);}},
-          (pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?"*":"o")+" "+(pin.upvotes?pin.upvotes.length:0)),
+        e("button",{
+          style:Object.assign({},S.miniBtn,{color:pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?"#2e7d32":"#9a8a70",fontWeight:pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?700:400}),
+          onClick:function(){props.onUpvote(pin.id);}},
+          "👍 "+(pin.upvotes?pin.upvotes.length:0)),
         e("button",{style:S.miniBtn,onClick:function(){props.onSave(pin);}}, "⭐ Save")
       ),
       isOwner && !pin.saved_from && e("button",{style:Object.assign({},S.miniBtn,{color:"#c05050"}),onClick:function(){props.onDelete(pin.id);}}, "🗑")
