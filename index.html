@@ -806,7 +806,8 @@ function App() {
 
   // Re-check comments whenever user, pins or tab changes
   useEffect(function(){
-    if(pins.length > 0 && uname && uname !== "guest") checkNewComments(pins);
+    var name = user ? (user.user_metadata&&user.user_metadata.full_name ? user.user_metadata.full_name : (user.email?user.email.split("@")[0]:"")) : "";
+    if(pins.length > 0 && name && name !== "guest") checkNewComments(pins, name);
   },[user, pins, tab]);
 
   useEffect(function(){
@@ -1441,9 +1442,15 @@ function App() {
 
       e("div",{style:{display:"flex",borderBottom:"1px solid #e8dcc4",flexShrink:0,background:"rgba(250,246,236,0.8)"}},
         TABS.map(function(t){
-          return e("button",{key:t[0],onClick:function(){setTab(t[0]); if(t[0]==="mine") markCommentsSeen();},
+          return e("button",{key:t[0],onClick:function(){setTab(t[0]);},
             style:{flex:1,padding:"9px 2px",background:"none",border:"none",cursor:"pointer",fontSize:12,color:tab===t[0]?"#2e7d32":"#9a8a70",borderBottom:tab===t[0]?"2px solid #2e7d32":"2px solid transparent",fontFamily:"Courier New,monospace",fontWeight:tab===t[0]?700:400}},
-            t[1]);
+            t[0]==="mine"
+              ? e("span",{style:{position:"relative",display:"inline-flex",alignItems:"center",gap:3}},
+                  t[1],
+                  unreadPinIds.length>0&&e("span",{style:{width:7,height:7,borderRadius:"50%",background:"#c62828",display:"inline-block",flexShrink:0,marginBottom:4}})
+                )
+              : t[1]
+          );
         })
       ),
 
