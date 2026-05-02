@@ -88,14 +88,14 @@ const api = {
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 var ONBOARD_KEY = "pm-onboarded-v3";
-var WHATSNEW_KEY = "pm-whatsnew-v3";
+var WHATSNEW_KEY = "pm-whatsnew-v4";
 var WHATSNEW = [
-  {emoji:"💬", title:"Threaded comments", body:"You can now reply to comments on pins. Replies appear indented below the original comment. Tap '↩ Reply' on any comment to respond."},
+  {emoji:"✨", title:"New splash screen", body:"PINMAP has a fresh new branded splash screen when you open the app."},
+  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle showing their count. Tap any cluster to zoom in and see the individual pins."},
+  {emoji:"💬", title:"Threaded comments", body:"Reply to comments on pins. Tap '↩ Reply' on any comment to respond."},
   {emoji:"👍", title:"Comment upvotes", body:"Tap 👍 on any comment to upvote it. Tap again to remove your upvote."},
-  {emoji:"🗺", title:"Smart pin visibility", body:"Searching a hashtag or tapping another user's pin now automatically switches the map to show all public pins."},
-  {emoji:"🔍", title:"Dual search bar", body:"Tap '# Tags' or '📍 Places' to switch between hashtag search and address/location search."},
-  {emoji:"👤", title:"User profiles", body:"Tap any username on a pin to see all their public pins on the map."},
-  {emoji:"🔥", title:"Trending hashtags", body:"The Search tab now shows the most active hashtags from the last 7 days."}
+  {emoji:"🗺", title:"Smart pin visibility", body:"Searching a hashtag now automatically switches the map to show all public pins."},
+  {emoji:"🔍", title:"Dual search bar", body:"Tap '# Tags' or '📍 Places' to switch between hashtag search and address search."}
 ];
 var ONBOARD_STEPS = [
   {
@@ -295,52 +295,47 @@ var S = {
 
 /*    Splash                                                                     */
 function Splash(props) {
-  var expState = useState(false); var expanded = expState[0]; var setExpanded = expState[1];
-  return e("div",{style:{position:"fixed",inset:0,background:"#f0e8d0",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16}},
-    e("div",{style:{textAlign:"center",padding:"36px 28px",background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,maxWidth:340,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.12)"}},
-      e("div",{style:{fontSize:44,marginBottom:6}},"📍"),
-      e("div",{style:{fontSize:28,fontWeight:900,letterSpacing:4,color:"#2e7d32",marginBottom:4}},"PINMAP"),
-      e("div",{style:{fontSize:14,color:"#9a8a70",letterSpacing:1,marginBottom:6}},"Tag the terrain. Share the stoke."),
-      e("div",{style:{fontSize:11,color:"#c8b89a",marginBottom:20,letterSpacing:0.3}},"(c) "+new Date().getFullYear()+" Seth Gray. All rights reserved."),
-      e("button",{
-        onClick:function(){setExpanded(function(v){return !v;});},
-        style:{background:"none",border:"1px solid #d0c4a8",borderRadius:8,padding:"8px 16px",fontSize:13,color:"#6a5a40",cursor:"pointer",marginBottom:14,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6}
-      }, expanded?"Hide description":"What is PINMAP? (learn more)"),
-      expanded && e("div",{style:{textAlign:"left",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:"14px 16px",marginBottom:16,fontSize:13,color:"#4a3a28",lineHeight:1.75}},
-        e("p",{style:{marginBottom:10,fontWeight:700,color:"#2e7d32"}},"A lightweight social map for the things that matter to you."),
-        e("p",{style:{marginBottom:10}},"PINMAP lets you drop a pin on any location and tag it with hashtags - then share it publicly or keep it just for yourself."),
-        e("p",{style:{marginBottom:10}},"Search any hashtag to discover pins saved by others. Follow a tag like #murals and find hidden street art in your city, or browse #wildflowers to see where others have spotted rare blooms."),
-        e("p",{style:{marginBottom:10}},"Save pins from other users to your own collections. Upvote the ones you love. Export your collections to GPX or GeoJSON to use in other apps like Gaia GPS or AllTrails."),
-        e("p",{style:{fontStyle:"italic",color:"#7a6a50"}},"Great pubs, unique murals, favourite flowers, secret trails, hidden gems - if it has a location, it belongs on PINMAP."),
-        e("p",{style:{marginTop:10,fontSize:10,color:"#c8b89a",borderTop:"1px solid #d0c4a8",paddingTop:8}},
-          "PINMAP is the intellectual property of Seth Gray. (c) "+new Date().getFullYear()+" All rights reserved. Unauthorised reproduction or redistribution is prohibited."
-        )
+  return e("div",{style:{position:"fixed",inset:0,zIndex:9999,overflow:"hidden",fontFamily:"Courier New,monospace"}},
+    e("div",{style:{position:"absolute",inset:0,background:"linear-gradient(160deg,#1b4332 0%,#2e7d32 45%,#1a3a2a 100%)"}}),
+    e("div",{style:{position:"absolute",inset:0,opacity:0.06,backgroundImage:"radial-gradient(circle,#fff 1px,transparent 1px)",backgroundSize:"28px 28px"}}),
+    e("div",{style:{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",padding:32}}),
+    e("div",{style:{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",padding:32}},
+      e("div",{style:{marginBottom:32,display:"flex",flexDirection:"column",alignItems:"center"}},
+        e("div",{style:{width:80,height:80,marginBottom:20,position:"relative"}},
+          e("svg",{width:80,height:80,viewBox:"0 0 26 34",xmlns:"http://www.w3.org/2000/svg"},
+            e("path",{d:"M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z",fill:"rgba(255,255,255,0.95)",stroke:"rgba(255,255,255,0.3)",strokeWidth:"0.5"}),
+            e("text",{x:"13",y:"17",textAnchor:"middle",fontSize:"10",fill:"#2e7d32",fontFamily:"Courier New,monospace",fontWeight:"700"},"#")
+          )
+        ),
+        e("div",{style:{fontSize:36,fontWeight:700,color:"#ffffff",letterSpacing:6,marginBottom:6}},"PINMAP"),
+        e("div",{style:{fontSize:13,color:"rgba(255,255,255,0.6)",letterSpacing:3}})
       ),
+      e("div",{style:{fontSize:13,color:"rgba(255,255,255,0.55)",marginBottom:48,letterSpacing:2}},"discover · save · share"),
       props.loading
-        ? e("div",{style:{fontSize:15,color:"#9a8a70",padding:"16px 0"}},"Checking session...")
-        : e("div",null,
+        ? e("div",{style:{fontSize:14,color:"rgba(255,255,255,0.6)"}},"Loading...")
+        : e("div",{style:{display:"flex",flexDirection:"column",gap:12,width:"100%",maxWidth:300}},
             e("button",{
-              style:{width:"100%",padding:12,marginBottom:10,background:"#fff",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:15,fontWeight:700,color:"#2c2416",display:"flex",alignItems:"center",justifyContent:"center",gap:8},
+              style:{padding:"15px",background:"#ffffff",color:"#2e7d32",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"Courier New,monospace",display:"flex",alignItems:"center",justifyContent:"center",gap:10},
               onClick:props.onGoogle
             },
               e("svg",{width:18,height:18,viewBox:"0 0 48 48"},
-                e("path",{fill:"#EA4335",d:"M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"}),
                 e("path",{fill:"#4285F4",d:"M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"}),
-                e("path",{fill:"#FBBC05",d:"M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"}),
-                e("path",{fill:"#34A853",d:"M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"})
+                e("path",{fill:"#34A853",d:"M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.16C6.51 42.62 14.62 48 24 48z"}),
+                e("path",{fill:"#FBBC05",d:"M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.16C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"}),
+                e("path",{fill:"#EA4335",d:"M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.16C12.43 13.72 17.74 9.5 24 9.5z"})
               ),
-              "Continue with Google"
+              "Sign in with Google"
             ),
             e("button",{
-              style:{width:"100%",padding:11,background:"none",border:"1.5px solid #d0c4a8",borderRadius:8,cursor:"pointer",fontSize:15,color:"#6a5a40"},
+              style:{padding:"15px",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.85)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:12,fontSize:14,cursor:"pointer",fontFamily:"Courier New,monospace"},
               onClick:props.onGuest
             },"Browse as Guest")
-          )
+          ),
+      e("div",{style:{position:"absolute",bottom:32,fontSize:11,color:"rgba(255,255,255,0.3)"}},"© "+new Date().getFullYear()+" Seth Gray · All rights reserved")
     )
   );
 }
 
-/*    Onboarding Overlay                                                          */
 function Onboarding(props) {
   var step = props.step;
   var info = ONBOARD_STEPS[step];
@@ -698,6 +693,7 @@ function App() {
   var s33=useState(false); var trendingLoading=s33[0]; var setTrendingLoading=s33[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
   var s39=useState([]); var unreadPinIds=s39[0]; var setUnreadPinIds=s39[1];
+  var s41=useState(13); var mapZoom=s41[0]; var setMapZoom=s41[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
@@ -774,6 +770,7 @@ function App() {
       currentBase.current = [initTile];
       setTimeout(function(){map.invalidateSize();},300);
       map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
+      map.on("zoomend",function(){setMapZoom(map.getZoom());});
       mapObj.current=map;
     }
     if(splashDone) tryInit();
@@ -839,6 +836,57 @@ function App() {
     if(!mapObj.current||!window.L) return;
     Object.values(markers.current).forEach(function(m){m.remove();});
     markers.current={};
+    var map=mapObj.current;
+    var zoom=map.getZoom();
+
+    if(zoom<=10){
+      var clPins=pins.filter(function(p){
+        if(mapLayerRef.current==="mine") return p.owner===uname;
+        if(mapLayerRef.current==="public") return p.privacy==="public"||p.owner===uname;
+        if(mapLayerRef.current==="none") return false;
+        return true;
+      });
+      if(activeFilter) clPins=clPins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;});
+      var clusters=[], used=new Array(clPins.length).fill(false);
+      for(var ci=0;ci<clPins.length;ci++){
+        if(used[ci]) continue;
+        var grp=[clPins[ci]]; used[ci]=true;
+        var pt1=map.latLngToContainerPoint([clPins[ci].lat,clPins[ci].lng]);
+        for(var cj=ci+1;cj<clPins.length;cj++){
+          if(used[cj]) continue;
+          var pt2=map.latLngToContainerPoint([clPins[cj].lat,clPins[cj].lng]);
+          if(Math.sqrt(Math.pow(pt1.x-pt2.x,2)+Math.pow(pt1.y-pt2.y,2))<80){grp.push(clPins[cj]);used[cj]=true;}
+        }
+        clusters.push(grp);
+      }
+      clusters.forEach(function(grp){
+        var clat=grp.reduce(function(s,p){return s+p.lat;},0)/grp.length;
+        var clng=grp.reduce(function(s,p){return s+p.lng;},0)/grp.length;
+        var clrColor=grp[0].color||tagColor(grp[0].tags&&grp[0].tags[0]||"x");
+        if(grp.length===1){
+          var pin=grp[0]; var color=pin.color||tagColor(pin.tags&&pin.tags[0]||"x");
+          var pinEmoji=getPinIcon(pin.tags); var hasEmoji=pinEmoji!=="📍";
+          var innerHtml=hasEmoji?'<foreignObject x="3" y="3" width="20" height="20"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:12px;text-align:center;line-height:20px">'+pinEmoji+'</div></foreignObject>':'<circle cx="13" cy="13" r="4" fill="white"/>';
+          var icon=window.L.divIcon({className:"pm-pin",html:'<svg width="30" height="38" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/>'+innerHtml+'</svg>',iconSize:[30,38],iconAnchor:[15,38]});
+          var m=window.L.marker([pin.lat,pin.lng],{icon:icon});
+          m.on("click",function(){if(pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none"))setMapLayer("public");setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
+          m.addTo(map); markers.current[pin.id]=m;
+        } else {
+          var sz=grp.length>99?52:grp.length>9?46:40;
+          var cIcon=window.L.divIcon({className:"",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+clrColor+';border:3px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:'+(grp.length>9?12:14)+'px;font-family:Courier New,monospace;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+grp.length+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+          var cm=window.L.marker([clat,clng],{icon:cIcon});
+          var grpCopy=grp.slice();
+          cm.on("click",function(){map.fitBounds(window.L.latLngBounds(grpCopy.map(function(p){return[p.lat,p.lng];})),{padding:[60,60],maxZoom:11});});
+          cm.addTo(map); markers.current["cl_"+ci]=cm;
+        }
+      });
+      if(focusPinId.current){
+        var fpid=focusPinId.current;
+        setTimeout(function(){var fm=markers.current[fpid];if(fm&&fm._icon){if(focusedMarker.current&&focusedMarker.current._icon)focusedMarker.current._icon.classList.remove("pin-focused");fm._icon.classList.add("pin-focused");focusedMarker.current=fm;focusPinId.current=null;setTimeout(function(){if(fm._icon)fm._icon.classList.remove("pin-focused");},2200);}},200);
+      }
+      return;
+    }
+
     var layerPins = pins.filter(function(p){
       if(mapLayer==="mine")   return p.owner===uname;
       if(mapLayer==="public") return p.privacy==="public"||p.owner===uname;
@@ -879,7 +927,7 @@ function App() {
         }
       }, 200);
     }
-  },[pins,activeFilter,mapLayer,uname]);
+  },[pins,activeFilter,mapLayer,uname,mapZoom]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
