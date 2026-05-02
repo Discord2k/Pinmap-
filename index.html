@@ -844,6 +844,20 @@ function App() {
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
+  // Handle #pin= hash from push notification click
+  useEffect(function(){
+    if(!splashDone||!pins.length) return;
+    var hash = window.location.hash;
+    if(hash && hash.startsWith("#pin=")){
+      var pinId = hash.replace("#pin=","");
+      var pin = pins.find(function(p){return p.id===pinId;});
+      if(pin){
+        focusPin(pin);
+        window.location.hash = "";
+      }
+    }
+  },[splashDone, pins]);
+
   // Keep mapLayerRef in sync so marker closures always see current value
   useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
 
