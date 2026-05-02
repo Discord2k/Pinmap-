@@ -88,14 +88,14 @@ const api = {
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 var ONBOARD_KEY = "pm-onboarded-v3";
-var WHATSNEW_KEY = "pm-whatsnew-v4";
+var WHATSNEW_KEY = "pm-whatsnew-v5";
 var WHATSNEW = [
-  {emoji:"✨", title:"New splash screen", body:"PINMAP has a new branded splash screen when you open the app."},
-  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle showing their count. Tap any cluster to zoom in and see the individual pins."},
+  {emoji:"📲", title:"Install PINMAP", body:"You can now install PINMAP directly to your home screen. Look for the install banner when you visit the site."},
+  {emoji:"✨", title:"New splash screen", body:"PINMAP has a fresh new branded splash screen with a blurred map background."},
+  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle. Tap to zoom in and see them individually."},
   {emoji:"💬", title:"Threaded comments", body:"Reply to comments on pins. Tap '↩ Reply' on any comment to respond."},
   {emoji:"👍", title:"Comment upvotes", body:"Tap 👍 on any comment to upvote it. Tap again to remove your upvote."},
-  {emoji:"🗺", title:"Smart pin visibility", body:"Searching a hashtag now automatically switches the map to show all public pins."},
-  {emoji:"🔍", title:"Dual search bar", body:"Tap '# Tags' or '📍 Places' to switch between hashtag search and address search."}
+  {emoji:"🗺", title:"Smart pin visibility", body:"Searching a hashtag now automatically switches the map to show all public pins."}
 ];
 var ONBOARD_STEPS = [
   {
@@ -695,6 +695,8 @@ function App() {
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
   var s39=useState([]); var unreadPinIds=s39[0]; var setUnreadPinIds=s39[1];
   var s41=useState(13); var mapZoom=s41[0]; var setMapZoom=s41[1];
+  var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
+  var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
@@ -703,6 +705,25 @@ function App() {
 
   // Keep mapLayerRef in sync so marker closures always see current value
   useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
+
+  // Show install prompt after 5 seconds if available
+  useEffect(function(){
+    if(!splashDone) return;
+    var timer = setTimeout(function(){
+      // Check if already installed
+      if(window.matchMedia("(display-mode: standalone)").matches) return;
+      if(localStorage.getItem("pm-install-dismissed")) return;
+      if(window._installPromptEvent){
+        setInstallPrompt(window._installPromptEvent);
+        setShowInstall(true);
+      } else {
+        // iOS or unsupported - show manual instructions
+        var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if(isIOS) setShowInstall("ios");
+      }
+    }, 5000);
+    return function(){ clearTimeout(timer); };
+  },[splashDone]);
 
   useEffect(function(){
     // Wire SW update flag to React state
@@ -1338,6 +1359,50 @@ function App() {
 
     e("div",{ref:mapDiv,style:{position:"absolute",top:0,left:0,right:0,bottom:0,width:"100%",height:"100%",zIndex:0}}),
 
+    showInstall && e("div",{style:{
+      position:"fixed",
+      bottom:"calc(90px + env(safe-area-inset-bottom,0px))",
+      left:16,right:16,
+      background:"#1b4332",color:"#fff",
+      padding:"12px 16px",borderRadius:12,
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      zIndex:9997,boxShadow:"0 4px 20px rgba(0,0,0,0.3)",
+      fontSize:13,gap:10
+    }},
+      e("div",{style:{display:"flex",alignItems:"center",gap:10,flex:1}},
+        e("span",{style:{fontSize:22}},"📲"),
+        e("div",null,
+          e("div",{style:{fontWeight:700,fontSize:13}},"Install PINMAP"),
+          e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},
+            showInstall==="ios"
+              ? "Tap Share → Add to Home Screen"
+              : "Get the full app experience"
+          )
+        )
+      ),
+      e("div",{style:{display:"flex",gap:6,flexShrink:0}},
+        e("button",{
+          style:{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:6,padding:"5px 10px",fontSize:11,cursor:"pointer"},
+          onClick:function(){
+            localStorage.setItem("pm-install-dismissed","1");
+            setShowInstall(false);
+          }
+        },"Later"),
+        showInstall!=="ios" && e("button",{
+          style:{background:"#fff",color:"#1b4332",border:"none",borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"},
+          onClick:function(){
+            if(installPrompt){
+              installPrompt.prompt();
+              installPrompt.userChoice.then(function(){
+                setShowInstall(false);
+                setInstallPrompt(null);
+              });
+            }
+          }
+        },"Install")
+      )
+    ),
+
     updateReady && e("div",{style:{
       position:"fixed",
       bottom:"calc(100px + env(safe-area-inset-bottom,0px))",
@@ -1827,6 +1892,12 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+// Capture PWA install prompt
+window.addEventListener("beforeinstallprompt",function(e){
+  e.preventDefault();
+  window._installPromptEvent = e;
+});
+
 if("serviceWorker" in navigator){
   window.addEventListener("load",function(){
     navigator.serviceWorker.register("./sw.js").then(function(reg){
