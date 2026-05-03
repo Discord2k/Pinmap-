@@ -864,6 +864,22 @@ function App() {
     return function(){ window.removeEventListener("hashchange", onHashChange); };
   },[pins]);
 
+  // Listen via BroadcastChannel (most reliable cross-browser)
+  useEffect(function(){
+    var bc = null;
+    try {
+      bc = new BroadcastChannel("pinmap-notifications");
+      bc.onmessage = function(event) {
+        console.log("BroadcastChannel received:", JSON.stringify(event.data));
+        if(event.data && event.data.type === "open-pin" && event.data.pinId) {
+          window._pendingPinId = event.data.pinId;
+          window.dispatchEvent(new Event("pinmap-open-pin"));
+        }
+      };
+    } catch(e) { console.log("BroadcastChannel not supported"); }
+    return function(){ if(bc) bc.close(); };
+  },[]);
+
   // Listen for SW postMessage when notification is clicked
   useEffect(function(){
     function onMessage(event) {
