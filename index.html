@@ -861,20 +861,26 @@ function App() {
   // Open pending pin when pins are available
   useEffect(function(){
     if(!splashDone || !pins.length) return;
-    // Check postMessage pending pin
     var pinId = window._pendingPinId;
-    // Also check URL hash as fallback
     if(!pinId && window.location.hash && window.location.hash.includes("pin=")) {
       pinId = window.location.hash.split("pin=")[1].split("&")[0];
     }
-    if(pinId) {
-      var pin = pins.find(function(p){return p.id===pinId;});
-      if(pin){
-        window._pendingPinId = null;
-        window.location.hash = "";
-        setTimeout(function(){focusPin(pin);}, 800);
+    if(!pinId) return;
+    var pin = pins.find(function(p){return p.id===pinId;});
+    if(!pin) return;
+    window._pendingPinId = null;
+    window.location.hash = "";
+    // Retry until map is ready
+    var attempts = 0;
+    var tryFocus = function(){
+      if(mapObj.current && window.L){
+        focusPin(pin);
+      } else if(attempts < 20){
+        attempts++;
+        setTimeout(tryFocus, 300);
       }
-    }
+    };
+    setTimeout(tryFocus, 500);
   },[splashDone, pins]);
 
   // Keep mapLayerRef in sync so marker closures always see current value
