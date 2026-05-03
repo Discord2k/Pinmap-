@@ -849,6 +849,7 @@ function App() {
   useEffect(function(){
     function onHashChange() {
       var hash = window.location.hash;
+      console.log("hashchange fired:", hash);
       if(hash && hash.includes("pin=")) {
         var pinId = hash.split("pin=")[1].split("&")[0];
         if(pinId && pins.length) {
@@ -871,11 +872,11 @@ function App() {
   // Listen for SW postMessage when notification is clicked
   useEffect(function(){
     function onMessage(event) {
+      console.log("SW message received:", JSON.stringify(event.data));
       if(!event.data || event.data.type !== "open-pin") return;
       var pinId = event.data.pinId || (event.data.url && event.data.url.includes("pin=") ? event.data.url.split("pin=")[1] : null);
       if(!pinId) return;
-      console.log("SW message received, pinId:", pinId);
-      // Set as pending and trigger via hash so the effect picks it up
+      console.log("setting pendingPinId:", pinId, "pins loaded:", window._pinsLoaded, "pins count:", window._allPins ? window._allPins.length : 0);
       window._pendingPinId = pinId;
       window.dispatchEvent(new Event("pinmap-open-pin"));
     }
@@ -887,6 +888,7 @@ function App() {
   useEffect(function(){
     function onPinEvent(){
       var pinId = window._pendingPinId;
+      console.log("pinmap-open-pin event fired, pinId:", pinId, "pins:", pins.length);
       if(!pinId || !pins.length) return;
       var pin = pins.find(function(p){return p.id===pinId;});
       if(!pin) return;
