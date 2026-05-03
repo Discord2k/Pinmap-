@@ -844,28 +844,38 @@ function App() {
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
-  // Handle #pin= hash from push notification click
+  // Listen for SW postMessage when notification is clicked
   useEffect(function(){
-    if(!splashDone||!pins.length) return;
-    // Check current hash and also stored hash
-    var hash = window.location.hash || window._pendingPinHash || "";
-    if(hash && hash.includes("pin=")){
-      var pinId = hash.split("pin=")[1].split("&")[0];
+    function onMessage(event) {
+      if(event.data && event.data.type === "open-pin" && event.data.url) {
+        var pinId = event.data.url.split("pin=")[1];
+        if(!pinId) return;
+        // Find pin in loaded pins or wait for them to load
+        window._pendingPinId = pinId;
+      }
+    }
+    navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", onMessage);
+    return function(){ navigator.serviceWorker && navigator.serviceWorker.removeEventListener("message", onMessage); };
+  },[]);
+
+  // Open pending pin when pins are available
+  useEffect(function(){
+    if(!splashDone || !pins.length) return;
+    // Check postMessage pending pin
+    var pinId = window._pendingPinId;
+    // Also check URL hash as fallback
+    if(!pinId && window.location.hash && window.location.hash.includes("pin=")) {
+      pinId = window.location.hash.split("pin=")[1].split("&")[0];
+    }
+    if(pinId) {
       var pin = pins.find(function(p){return p.id===pinId;});
       if(pin){
-        setTimeout(function(){focusPin(pin);},500);
+        window._pendingPinId = null;
         window.location.hash = "";
-        window._pendingPinHash = "";
+        setTimeout(function(){focusPin(pin);}, 800);
       }
     }
   },[splashDone, pins]);
-
-  // Store hash immediately on load before app is ready
-  useEffect(function(){
-    if(window.location.hash && window.location.hash.includes("pin=")){
-      window._pendingPinHash = window.location.hash;
-    }
-  },[]);
 
   // Keep mapLayerRef in sync so marker closures always see current value
   useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
