@@ -1,4 +1,4 @@
-const CACHE = "pinmap-v127";
+const CACHE = "pinmap-v128";
 const ASSETS = [
   "./",
   "./index.html",
@@ -53,16 +53,14 @@ self.addEventListener("fetch", e => {
 });
 
 self.addEventListener("push", function(event) {
-  var data = {};
-  try { data = event.data.json(); } catch(e) { data = {title:"PINMAP", body:event.data ? event.data.text() : "New notification"}; }
-  console.log("push received:", JSON.stringify(data));
-  var notifUrl = data.url || "https://pin-map.com";
+  console.log("push ping received");
+  // Show notification - app will fetch details when clicked
   event.waitUntil(
-    self.registration.showNotification(data.title || "PINMAP", {
-      body: data.body || "",
+    self.registration.showNotification("PINMAP", {
+      body: "You have a new notification - tap to view",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
-      data: { url: notifUrl },
+      data: { checkNotifications: true },
       vibrate: [100, 50, 100],
       tag: "pinmap-notification",
       renotify: true
@@ -72,23 +70,20 @@ self.addEventListener("push", function(event) {
 
 self.addEventListener("notificationclick", function(event) {
   event.notification.close();
-  var url = (event.notification.data && event.notification.data.url) || "https://pin-map.com";
-  var pinId = url.includes("pin=") ? url.split("pin=")[1] : null;
-  console.log("notificationclick pinId:", pinId);
+  console.log("notification clicked");
   event.waitUntil(
     clients.matchAll({type:"window", includeUncontrolled:true}).then(function(clientList) {
-      // Broadcast to all clients via BroadcastChannel
+      // Tell app to check for pending notifications in DB
       try {
         var bc = new BroadcastChannel("pinmap-notifications");
-        bc.postMessage({type:"open-pin", pinId: pinId});
+        bc.postMessage({type:"check-notifications"});
         bc.close();
       } catch(e) {}
-      // Also try postMessage to each client
       for(var i = 0; i < clientList.length; i++) {
-        try { clientList[i].postMessage({type:"open-pin", pinId: pinId}); } catch(e) {}
+        try { clientList[i].postMessage({type:"check-notifications"}); } catch(e) {}
       }
       if(clientList.length > 0) return clientList[0].focus();
-      return clients.openWindow("https://pin-map.com/#pin=" + (pinId||""));
+      return clients.openWindow("https://pin-map.com");
     })
   );
 });
