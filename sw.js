@@ -1,4 +1,4 @@
-const CACHE = "pinmap-v119";
+const CACHE = "pinmap-v123";
 const ASSETS = [
   "./",
   "./index.html",
@@ -73,18 +73,25 @@ self.addEventListener("push", function(event) {
 self.addEventListener("notificationclick", function(event) {
   event.notification.close();
   var url = (event.notification.data && event.notification.data.url) || "https://pin-map.com";
-  console.log("notification clicked, url:", url);
+  var pinId = url.includes("pin=") ? url.split("pin=")[1] : null;
+  var targetUrl = "https://pin-map.com/" + (pinId ? "#pin=" + pinId : "");
+  console.log("notification clicked, targetUrl:", targetUrl);
   event.waitUntil(
     clients.matchAll({type:"window", includeUncontrolled:true}).then(function(clientList) {
-      for (var i = 0; i < clientList.length; i++) {
+      for(var i = 0; i < clientList.length; i++) {
         var client = clientList[i];
-        if (client.url.includes("pin-map.com")) {
-          // Send message to app with the pin URL
-          client.postMessage({type:"open-pin", url:url});
-          return client.focus();
+        if(client.url.includes("pin-map.com")) {
+          // Navigate existing client to new URL with hash then focus
+          return client.navigate(targetUrl).then(function(c) {
+            return c ? c.focus() : clients.openWindow(targetUrl);
+          }).catch(function() {
+            // navigate() may not be supported - try postMessage
+            client.postMessage({type:"open-pin", pinId: pinId});
+            return client.focus();
+          });
         }
       }
-      return clients.openWindow(url);
+      return clients.openWindow(targetUrl);
     })
   );
 });
