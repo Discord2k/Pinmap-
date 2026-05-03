@@ -844,23 +844,62 @@ function App() {
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
+  // Listen for hashchange (when SW navigates existing client)
+  useEffect(function(){
+    function onHashChange() {
+      var hash = window.location.hash;
+      if(hash && hash.includes("pin=")) {
+        var pinId = hash.split("pin=")[1].split("&")[0];
+        if(pinId && pins.length) {
+          var pin = pins.find(function(p){return p.id===pinId;});
+          if(pin){
+            window.location.hash = "";
+            focusPin(pin);
+          } else {
+            window._pendingPinId = pinId;
+          }
+        } else if(pinId) {
+          window._pendingPinId = pinId;
+        }
+      }
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return function(){ window.removeEventListener("hashchange", onHashChange); };
+  },[pins]);
+
   // Listen for SW postMessage when notification is clicked
   useEffect(function(){
     function onMessage(event) {
-      if(event.data && event.data.type === "open-pin" && event.data.url) {
-        var pinId = event.data.url.split("pin=")[1];
-        if(!pinId) return;
-        // Find pin in loaded pins or wait for them to load
-        window._pendingPinId = pinId;
-      }
+      if(!event.data || event.data.type !== "open-pin") return;
+      var pinId = event.data.pinId || (event.data.url && event.data.url.includes("pin=") ? event.data.url.split("pin=")[1] : null);
+      if(!pinId) return;
+      console.log("SW message received, pinId:", pinId);
+      // Set as pending and trigger via hash so the effect picks it up
+      window._pendingPinId = pinId;
+      window.dispatchEvent(new Event("pinmap-open-pin"));
     }
     navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", onMessage);
     return function(){ navigator.serviceWorker && navigator.serviceWorker.removeEventListener("message", onMessage); };
   },[]);
 
+  // Listen for custom event from SW message handler
+  useEffect(function(){
+    function onPinEvent(){
+      var pinId = window._pendingPinId;
+      if(!pinId || !pins.length) return;
+      var pin = pins.find(function(p){return p.id===pinId;});
+      if(!pin) return;
+      window._pendingPinId = null;
+      focusPin(pin);
+    }
+    window.addEventListener("pinmap-open-pin", onPinEvent);
+    return function(){ window.removeEventListener("pinmap-open-pin", onPinEvent); };
+  },[pins]);
+
   // Open pending pin when pins are available
   useEffect(function(){
     if(!splashDone || !pins.length) return;
+    window._allPins = pins;
     var pinId = window._pendingPinId;
     if(!pinId && window.location.hash && window.location.hash.includes("pin=")) {
       pinId = window.location.hash.split("pin=")[1].split("&")[0];
@@ -870,7 +909,6 @@ function App() {
     if(!pin) return;
     window._pendingPinId = null;
     window.location.hash = "";
-    // Retry until map is ready
     var attempts = 0;
     var tryFocus = function(){
       if(mapObj.current && window.L){
@@ -984,6 +1022,8 @@ function App() {
     api.list().then(function(data){
       if(Array.isArray(data)){
         setPins(data);
+        window._allPins = data;
+        window._pinsLoaded = true;
         checkNewComments(data);
       }
     }).catch(function(){flash("Could not load pins");}).finally(function(){setLoading(false);});
