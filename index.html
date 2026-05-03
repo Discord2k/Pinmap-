@@ -1695,11 +1695,11 @@ function App() {
       fontSize:13,gap:10
     }},
       e("div",{style:{display:"flex",alignItems:"center",gap:10,flex:1},
-        onClick:function(){focusPin(notifPin);setNotifPin(null);}
+        onClick:function(){setNotifPin(null);}
       },
         e("span",{style:{fontSize:22}},getPinIcon(notifPin.tags)),
         e("div",null,
-          e("div",{style:{fontWeight:700,fontSize:13}},"New comment on your pin"),
+          e("div",{style:{fontWeight:700,fontSize:13}},"💬 New comment on your pin"),
           e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},notifPin.name+" — tap to view")
         )
       ),
