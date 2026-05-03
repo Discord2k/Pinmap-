@@ -75,6 +75,8 @@ const api = {
   follow:         function(id,owner,tag){ return sb.from("follows").insert({id:id,owner:owner,tag:tag}).select().then(function(r){return r.data;}); },
   unfollow:       function(id,owner)    { return sbWithUser(owner).from("follows").delete().eq("id",id); },
   getUserFollows:   function(owner)        { return sb.from("user_follows").select("*").eq("owner",owner).then(function(r){return r.data||[];}); },
+  getNotifications: function(owner)       { return sb.from("notifications").select("*").eq("owner",owner).eq("seen",false).order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
+  markNotifSeen:    function(id)          { return sb.from("notifications").update({seen:true}).eq("id",id); },
   followUser:      function(id,owner,following){ return sb.from("user_follows").insert({id:id,owner:owner,following:following}).select().then(function(r){return r.data;}); },
   unfollowUser:    function(id,owner)         { return sbWithUser(owner).from("user_follows").delete().eq("id",id); },
   getTrending:    function(){
@@ -871,9 +873,8 @@ function App() {
       bc = new BroadcastChannel("pinmap-notifications");
       bc.onmessage = function(event) {
         console.log("BroadcastChannel received:", JSON.stringify(event.data));
-        if(event.data && event.data.type === "open-pin" && event.data.pinId) {
-          window._pendingPinId = event.data.pinId;
-          window.dispatchEvent(new Event("pinmap-open-pin"));
+        if(event.data && (event.data.type === "check-notifications" || event.data.type === "open-pin")) {
+          window.dispatchEvent(new Event("pinmap-check-notifications"));
         }
       };
     } catch(e) { console.log("BroadcastChannel not supported"); }
@@ -884,36 +885,40 @@ function App() {
   useEffect(function(){
     function onMessage(event) {
       console.log("SW message received:", JSON.stringify(event.data));
-      if(!event.data || event.data.type !== "open-pin") return;
-      var pinId = event.data.pinId || (event.data.url && event.data.url.includes("pin=") ? event.data.url.split("pin=")[1] : null);
-      if(!pinId) return;
-      console.log("setting pendingPinId:", pinId, "pins loaded:", window._pinsLoaded, "pins count:", window._allPins ? window._allPins.length : 0);
-      window._pendingPinId = pinId;
-      window.dispatchEvent(new Event("pinmap-open-pin"));
+      if(event.data && (event.data.type === "check-notifications" || event.data.type === "open-pin")) {
+        window.dispatchEvent(new Event("pinmap-check-notifications"));
+      }
     }
     navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", onMessage);
     return function(){ navigator.serviceWorker && navigator.serviceWorker.removeEventListener("message", onMessage); };
   },[]);
 
-  // Listen for custom event from SW message handler
+  // Check notifications from DB when SW signals
   useEffect(function(){
-    function onPinEvent(){
-      var pinId = window._pendingPinId;
-      console.log("pinmap-open-pin event fired, pinId:", pinId, "pins:", pins.length);
-      if(!pinId || !pins.length) return;
-      var pin = pins.find(function(p){return p.id===pinId;});
-      if(!pin) return;
-      window._pendingPinId = null;
-      openNotifPin(pin);
+    function onCheckNotif(){
+      if(!uname||uname==="guest") return;
+      api.getNotifications(uname).then(function(notifs){
+        if(!notifs||!notifs.length) return;
+        var latest = notifs[0];
+        api.markNotifSeen(latest.id);
+        // Find the pin
+        var pin = pins.find(function(p){return p.id===latest.pin_id;});
+        if(pin){
+          openNotifPin(pin);
+        } else {
+          // Pin not in local list - show banner without focusing
+          setNotifPin({id:latest.pin_id, name:latest.pin_name, tags:[], lat:0, lng:0, _noFocus:true});
+          flash(latest.message);
+        }
+      });
     }
-    window.addEventListener("pinmap-open-pin", onPinEvent);
-    return function(){ window.removeEventListener("pinmap-open-pin", onPinEvent); };
-  },[pins]);
+    window.addEventListener("pinmap-check-notifications", onCheckNotif);
+    return function(){ window.removeEventListener("pinmap-check-notifications", onCheckNotif); };
+  },[uname, pins]);
 
   function openNotifPin(pin) {
-    // Show notification banner AND focus on map
     setNotifPin(pin);
-    focusPin(pin);
+    if(!pin._noFocus) focusPin(pin);
   }
 
   // Open pending pin when pins are available
