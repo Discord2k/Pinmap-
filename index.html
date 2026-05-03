@@ -838,6 +838,7 @@ function App() {
   var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var s45=useState(false); var pushEnabled=s45[0]; var setPushEnabled=s45[1];
+  var s46=useState(null); var notifPin=s46[0]; var setNotifPin=s46[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
@@ -854,7 +855,7 @@ function App() {
           var pin = pins.find(function(p){return p.id===pinId;});
           if(pin){
             window.location.hash = "";
-            focusPin(pin);
+            openNotifPin(pin);
           } else {
             window._pendingPinId = pinId;
           }
@@ -890,11 +891,17 @@ function App() {
       var pin = pins.find(function(p){return p.id===pinId;});
       if(!pin) return;
       window._pendingPinId = null;
-      focusPin(pin);
+      openNotifPin(pin);
     }
     window.addEventListener("pinmap-open-pin", onPinEvent);
     return function(){ window.removeEventListener("pinmap-open-pin", onPinEvent); };
   },[pins]);
+
+  function openNotifPin(pin) {
+    // Show notification banner AND focus on map
+    setNotifPin(pin);
+    focusPin(pin);
+  }
 
   // Open pending pin when pins are available
   useEffect(function(){
@@ -1655,6 +1662,31 @@ function App() {
           }
         },"Install")
       )
+    ),
+
+    notifPin && e("div",{style:{
+      position:"fixed",
+      top:"calc(70px + env(safe-area-inset-top,0px))",
+      left:16,right:16,maxWidth:480,margin:"0 auto",
+      background:"#1b4332",color:"#fff",
+      padding:"12px 16px",borderRadius:12,
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      zIndex:9997,boxShadow:"0 4px 20px rgba(0,0,0,0.3)",
+      fontSize:13,gap:10
+    }},
+      e("div",{style:{display:"flex",alignItems:"center",gap:10,flex:1},
+        onClick:function(){focusPin(notifPin);setNotifPin(null);}
+      },
+        e("span",{style:{fontSize:22}},getPinIcon(notifPin.tags)),
+        e("div",null,
+          e("div",{style:{fontWeight:700,fontSize:13}},"New comment on your pin"),
+          e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},notifPin.name+" — tap to view")
+        )
+      ),
+      e("button",{
+        style:{background:"none",border:"none",color:"rgba(255,255,255,0.6)",fontSize:20,cursor:"pointer",padding:0},
+        onClick:function(){setNotifPin(null);}
+      },"x")
     ),
 
     updateReady && e("div",{style:{
