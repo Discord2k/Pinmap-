@@ -197,10 +197,9 @@ async function subscribeToPush(uname) {
   if(!("PushManager" in window)){throw new Error("Push not supported on this browser");}
   console.log("subscribeToPush called for:", uname);
   var reg = await navigator.serviceWorker.ready;
-  console.log("SW ready:", reg);
   var existing = await reg.pushManager.getSubscription();
   if(existing){
-    console.log("Already subscribed, saving to DB");
+    console.log("Already subscribed");
     await savePushSubscription(existing, uname);
     return;
   }
@@ -218,7 +217,12 @@ async function subscribeToPush(uname) {
 
 async function savePushSubscription(sub, uname) {
   var json = sub.toJSON();
-  // Try insert - if it fails due to conflict just ignore
+  // Check if already exists first
+  var existing = await sb.from("push_subscriptions").select("id").eq("endpoint", json.endpoint).single();
+  if(existing.data) {
+    console.log("Push subscription already exists, skipping");
+    return;
+  }
   var result = await sb.from("push_subscriptions").insert({
     id: uid(),
     owner: uname,
@@ -226,16 +230,7 @@ async function savePushSubscription(sub, uname) {
     p256dh: json.keys.p256dh,
     auth: json.keys.auth
   });
-  if(result.error && result.error.code === "23505") {
-    // Duplicate endpoint - update p256dh and auth instead
-    await sb.from("push_subscriptions").update({
-      owner: uname,
-      p256dh: json.keys.p256dh,
-      auth: json.keys.auth
-    }).eq("endpoint", json.endpoint);
-  }
-  console.log("savePushSubscription done, error:", result.error);
-  return result;
+  console.log("Push subscription saved:", result.error ? result.error.message : "OK");
 }
 
 var BANNED_TAGS = [
@@ -1045,10 +1040,12 @@ function App() {
     if(!user||!uname||uname==="guest") return;
     api.getFollows(uname).then(function(data){setFollows(data||[]);});
     api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
-    // Subscribe to push notifications
-    subscribeToPush(uname).then(function(){
-      if("PushManager" in window) setPushEnabled(true);
-    });
+    // Subscribe to push once - only if not already enabled
+    if(!pushEnabled && "PushManager" in window && Notification.permission==="granted"){
+      subscribeToPush(uname).then(function(){
+        setPushEnabled(true);
+      }).catch(function(){});
+    }
   },[user]);
 
   // Switch base layer when baseLayer state changes
