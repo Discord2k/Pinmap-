@@ -1,4 +1,4 @@
-const CACHE = "pinmap-v117";
+const CACHE = "pinmap-v118";
 const ASSETS = [
   "./",
   "./index.html",
@@ -55,13 +55,17 @@ self.addEventListener("fetch", e => {
 self.addEventListener("push", function(event) {
   var data = {};
   try { data = event.data.json(); } catch(e) { data = {title:"PINMAP", body:event.data ? event.data.text() : "New notification"}; }
+  console.log("push received:", JSON.stringify(data));
+  var notifUrl = data.url || "https://pin-map.com";
   event.waitUntil(
     self.registration.showNotification(data.title || "PINMAP", {
       body: data.body || "",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
-      data: data.url ? {url: data.url} : {},
-      vibrate: [100, 50, 100]
+      data: { url: notifUrl },
+      vibrate: [100, 50, 100],
+      tag: "pinmap-notification",
+      renotify: true
     })
   );
 });
@@ -69,17 +73,18 @@ self.addEventListener("push", function(event) {
 self.addEventListener("notificationclick", function(event) {
   event.notification.close();
   var url = (event.notification.data && event.notification.data.url) || "https://pin-map.com";
+  console.log("notification clicked, url:", url);
   event.waitUntil(
     clients.matchAll({type:"window", includeUncontrolled:true}).then(function(clientList) {
-      // If app is already open, navigate it to the pin URL
       for (var i = 0; i < clientList.length; i++) {
         var client = clientList[i];
-        if (client.url.includes("pin-map.com") && "navigate" in client) {
-          return client.navigate(url).then(function(c){ return c.focus(); });
+        if (client.url.includes("pin-map.com")) {
+          // Send message to app with the pin URL
+          client.postMessage({type:"open-pin", url:url});
+          return client.focus();
         }
       }
-      // Otherwise open a new window
-      if (clients.openWindow) return clients.openWindow(url);
+      return clients.openWindow(url);
     })
   );
 });
