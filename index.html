@@ -1469,7 +1469,7 @@ function App() {
       var tags=form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
       var banned=checkBannedTags(tags);
       if(banned.length>0){flash("Tag not allowed: #"+banned.join(", #"));return;}
-      var pin={id:uid(),owner:uname,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,color:form.color||"#2e7d32",upvotes:[],saved_by:[],saved_from:null};
+      var pin={id:uid(),owner:uname,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,color:form.color||"#2e7d32",upvotes:[],saved_by:[],saved_from:null,expires_at:form.expires_at?new Date(form.expires_at).toISOString():null};
       var photoData = pin.photo;
       var doInsert = function(photoUrl) {
         var pinToSave = Object.assign({}, pin, {photo: photoUrl});
