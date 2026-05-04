@@ -510,7 +510,17 @@ function PinCard(props) {
     e("div",{style:{display:"flex",alignItems:"center",gap:5,marginBottom:1}},
       e("span",{style:{width:8,height:8,borderRadius:"50%",background:pin.color||tagColor(pin.tags&&pin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
       e("span",{style:{fontSize:14,lineHeight:1}},getPinIcon(pin.tags)),
-      e("span",{style:{fontWeight:700,fontSize:13,color:"#2c2416"}},pin.name)
+      e("span",{style:{fontWeight:700,fontSize:13,color:"#2c2416"}},pin.name),
+      pin.expires_at&&e("span",{style:{fontSize:10,marginLeft:5,padding:"1px 5px",borderRadius:4,
+        background:new Date(pin.expires_at)<new Date()?"#ffebee":"#fff8e1",
+        color:new Date(pin.expires_at)<new Date()?"#c62828":"#e65100",
+        border:"1px solid "+(new Date(pin.expires_at)<new Date()?"#ef9a9a":"#ffe082")
+      }},new Date(pin.expires_at)<new Date()?"Expired":(function(){
+        var diff=new Date(pin.expires_at)-new Date();
+        var days=Math.floor(diff/864e5);
+        var hrs=Math.floor((diff%864e5)/36e5);
+        return "⏰ "+(days>0?days+"d ":"")+hrs+"h";
+      })())
     ),
     e("div",{style:{fontSize:11,color:"#9a8a70",marginBottom:2}},
       e("span",{
@@ -2137,9 +2147,9 @@ function App() {
           e("div",{style:{marginBottom:10}},
             e("label",{style:{fontSize:11,color:"#9a8a70",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:1}},"Expiry date (optional)"),
             e("input",{
-              type:"date",
+              type:"datetime-local",
               style:{width:"100%",padding:"8px 10px",border:"1px solid #d0c4a8",borderRadius:8,fontSize:13,background:"#faf6ed",color:"#2c2416",fontFamily:"Courier New,monospace"},
-              min:new Date().toISOString().split("T")[0],
+              min:new Date().toISOString().slice(0,16),
               value:form.expires_at||"",
               onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}
             })
@@ -2278,7 +2288,17 @@ function App() {
       e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:2,paddingRight:20}},
       e("span",{style:{width:12,height:12,borderRadius:"50%",background:selPin.color||tagColor(selPin.tags&&selPin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
       e("span",{style:{fontSize:20,lineHeight:1}},getPinIcon(selPin.tags)),
-      e("span",{style:{fontWeight:700,fontSize:16,color:"#2c2416"}},selPin.name)
+      e("span",{style:{fontWeight:700,fontSize:16,color:"#2c2416"}},selPin.name,
+      selPin.expires_at&&e("span",{style:{fontSize:11,marginLeft:6,padding:"2px 6px",borderRadius:4,
+        background:new Date(selPin.expires_at)<new Date()?"#ffebee":"#fff8e1",
+        color:new Date(selPin.expires_at)<new Date()?"#c62828":"#e65100",
+        border:"1px solid "+(new Date(selPin.expires_at)<new Date()?"#ef9a9a":"#ffe082")
+      }},new Date(selPin.expires_at)<new Date()?"Expired":(function(){
+        var diff=new Date(selPin.expires_at)-new Date();
+        var days=Math.floor(diff/864e5);
+        var hrs=Math.floor((diff%864e5)/36e5);
+        return "⏰ "+(days>0?days+"d ":"")+hrs+"h";
+      })()))
     ),
       e("div",{style:{fontSize:12,color:"#9a8a70",marginBottom:6}},
         e("span",{
