@@ -61,6 +61,9 @@ const api = {
   insert:         function(pin)        { return sb.from("pins").insert(pin).select().then(function(r){return r.data;}); },
   update:         function(id,p,uname) { return sbWithUser(uname).from("pins").update(p).eq("id",id).then(function(r){return r.data;}); },
   upvotePin:      function(id,upvotes)  { return sb.from("pins").update({upvotes:upvotes}).eq("id",id); },
+  savePin:        function(id,savedBy)  { return sb.from("pins").update({saved_by:savedBy}).eq("id",id); },
+  getSavedPins:   function(uname)       { return sb.from("pins").select("*").contains("saved_by",[uname]).then(function(r){return r.data||[];}); },
+  deleteExpired:  function()            { return sb.from("pins").delete().lt("expires_at",new Date().toISOString()).not("expires_at","is",null); },
   remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).eq("privacy","public").then(function(r){return r.data||[];}); },
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
@@ -93,87 +96,31 @@ const api = {
 };
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
-var ONBOARD_KEY = "pm-onboarded-v4";
-var WHATSNEW_KEY = "pm-whatsnew-v7";
+var ONBOARD_KEY = "pm-onboarded-v5";
+var WHATSNEW_KEY = "pm-whatsnew-v8";
 var WHATSNEW = [
+  {emoji:"🔖", title:"Pin saves", body:"Tap 🔖 Save on any public pin to bookmark it. Your saved pins appear in the Saved Pins section of your Profile tab. Tap to jump to them on the map."},
+  {emoji:"⏰", title:"Expiring pins", body:"When adding a pin you can now set an optional expiry date. Expired pins are automatically deleted and hidden from the map — great for events and temporary spots."},
   {emoji:"🔔", title:"Push notifications", body:"Get notified when someone comments on your pin or a followed user posts a new pin — even when the app is closed. Enable in Profile tab."},
   {emoji:"👤", title:"Follow users", body:"Follow other users from their profile. You will be notified when they post new public pins."},
   {emoji:"💬", title:"Threaded comments and upvotes", body:"Reply to comments with ↩ Reply and upvote with 👍. The Mine tab shows comment counts per pin."},
-  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle showing their count. Tap to zoom in."},
-  {emoji:"✨", title:"New splash screen", body:"Fresh branded splash screen with a blurred map background centered on Orlando."},
-  {emoji:"📲", title:"Install PINMAP", body:"Install to your home screen for the best experience. Look for the install banner."}
+  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle showing their count. Tap to zoom in."}
 ];
 var ONBOARD_STEPS = [
-  {
-    title:"Welcome to PINMAP!",
-    body:"A social map for saving and sharing the places that matter to you. Drop pins, add hashtags, and discover locations shared by others. Let's show you around.",
-    pos:"center"
-  },
-  {
-    title:"The Menu Button",
-    body:"Tap the hamburger button to open the full menu. Drag it anywhere on screen — its position is saved. A red badge appears when someone comments on your pins.",
-    pos:"top"
-  },
-  {
-    title:"Dual Search Bar",
-    body:"The search bar has two modes. Tap '# Tags' to search public pins by hashtag — the map auto-switches to show results. Tap '📍 Places' to search any address worldwide and fly there.",
-    pos:"bottom"
-  },
-  {
-    title:"Drop a Pin",
-    body:"Tap anywhere on the map to set a location, then open Add. Give your pin a name, hashtags, a color, and an optional photo. Choose public, private, or shareable.",
-    pos:"center"
-  },
-  {
-    title:"Pin Icons and Clustering",
-    body:"Pins show an emoji based on their hashtag — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot. When zoomed out, nearby pins cluster into a circle — tap to zoom in and separate them.",
-    pos:"center"
-  },
-  {
-    title:"Map Layers",
-    body:"Use the Layers button on the right to switch between Standard, Topographic, Satellite, Hiking Trails, and Nautical chart views.",
-    pos:"center"
-  },
-  {
-    title:"Pin Visibility",
-    body:"The middle right button controls what shows on the map — your pins only, all public pins, or a clean map. Searching a hashtag auto-switches to show all public pins.",
-    pos:"center"
-  },
-  {
-    title:"GPS and Nearby",
-    body:"Tap the GPS button to jump to your location. Use the Nearby tab to discover public pins within a radius of where you are.",
-    pos:"bottom"
-  },
-  {
-    title:"Follow Users and Hashtags",
-    body:"Tap any username to view their public profile and follow them — you'll get a push notification when they post a new pin. Follow hashtags in the Search tab to track your favourite topics.",
-    pos:"center"
-  },
-  {
-    title:"Trending and Smart Search",
-    body:"The Search tab shows the top hashtags from the last 7 days. Your followed tags appear as quick-access chips. Recent pins show in blue so you always see what is active.",
-    pos:"bottom"
-  },
-  {
-    title:"Comments, Replies and Upvotes",
-    body:"Tap any pin to leave a comment. Reply to comments with ↩ Reply. Upvote comments with 👍. The Mine tab shows comment counts and highlights pins with new activity.",
-    pos:"center"
-  },
-  {
-    title:"Push Notifications",
-    body:"Enable push notifications in your Profile tab to get alerts when someone comments on your pin or a user you follow posts something new — even when the app is closed.",
-    pos:"center"
-  },
-  {
-    title:"Mine Tab",
-    body:"Your pins are grouped by hashtag. Tap a tag to drill into its pins, see comment counts, show them on the map, or export as GeoJSON or GPX for use in other apps.",
-    pos:"center"
-  },
-  {
-    title:"You are all set!",
-    body:"Sign in with Google to save everything across your devices. Your pins, comments, follows and notifications are all stored securely. Happy exploring!",
-    pos:"center"
-  }
+  {title:"Welcome to PINMAP!",body:"A social map for saving and sharing the places that matter to you. Drop pins, add hashtags, and discover locations shared by others. Let's show you around.",pos:"center"},
+  {title:"The Menu Button",body:"Tap the hamburger button to open the full menu. Drag it anywhere on screen — its position is saved. A red badge appears when someone comments on your pins.",pos:"top"},
+  {title:"Dual Search Bar",body:"Tap '# Tags' to search public pins by hashtag — the map auto-switches to show results. Tap '📍 Places' to search any address worldwide.",pos:"bottom"},
+  {title:"Drop a Pin",body:"Tap anywhere on the map to set a location, then open Add. Give your pin a name, hashtags, a color, photo, and an optional expiry date for temporary spots.",pos:"center"},
+  {title:"Pin Saves",body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Saved pins appear in the Saved Pins section of your Profile tab — tap to jump straight to them.",pos:"center"},
+  {title:"Expiring Pins",body:"When adding a pin you can set an optional expiry date. The pin shows a countdown badge and is automatically deleted when it expires — perfect for events.",pos:"center"},
+  {title:"Pin Icons and Clustering",body:"Pins show an emoji based on their hashtag — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot. When zoomed out, nearby pins cluster — tap to zoom in.",pos:"center"},
+  {title:"Map Layers",body:"Use the Layers button on the right to switch between Standard, Topographic, Satellite, Hiking Trails, and Nautical chart views.",pos:"center"},
+  {title:"Pin Visibility",body:"The middle right button controls what shows on the map — your pins only, all public pins, or a clean map. Searching a hashtag auto-switches to show all public pins.",pos:"center"},
+  {title:"GPS and Nearby",body:"Tap the GPS button to jump to your location. Use the Nearby tab to discover public pins within a radius of where you are.",pos:"bottom"},
+  {title:"Follow Users and Hashtags",body:"Tap any username to view their public profile and follow them — you'll get a push notification when they post a new pin. Follow hashtags in the Search tab.",pos:"center"},
+  {title:"Comments, Replies and Upvotes",body:"Tap any pin to leave a comment. Reply with ↩ Reply. Upvote comments with 👍. The Mine tab shows comment counts and highlights pins with new activity.",pos:"center"},
+  {title:"Push Notifications",body:"Enable push notifications in your Profile tab to get alerts when someone comments on your pin or a user you follow posts something new.",pos:"center"},
+  {title:"You are all set!",body:"Sign in with Google to save everything across your devices. Your pins, saves, follows and notifications are all stored securely. Happy exploring!",pos:"center"}
 ];
 
 function uid() { return Math.random().toString(36).slice(2,10); }
@@ -599,6 +546,8 @@ function ProfilePanel(props) {
   var pushEnabled=props.pushEnabled||false;
   var setPushEnabled=props.setPushEnabled||function(){};
   var flash=props.flash||function(){};
+  var savedPins=props.savedPins||[];
+  var toggleSavePin=props.toggleSavePin||function(){};
   var own=myPins.filter(function(p){return !p.saved_from;});
   var saved=myPins.filter(function(p){return p.saved_from;});
   var upvotes=own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
@@ -672,6 +621,23 @@ function ProfilePanel(props) {
             }
           }
         }, pushEnabled?"Enabled":"Enable")
+      )
+    ),
+    savedPins.length>0&&e("div",null,
+      e("div",{style:S.secHead},"Saved Pins"),
+      e("div",{style:{display:"flex",flexDirection:"column",gap:6,marginBottom:14}},
+        savedPins.map(function(pin){
+          return e("div",{key:pin.id,style:{background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc",padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+            e("div",{style:{cursor:"pointer",flex:1},onClick:function(){focusPin(pin);}},
+              e("div",{style:{fontSize:13,fontWeight:700,color:"#2c2416"}},"🔖 "+pin.name),
+              e("div",{style:{fontSize:11,color:"#9a8a70"}},"@"+pin.owner+(pin.tags&&pin.tags[0]?" · #"+pin.tags[0]:""))
+            ),
+            e("button",{
+              style:{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid #d0c4a8",background:"none",color:"#9a8a70",cursor:"pointer",fontFamily:"Courier New,monospace"},
+              onClick:function(){toggleSavePin(pin);}
+            },"Remove")
+          );
+        })
       )
     ),
     e("div",{style:S.secHead},"Export your data"),
@@ -844,6 +810,7 @@ function App() {
   var s47=useState(null); var adminStats=s47[0]; var setAdminStats=s47[1];
   var s48=useState(false); var adminLoading=s48[0]; var setAdminLoading=s48[1];
   var s49=useState([]); var activeUsers=s49[0]; var setActiveUsers=s49[1];
+  var s50=useState([]); var savedPins=s50[0]; var setSavedPins=s50[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
@@ -1105,6 +1072,11 @@ function App() {
     if(!user||!uname||uname==="guest") return;
     api.getFollows(uname).then(function(data){setFollows(data||[]);});
     api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
+    api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);});
+    // Clean up expired pins
+    api.deleteExpired().then(function(r){
+      if(r.data&&r.data.length>0) api.list().then(function(d){if(Array.isArray(d))setPins(d);});
+    });
     // Subscribe to push once - only if not already enabled
     if(!pushEnabled && "PushManager" in window && Notification.permission==="granted"){
       subscribeToPush(uname).then(function(){
@@ -1212,7 +1184,10 @@ function App() {
       return;
     }
 
+    var now = new Date();
     var layerPins = pins.filter(function(p){
+      // Hide expired pins from map
+      if(p.expires_at && new Date(p.expires_at) < now && p.owner!==uname) return false;
       if(mapLayer==="mine")   return p.owner===uname;
       if(mapLayer==="public") return p.privacy==="public"||p.owner===uname;
       if(mapLayer==="none")   return false;
@@ -1379,6 +1354,26 @@ function App() {
       });
   }
 
+  function toggleSavePin(pin){
+    requireAuth(function(){
+      var isSaved = pin.saved_by && pin.saved_by.indexOf(uname)>=0;
+      var newSavedBy = isSaved
+        ? (pin.saved_by||[]).filter(function(u){return u!==uname;})
+        : (pin.saved_by||[]).concat([uname]);
+      api.savePin(pin.id, newSavedBy).then(function(){
+        setPins(function(prev){return prev.map(function(p){return p.id===pin.id?Object.assign({},p,{saved_by:newSavedBy}):p;});});
+        setSelPin(function(prev){return prev&&prev.id===pin.id?Object.assign({},prev,{saved_by:newSavedBy}):prev;});
+        if(isSaved){
+          setSavedPins(function(prev){return prev.filter(function(p){return p.id!==pin.id;});});
+          flash("Pin unsaved");
+        } else {
+          setSavedPins(function(prev){return prev.concat([Object.assign({},pin,{saved_by:newSavedBy})]);});
+          flash("Pin saved!");
+        }
+      });
+    });
+  }
+
   function toggleUserFollow(targetUser){
     requireAuth(function(){
       var existing=userFollows.find(function(f){return f.following===targetUser;});
@@ -1465,7 +1460,7 @@ function App() {
         var pinToSave = Object.assign({}, pin, {photo: photoUrl});
         api.insert(pinToSave).then(function(){
           setPins(function(p){return [pinToSave].concat(p);});
-          setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32"});
+          setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32",expires_at:""});
           setPendingLL(null);setTab("mine");flash("Pin saved!");
           // Notify followers if pin is public
           if(pinToSave.privacy==="public") {
@@ -2139,6 +2134,16 @@ function App() {
               )
             )
           ),
+          e("div",{style:{marginBottom:10}},
+            e("label",{style:{fontSize:11,color:"#9a8a70",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:1}},"Expiry date (optional)"),
+            e("input",{
+              type:"date",
+              style:{width:"100%",padding:"8px 10px",border:"1px solid #d0c4a8",borderRadius:8,fontSize:13,background:"#faf6ed",color:"#2c2416",fontFamily:"Courier New,monospace"},
+              min:new Date().toISOString().split("T")[0],
+              value:form.expires_at||"",
+              onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}
+            })
+          ),
           e("div",{style:{display:"flex",gap:10,marginBottom:6}},
             ["public","private","shareable"].map(function(opt){
               return e("label",{key:opt,style:{fontSize:13,cursor:"pointer",color:"#6a5a40"}},
@@ -2240,7 +2245,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,
           userFollows:userFollows,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
-          flash:flash,
+          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
@@ -2301,6 +2306,12 @@ function App() {
         (uname&&selPin.owner!==uname)&&e(React.Fragment,null,
           e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){toggleUpvote(selPin.id);}},
             (selPin.upvotes&&selPin.upvotes.indexOf(uname)>=0?"* ":"o ")+(selPin.upvotes?selPin.upvotes.length:0)),
+          selPin.owner!==uname&&e("button",{
+            style:{fontSize:12,padding:"4px 10px",borderRadius:6,cursor:"pointer",fontFamily:"Courier New,monospace",
+              background:"none",border:"1px solid #d0c4a8",
+              color:selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"#e65100":"#9a8a70"},
+            onClick:function(){toggleSavePin(selPin);}
+          },selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"🔖 Saved":"🔖 Save"),
           e("button",{style:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){saveToCollection(selPin);}},"⭐ Save")
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
