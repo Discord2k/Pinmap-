@@ -93,15 +93,15 @@ const api = {
 };
 
 var COLORS = ["#2e7d32","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
-var ONBOARD_KEY = "pm-onboarded-v3";
-var WHATSNEW_KEY = "pm-whatsnew-v6";
+var ONBOARD_KEY = "pm-onboarded-v4";
+var WHATSNEW_KEY = "pm-whatsnew-v7";
 var WHATSNEW = [
-  {emoji:"👤", title:"Follow users", body:"You can now follow other users. Tap their username on any pin to open their profile and hit Follow. Your followed users appear in your Profile tab."},
-  {emoji:"📲", title:"Install PINMAP", body:"Install PINMAP to your home screen. Look for the install banner when you visit the site."},
-  {emoji:"✨", title:"New splash screen", body:"PINMAP has a fresh new branded splash screen with a blurred map background."},
-  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle. Tap to zoom in and see them individually."},
-  {emoji:"💬", title:"Threaded comments", body:"Reply to comments on pins. Tap '↩ Reply' on any comment to respond."},
-  {emoji:"👍", title:"Comment upvotes", body:"Tap 👍 on any comment to upvote it. Tap again to remove your upvote."}
+  {emoji:"🔔", title:"Push notifications", body:"Get notified when someone comments on your pin or a followed user posts a new pin — even when the app is closed. Enable in Profile tab."},
+  {emoji:"👤", title:"Follow users", body:"Follow other users from their profile. You will be notified when they post new public pins."},
+  {emoji:"💬", title:"Threaded comments and upvotes", body:"Reply to comments with ↩ Reply and upvote with 👍. The Mine tab shows comment counts per pin."},
+  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle showing their count. Tap to zoom in."},
+  {emoji:"✨", title:"New splash screen", body:"Fresh branded splash screen with a blurred map background centered on Orlando."},
+  {emoji:"📲", title:"Install PINMAP", body:"Install to your home screen for the best experience. Look for the install banner."}
 ];
 var ONBOARD_STEPS = [
   {
@@ -111,62 +111,67 @@ var ONBOARD_STEPS = [
   },
   {
     title:"The Menu Button",
-    body:"Tap the hamburger button to open the full menu. Drag it anywhere on screen to reposition it - your position is saved when you return. A red badge appears when someone comments on your pins.",
+    body:"Tap the hamburger button to open the full menu. Drag it anywhere on screen — its position is saved. A red badge appears when someone comments on your pins.",
     pos:"top"
   },
   {
     title:"Dual Search Bar",
-    body:"The search bar at the top has two modes. Tap '# Tags' (green) to search public pins by hashtag. Tap '📍 Places' (blue) to search any address or location worldwide and fly the map there.",
+    body:"The search bar has two modes. Tap '# Tags' to search public pins by hashtag — the map auto-switches to show results. Tap '📍 Places' to search any address worldwide and fly there.",
     pos:"bottom"
   },
   {
     title:"Drop a Pin",
-    body:"Tap anywhere on the map to set a location, then open the menu and go to Add. Give your pin a name, hashtags, a color, and an optional photo. Choose public, private, or shareable.",
+    body:"Tap anywhere on the map to set a location, then open Add. Give your pin a name, hashtags, a color, and an optional photo. Choose public, private, or shareable.",
     pos:"center"
   },
   {
-    title:"Pin Icons and Colors",
-    body:"Pins automatically show an emoji based on their hashtag - a beer mug for #pub, a boot for #hiking, a fish for #fishingspot and more. Pick any color for your pin using the color picker.",
+    title:"Pin Icons and Clustering",
+    body:"Pins show an emoji based on their hashtag — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot. When zoomed out, nearby pins cluster into a circle — tap to zoom in and separate them.",
     pos:"center"
   },
   {
     title:"Map Layers",
-    body:"Use the Layers button on the right side of the map to switch between Standard, Topographic, Satellite, Hiking Trails, and Nautical chart views.",
+    body:"Use the Layers button on the right to switch between Standard, Topographic, Satellite, Hiking Trails, and Nautical chart views.",
     pos:"center"
   },
   {
     title:"Pin Visibility",
-    body:"The middle button on the right controls what pins are shown on the map. Switch between your pins only, all public pins from everyone, or a clean map with no pins at all.",
+    body:"The middle right button controls what shows on the map — your pins only, all public pins, or a clean map. Searching a hashtag auto-switches to show all public pins.",
     pos:"center"
   },
   {
     title:"GPS and Nearby",
-    body:"Tap the GPS button to jump to your current location. Then open the menu and use the Nearby tab to discover public pins within a chosen radius of where you are.",
+    body:"Tap the GPS button to jump to your location. Use the Nearby tab to discover public pins within a radius of where you are.",
     pos:"bottom"
   },
   {
-    title:"Social Features",
-    body:"Tap any username on a pin to view their public profile and all their pins on the map. In the Search tab you can follow hashtags and see what is trending this week.",
+    title:"Follow Users and Hashtags",
+    body:"Tap any username to view their public profile and follow them — you'll get a push notification when they post a new pin. Follow hashtags in the Search tab to track your favourite topics.",
     pos:"center"
   },
   {
-    title:"Smart Search",
-    body:"The Search tab shows trending hashtags from the last 7 days and tags you follow. Tap Follow on any hashtag to track it. Your followed tags appear as quick-access chips.",
+    title:"Trending and Smart Search",
+    body:"The Search tab shows the top hashtags from the last 7 days. Your followed tags appear as quick-access chips. Recent pins show in blue so you always see what is active.",
     pos:"bottom"
   },
   {
-    title:"Comments and Notifications",
-    body:"Tap any pin to see its details and leave a comment. When someone comments on your pin you will see a red badge on the menu button next time you open the app.",
+    title:"Comments, Replies and Upvotes",
+    body:"Tap any pin to leave a comment. Reply to comments with ↩ Reply. Upvote comments with 👍. The Mine tab shows comment counts and highlights pins with new activity.",
+    pos:"center"
+  },
+  {
+    title:"Push Notifications",
+    body:"Enable push notifications in your Profile tab to get alerts when someone comments on your pin or a user you follow posts something new — even when the app is closed.",
     pos:"center"
   },
   {
     title:"Mine Tab",
-    body:"The Mine tab groups your pins by hashtag. Tap a tag to see all its pins, show them on the map, or export them as GeoJSON or GPX files for use in other apps.",
+    body:"Your pins are grouped by hashtag. Tap a tag to drill into its pins, see comment counts, show them on the map, or export as GeoJSON or GPX for use in other apps.",
     pos:"center"
   },
   {
     title:"You are all set!",
-    body:"Sign in with Google to save pins across all your devices. Your pins, comments and followed tags are all stored securely. Happy exploring!",
+    body:"Sign in with Google to save everything across your devices. Your pins, comments, follows and notifications are all stored securely. Happy exploring!",
     pos:"center"
   }
 ];
@@ -836,11 +841,46 @@ function App() {
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var s45=useState(false); var pushEnabled=s45[0]; var setPushEnabled=s45[1];
   var s46=useState(null); var notifPin=s46[0]; var setNotifPin=s46[1];
+  var s47=useState(null); var adminStats=s47[0]; var setAdminStats=s47[1];
+  var s48=useState(false); var adminLoading=s48[0]; var setAdminLoading=s48[1];
+  var s49=useState([]); var activeUsers=s49[0]; var setActiveUsers=s49[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
+
+  // Presence tracking - ping every 60 seconds while app is open
+  useEffect(function(){
+    if(!splashDone || !uname || uname==="guest") return;
+    var presenceId = "presence-"+uname.toLowerCase().replace(/ /g,"-");
+
+    function updatePresence(){
+      var record = {id:presenceId, owner:uname, last_seen:new Date().toISOString()};
+      // Add approximate location if available
+      if(userLL && userLL.lat) {
+        // Round to 2 decimal places (~1km precision)
+        record.lat = Math.round(userLL.lat*100)/100;
+        record.lng = Math.round(userLL.lng*100)/100;
+      }
+      sb.from("presence").upsert(record, {onConflict:"id"});
+    }
+
+    updatePresence();
+    var interval = setInterval(updatePresence, 60000);
+
+    // Remove presence on page unload
+    function onUnload(){
+      sb.from("presence").delete().eq("id",presenceId);
+    }
+    window.addEventListener("beforeunload", onUnload);
+
+    return function(){
+      clearInterval(interval);
+      window.removeEventListener("beforeunload", onUnload);
+      sb.from("presence").delete().eq("id",presenceId);
+    };
+  },[splashDone, uname]);
 
   // Listen for hashchange (when SW navigates existing client)
   useEffect(function(){
@@ -1093,6 +1133,7 @@ function App() {
   useEffect(function(){
     var name = user ? (user.user_metadata&&user.user_metadata.full_name ? user.user_metadata.full_name : (user.email?user.email.split("@")[0]:"")) : "";
     if(pins.length > 0 && name && name !== "guest") checkNewComments(pins, name);
+    if(tab === "admin" && uname === "Seth Gray") loadAdminStats();
     // Load comment counts for all my pins when Mine tab opens
     if(tab==="mine" && pins.length>0 && name && name!=="guest"){
       var myPinIds=pins.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
@@ -1204,6 +1245,69 @@ function App() {
   },[pins,activeFilter,mapLayer,uname,mapZoom]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
+
+  function loadAdminStats() {
+    if(uname !== "Seth Gray") return;
+    setAdminLoading(true);
+    var now = new Date();
+    var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    var weekStart = new Date(now.getTime() - 7*24*60*60*1000).toISOString();
+    var fiveMinAgo = new Date(Date.now()-5*60*1000).toISOString();
+    Promise.all([
+      sb.from("pins").select("id,owner,created_at,tags,lat,lng").order("created_at",{ascending:false}),
+      sb.from("comments").select("id,owner,created_at"),
+      sb.from("push_subscriptions").select("owner"),
+      sb.from("follows").select("owner,tag"),
+      sb.from("user_follows").select("owner,following"),
+      sb.from("notifications").select("id,owner,created_at,seen"),
+      sb.from("presence").select("*").gte("last_seen",fiveMinAgo)
+    ]).then(function(results) {
+      var pins = results[0].data||[];
+      var comments = results[1].data||[];
+      var subs = results[2].data||[];
+      var tagFollows = results[3].data||[];
+      var userFollows = results[4].data||[];
+      var notifs = results[5].data||[];
+      var activeNow = results[6].data||[];
+
+      // Unique users
+      var allOwners = [...new Set(pins.map(function(p){return p.owner;}))];
+      // Pins today
+      var pinsToday = pins.filter(function(p){return p.created_at>=todayStart;}).length;
+      var pinsWeek = pins.filter(function(p){return p.created_at>=weekStart;}).length;
+      // Comments today
+      var commentsToday = comments.filter(function(c){return c.created_at>=todayStart;}).length;
+      // Top users by pin count
+      var userPinCounts = {};
+      pins.forEach(function(p){ userPinCounts[p.owner]=(userPinCounts[p.owner]||0)+1; });
+      var topUsers = Object.keys(userPinCounts).map(function(u){return {user:u,count:userPinCounts[u]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10);
+      // Top tags
+      var tagCounts = {};
+      pins.forEach(function(p){(p.tags||[]).forEach(function(t){tagCounts[t]=(tagCounts[t]||0)+1;});});
+      var topTags = Object.keys(tagCounts).map(function(t){return {tag:t,count:tagCounts[t]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10);
+      // Recent pins with location
+      var recentPins = pins.slice(0,20);
+      // Push enabled users
+      var pushUsers = [...new Set(subs.map(function(s){return s.owner;}))];
+      // Unseen notifications
+      var unseenNotifs = notifs.filter(function(n){return !n.seen;}).length;
+
+      setAdminStats({
+        totalPins: pins.length,
+        totalComments: comments.length,
+        totalUsers: allOwners.length,
+        pinsToday, pinsWeek, commentsToday,
+        topUsers, topTags, recentPins,
+        pushEnabled: pushUsers.length,
+        tagFollows: tagFollows.length,
+        userFollows: userFollows.length,
+        unseenNotifs, pushUsers,
+        activeNow: activeNow,
+        activeCount: activeNow.length
+      });
+      setAdminLoading(false);
+    });
+  }
 
   function focusPin(pin) {
     if(pin.owner!==uname && (mapLayerRef.current==="mine"||mapLayerRef.current==="none")){
@@ -1630,7 +1734,7 @@ function App() {
   // Pad with defaults if not enough recent tags
   var suggestTags = recentTags.slice();
   DEFAULT_TAGS.forEach(function(t){ if(suggestTags.length<8 && !recentTagsSeen[t]){ suggestTags.push(t); } });
-  var TABS=[["search","Search"],["mine","Mine"],["add","Add"],["nearby","Nearby"],["profile","Profile"]];
+  var TABS=[["search","Search"],["mine","Mine"],["add","Add"],["nearby","Nearby"],["profile","Profile"]].concat(uname==="Seth Gray"?[["admin","Admin"]]:[]);
 
   if(!sessionChecked||!splashDone){
     return e(Splash,{loading:!sessionChecked,onGoogle:api.signInGoogle,onGuest:function(){setSplashDone(true);}});
@@ -1700,7 +1804,7 @@ function App() {
         e("span",{style:{fontSize:22}},getPinIcon(notifPin.tags)),
         e("div",null,
           e("div",{style:{fontWeight:700,fontSize:13}},"💬 New comment on your pin"),
-          e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},notifPin.name+" — tap to dismiss")
+          e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},notifPin.name+" — tap to view")
         )
       ),
       e("button",{
@@ -2053,6 +2157,72 @@ function App() {
             ?e("div",{style:S.hint},"No pins within "+nearbyKm+"km.")
             :nearbyRes.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,dist:p.dist,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
           )
+        ),
+
+        tab==="admin" && uname==="Seth Gray" && e("div",null,
+          adminLoading
+            ? e("div",{style:{textAlign:"center",padding:24,color:"#9a8a70"}},"Loading stats...")
+            : adminStats && e("div",null,
+                e("div",{style:{fontSize:13,fontWeight:700,color:"#2e7d32",marginBottom:10,letterSpacing:2,textTransform:"uppercase"}},"Admin Dashboard"),
+
+                e("div",{style:{background:"#2e7d32",borderRadius:10,padding:"12px 14px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+                  e("div",null,
+                    e("div",{style:{fontSize:24,fontWeight:700,color:"#fff"}},"🟢 "+adminStats.activeCount),
+                    e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},adminStats.activeCount===1?"user active now":"users active now (last 5 min)")
+                  ),
+                  e("div",{style:{fontSize:12,color:"rgba(255,255,255,0.8)"}},
+                    adminStats.activeNow.map(function(u){return "@"+u.owner;}).join(", ")
+                  )
+                ),
+
+                e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
+                  [
+                    ["📍","Total Pins",adminStats.totalPins],
+                    ["💬","Total Comments",adminStats.totalComments],
+                    ["👥","Unique Users",adminStats.totalUsers],
+                    ["🔔","Push Enabled",adminStats.pushEnabled],
+                    ["📍","Pins Today",adminStats.pinsToday],
+                    ["📍","Pins This Week",adminStats.pinsWeek],
+                    ["💬","Comments Today",adminStats.commentsToday],
+                    ["❤️","Tag Follows",adminStats.tagFollows],
+                    ["👤","User Follows",adminStats.userFollows],
+                    ["🔔","Unseen Notifs",adminStats.unseenNotifs]
+                  ].map(function(s,i){
+                    return e("div",{key:i,style:{background:"#f0e8d4",borderRadius:8,padding:"10px 12px",border:"1px solid #e0d4bc"}},
+                      e("div",{style:{fontSize:18}},[s[0]," ",s[2]].join("")),
+                      e("div",{style:{fontSize:10,color:"#9a8a70",marginTop:2}},s[1])
+                    );
+                  })
+                ),
+
+                e("div",{style:{fontSize:11,fontWeight:700,color:"#2e7d32",marginBottom:6,textTransform:"uppercase",letterSpacing:1}},"Top Users"),
+                e("div",{style:{marginBottom:12}},
+                  adminStats.topUsers.map(function(u,i){
+                    return e("div",{key:i,style:{display:"flex",justifyContent:"space-between",padding:"5px 8px",background:i%2===0?"#f0e8d4":"#faf6ed",borderRadius:4,fontSize:12}},
+                      e("span",{style:{color:"#2e7d32"}},"@"+u.user),
+                      e("span",{style:{color:"#9a8a70"}},u.count+" pins")
+                    );
+                  })
+                ),
+
+                e("div",{style:{fontSize:11,fontWeight:700,color:"#2e7d32",marginBottom:6,textTransform:"uppercase",letterSpacing:1}},"Top Hashtags"),
+                e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:12}},
+                  adminStats.topTags.map(function(t,i){
+                    return e("div",{key:i,style:{fontSize:11,padding:"2px 8px",borderRadius:10,background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7"}},
+                      "#"+t.tag+" ("+t.count+")"
+                    );
+                  })
+                ),
+
+                e("div",{style:{fontSize:11,fontWeight:700,color:"#2e7d32",marginBottom:6,textTransform:"uppercase",letterSpacing:1}},"Push Subscribed Users"),
+                e("div",{style:{marginBottom:12}},
+                  adminStats.pushUsers.map(function(u,i){
+                    return e("div",{key:i,style:{fontSize:12,padding:"3px 8px",color:"#2c2416"}},"🔔 @"+u);
+                  })
+                ),
+
+                e("button",{style:{width:"100%",padding:10,background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"Courier New,monospace"},onClick:loadAdminStats},"↺ Refresh")
+              )
         ),
 
         tab==="profile" && e("div",null,
