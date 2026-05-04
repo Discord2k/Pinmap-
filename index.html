@@ -1134,6 +1134,12 @@ function App() {
     var name = user ? (user.user_metadata&&user.user_metadata.full_name ? user.user_metadata.full_name : (user.email?user.email.split("@")[0]:"")) : "";
     if(pins.length > 0 && name && name !== "guest") checkNewComments(pins, name);
     if(tab === "admin" && uname === "Seth Gray") loadAdminStats();
+    // Auto-refresh admin stats every 30 seconds while on admin tab
+    var adminInterval = null;
+    if(tab === "admin" && uname === "Seth Gray"){
+      adminInterval = setInterval(function(){ loadAdminStats(); }, 30000);
+    }
+    return function(){ if(adminInterval) clearInterval(adminInterval); };
     // Load comment counts for all my pins when Mine tab opens
     if(tab==="mine" && pins.length>0 && name && name!=="guest"){
       var myPinIds=pins.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
