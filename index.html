@@ -856,14 +856,18 @@ function App() {
     var presenceId = "presence-"+uname.toLowerCase().replace(/ /g,"-");
 
     function updatePresence(){
-      var record = {id:presenceId, owner:uname, last_seen:new Date().toISOString()};
-      // Add approximate location if available
+      var now = new Date().toISOString();
+      var record = {id:presenceId, owner:uname, last_seen:now};
       if(userLL && userLL.lat) {
-        // Round to 2 decimal places (~1km precision)
         record.lat = Math.round(userLL.lat*100)/100;
         record.lng = Math.round(userLL.lng*100)/100;
       }
-      sb.from("presence").upsert(record, {onConflict:"id"});
+      // Delete old entry then insert fresh - most reliable approach
+      sb.from("presence").delete().eq("id",presenceId).then(function(){
+        sb.from("presence").insert(record).then(function(r){
+          if(r.error) console.log("presence insert error:", r.error.message);
+        });
+      });
     }
 
     updatePresence();
