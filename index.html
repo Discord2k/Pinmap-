@@ -1056,7 +1056,12 @@ function App() {
       currentBase.current = [initTile];
       setTimeout(function(){map.invalidateSize();},300);
       map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("Location set - fill details in Add tab");});
-      map.on("zoomend",function(){setMapZoom(map.getZoom());});
+      map.on("zoomend",function(){
+        // Immediately remove all markers to prevent ghost clusters
+        Object.values(markers.current).forEach(function(m){m.remove();});
+        markers.current={};
+        setMapZoom(map.getZoom());
+      });
       mapObj.current=map;
     }
     if(splashDone) tryInit();
