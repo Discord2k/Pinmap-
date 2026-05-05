@@ -79,6 +79,8 @@ const api = {
   unfollow:       function(id,owner)    { return sbWithUser(owner).from("follows").delete().eq("id",id); },
   getUserFollows:   function(owner)        { return sb.from("user_follows").select("*").eq("owner",owner).then(function(r){return r.data||[];}); },
   getNotifications: function(owner)       { return sb.from("notifications").select("*").eq("owner",owner).eq("seen",false).order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
+  getProfile:      function(id)          { return sb.from("profiles").select("*").eq("id",id).single().then(function(r){return r.data||null;}); },
+  upsertProfile:   function(profile)     { return sb.from("profiles").upsert(profile,{onConflict:"id"}); },
   markNotifSeen:    function(id)          { return sb.from("notifications").update({seen:true}).eq("id",id); },
   followUser:      function(id,owner,following){ return sb.from("user_follows").insert({id:id,owner:owner,following:following}).select().then(function(r){return r.data;}); },
   unfollowUser:    function(id,owner)         { return sbWithUser(owner).from("user_follows").delete().eq("id",id); },
@@ -558,6 +560,12 @@ function ProfilePanel(props) {
   var flash=props.flash||function(){};
   var savedPins=props.savedPins||[];
   var toggleSavePin=props.toggleSavePin||function(){};
+  var myProfile=props.myProfile||null;
+  var editingProfile=props.editingProfile||false;
+  var setEditingProfile=props.setEditingProfile||function(){};
+  var profileForm=props.profileForm||{};
+  var setProfileForm=props.setProfileForm||function(){};
+  var saveProfile=props.saveProfile||function(){};
   var own=myPins.filter(function(p){return !p.saved_from;});
   var saved=myPins.filter(function(p){return p.saved_from;});
   var upvotes=own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
@@ -598,6 +606,60 @@ function ProfilePanel(props) {
         })
       )
     ),
+    user && e("div",null,
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"},},
+        e("div",{style:S.secHead},"My Profile"),
+        e("button",{style:{fontSize:11,padding:"3px 10px",borderRadius:6,border:"1px solid #d0c4a8",background:"none",color:"#9a8a70",cursor:"pointer",fontFamily:"Courier New,monospace"},
+          onClick:function(){
+            setProfileForm({
+              bio:(myProfile&&myProfile.bio)||"",
+              location:(myProfile&&myProfile.location)||"",
+              website:(myProfile&&myProfile.website)||"",
+              twitter:(myProfile&&myProfile.twitter)||"",
+              instagram:(myProfile&&myProfile.instagram)||"",
+              youtube:(myProfile&&myProfile.youtube)||"",
+              avatar_url:(myProfile&&myProfile.avatar_url)||""
+            });
+            setEditingProfile(!editingProfile);
+          }
+        }, editingProfile?"Cancel":"Edit")
+      ),
+      editingProfile
+        ? e("div",{style:{marginBottom:14}},
+            [
+              ["bio","Bio","Tell people about yourself...","textarea"],
+              ["location","Location","City, Country","text"],
+              ["website","Website","yoursite.com","text"],
+              ["twitter","Twitter / X","username (no @)","text"],
+              ["instagram","Instagram","username (no @)","text"],
+              ["youtube","YouTube","channel name","text"],
+              ["avatar_url","Avatar URL","https://...","text"]
+            ].map(function(field,i){
+              return e("div",{key:i,style:{marginBottom:8}},
+                e("label",{style:{fontSize:10,color:"#9a8a70",display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:1}},field[1]),
+                field[3]==="textarea"
+                  ? e("textarea",{style:{width:"100%",padding:"7px 10px",border:"1px solid #d0c4a8",borderRadius:6,fontSize:12,background:"#faf6ed",color:"#2c2416",fontFamily:"Courier New,monospace",resize:"vertical",minHeight:60},
+                      placeholder:field[2],value:profileForm[field[0]],
+                      onChange:function(ev){var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,Object.fromEntries([[k,v]]));});}
+                    })
+                  : e("input",{style:{width:"100%",padding:"7px 10px",border:"1px solid #d0c4a8",borderRadius:6,fontSize:12,background:"#faf6ed",color:"#2c2416",fontFamily:"Courier New,monospace"},
+                      placeholder:field[2],value:profileForm[field[0]],
+                      onChange:function(ev){var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,Object.fromEntries([[k,v]]));});}
+                    })
+              );
+            }),
+            e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:saveProfile},"Save Profile")
+          )
+        : myProfile&&e("div",{style:{marginBottom:14,padding:"10px 12px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc"}},
+            myProfile.avatar_url&&e("img",{src:myProfile.avatar_url,style:{width:48,height:48,borderRadius:"50%",objectFit:"cover",marginBottom:8,display:"block"}}),
+            myProfile.bio&&e("div",{style:{fontSize:13,color:"#2c2416",marginBottom:4,lineHeight:1.5}},myProfile.bio),
+            myProfile.location&&e("div",{style:{fontSize:12,color:"#9a8a70"}},"📍 "+myProfile.location),
+            myProfile.website&&e("a",{href:myProfile.website.startsWith("http")?myProfile.website:"https://"+myProfile.website,target:"_blank",style:{fontSize:12,color:"#2e7d32",display:"block",marginTop:3}},"🌐 "+myProfile.website.replace(/https?:\/\//,"")),
+            myProfile.twitter&&e("div",{style:{fontSize:12,color:"#1da1f2",marginTop:3}},"𝕏 @"+myProfile.twitter),
+            myProfile.instagram&&e("div",{style:{fontSize:12,color:"#e1306c",marginTop:3}},"📸 @"+myProfile.instagram),
+            myProfile.youtube&&e("div",{style:{fontSize:12,color:"#ff0000",marginTop:3}},"▶ "+myProfile.youtube)
+          )
+      ),
     user && e("div",null,
       e("div",{style:S.secHead},"Notifications"),
       e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc",marginBottom:14}},
@@ -821,6 +883,10 @@ function App() {
   var s48=useState(false); var adminLoading=s48[0]; var setAdminLoading=s48[1];
   var s49=useState([]); var activeUsers=s49[0]; var setActiveUsers=s49[1];
   var s50=useState([]); var savedPins=s50[0]; var setSavedPins=s50[1];
+  var s51=useState(null); var myProfile=s51[0]; var setMyProfile=s51[1];
+  var s52=useState(null); var viewProfile=s52[0]; var setViewProfile=s52[1];
+  var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
+  var s54=useState({bio:"",location:"",website:"",twitter:"",instagram:"",youtube:"",avatar_url:""}); var profileForm=s54[0]; var setProfileForm=s54[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
 
   var uname = userName(user);
@@ -1088,6 +1154,9 @@ function App() {
     api.getFollows(uname).then(function(data){setFollows(data||[]);});
     api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
     api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);});
+    api.getProfile(uname).then(function(data){
+      if(data) setMyProfile(data);
+    });
     // Clean up expired pins
     api.deleteExpired().then(function(r){
       if(r.data&&r.data.length>0) api.list().then(function(d){if(Array.isArray(d))setPins(d);});
@@ -1367,6 +1436,15 @@ function App() {
           mapObj.current.fitBounds(bounds,{padding:[60,60]});
         }
       });
+  }
+
+  function saveProfile(){
+    var profile = Object.assign({id:uname, updated_at:new Date().toISOString()}, profileForm);
+    api.upsertProfile(profile).then(function(){
+      setMyProfile(profile);
+      setEditingProfile(false);
+      flash("Profile saved!");
+    });
   }
 
   function toggleSavePin(pin){
@@ -2260,7 +2338,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,
           userFollows:userFollows,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
-          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,
+          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,myProfile:myProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
@@ -2360,23 +2438,45 @@ function App() {
 
     viewUser&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}},
       e("div",{style:{background:"#faf6ed",borderRadius:"16px 16px 0 0",width:"100%",maxWidth:480,maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 -8px 40px rgba(0,0,0,0.2)"}},
-        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid #e8dcc4",flexShrink:0}},
-          e("div",null,
-            e("div",{style:{fontWeight:700,fontSize:17,color:"#2c2416"}},"@"+viewUser),
-            e("div",{style:{fontSize:12,color:"#9a8a70"}},userPinsLoading?"Loading...":(userPins.length+" public pins"))
+        e("div",{style:{flexShrink:0}},
+          e("div",{style:{
+            background:"linear-gradient(135deg,#1b4332,#2e7d32)",
+            height:70,borderRadius:"8px 8px 0 0",position:"relative"
+          }}),
+          e("div",{style:{padding:"0 16px 12px",marginTop:-28}},
+            e("div",{style:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:8}},
+              e("div",{style:{width:56,height:56,borderRadius:"50%",border:"3px solid #faf6ed",overflow:"hidden",background:"#e8dcc4",flexShrink:0}},
+                e("img",{
+                  src:(viewProfile&&viewProfile.avatar_url)||"https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=56",
+                  style:{width:"100%",height:"100%",objectFit:"cover"},
+                  onError:function(ev){ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=56";}
+                })
+              ),
+              e("div",{style:{display:"flex",gap:6}},
+                viewUser!==uname && e("button",{
+                  style:{fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Courier New,monospace",fontWeight:700,
+                    background:userFollows.some(function(f){return f.following===viewUser;})?"#2e7d32":"none",
+                    color:userFollows.some(function(f){return f.following===viewUser;})?"#fff":"#2e7d32",
+                    border:"1px solid #2e7d32"},
+                  onClick:function(){toggleUserFollow(viewUser);}
+                }, userFollows.some(function(f){return f.following===viewUser;})?"Following":"Follow"),
+                e("button",{style:{background:"none",border:"none",fontSize:20,color:"#9a8a70",cursor:"pointer"},
+                  onClick:function(){setViewUser(null);setUserPins([]);setViewProfile(null);}
+                },"x")
+              )
+            ),
+            e("div",{style:{fontWeight:700,fontSize:16,color:"#2c2416"}},"@"+viewUser),
+            viewProfile&&viewProfile.location&&e("div",{style:{fontSize:12,color:"#9a8a70",marginTop:2}},"📍 "+viewProfile.location),
+            viewProfile&&viewProfile.bio&&e("div",{style:{fontSize:12,color:"#5a4a38",marginTop:6,lineHeight:1.5}},viewProfile.bio),
+            e("div",{style:{display:"flex",gap:10,marginTop:6,flexWrap:"wrap"}},
+              viewProfile&&viewProfile.website&&e("a",{href:viewProfile.website.startsWith("http")?viewProfile.website:"https://"+viewProfile.website,target:"_blank",style:{fontSize:11,color:"#2e7d32",textDecoration:"none"}},"🌐 "+viewProfile.website.replace(/https?:\/\//,"")),
+              viewProfile&&viewProfile.twitter&&e("a",{href:"https://twitter.com/"+viewProfile.twitter,target:"_blank",style:{fontSize:11,color:"#1da1f2",textDecoration:"none"}},"𝕏 @"+viewProfile.twitter),
+              viewProfile&&viewProfile.instagram&&e("a",{href:"https://instagram.com/"+viewProfile.instagram,target:"_blank",style:{fontSize:11,color:"#e1306c",textDecoration:"none"}},"📸 @"+viewProfile.instagram),
+              viewProfile&&viewProfile.youtube&&e("a",{href:"https://youtube.com/@"+viewProfile.youtube,target:"_blank",style:{fontSize:11,color:"#ff0000",textDecoration:"none"}},"▶ "+viewProfile.youtube)
+            ),
+            e("div",{style:{fontSize:11,color:"#9a8a70",marginTop:6}},userPinsLoading?"Loading...":(userPins.length+" public pins"))
           ),
-          e("div",{style:{display:"flex",alignItems:"center",gap:8}},
-            viewUser!==uname && e("button",{
-              style:{
-                fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Courier New,monospace",fontWeight:700,
-                background:userFollows.some(function(f){return f.following===viewUser;})?"#2e7d32":"none",
-                color:userFollows.some(function(f){return f.following===viewUser;})?"#fff":"#2e7d32",
-                border:"1px solid #2e7d32"
-              },
-              onClick:function(){toggleUserFollow(viewUser);}
-            }, userFollows.some(function(f){return f.following===viewUser;})?"Following":"Follow"),
-            e("button",{style:{background:"none",border:"none",fontSize:22,color:"#9a8a70",cursor:"pointer"},onClick:function(){setViewUser(null);setUserPins([]);}},"x")
-          )
+          e("div",{style:{height:1,background:"#e8dcc4"}})
         ),
         e("div",{style:{overflowY:"auto",flex:1,padding:"12px 14px"}},
           userPinsLoading&&e("div",{style:{textAlign:"center",padding:24,color:"#9a8a70",fontSize:14}},"Loading pins..."),
