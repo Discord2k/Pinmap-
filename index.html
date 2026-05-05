@@ -740,15 +740,23 @@ function ProfilePanel(props) {
             }
           },"Enable")
         ),
-        pushEnabled && e("div",{style:{display:"flex",alignItems:"center",gap:8,marginTop:10,padding:"8px 10px",background:"#e8f5e9",borderRadius:6,border:"1px solid #a5d6a7"}},
-          e("span",{style:{fontSize:18,lineHeight:1}},"✓"),
-          e("div",{style:{flex:1}},
-            e("div",{style:{fontSize:12,fontWeight:700,color:"#2e7d32"}},"Notifications enabled"),
-            e("div",{style:{fontSize:11,color:"#4a7a4a",cursor:"pointer",textDecoration:"underline",lineHeight:1.5},
-              onClick:function(){flash("To disable: tap the 🔒 lock in your browser address bar → Notifications → Block, then reload the app.");}
-            },
-              e("div",null,"Tap here to learn"),
-              e("div",null,"how to disable")
+        pushEnabled && e("div",{style:{marginTop:10}},
+          e("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"#e8f5e9",borderRadius:6,border:"1px solid #a5d6a7",marginBottom:4}},
+            e("span",{style:{fontSize:18,lineHeight:1}},"✓"),
+            e("div",{style:{flex:1}},
+              e("div",{style:{fontSize:12,fontWeight:700,color:"#2e7d32"}},"Notifications enabled"),
+              e("div",{style:{fontSize:11,color:"#4a7a4a",cursor:"pointer",textDecoration:"underline"},
+                onClick:function(){setEditingProfile(function(p){return !p;});}
+              },"How to disable")
+            )
+          ),
+          editingProfile && e("div",{style:{fontSize:11,color:"#5a4a38",background:"#fff8e1",border:"1px solid #ffe082",borderRadius:6,padding:"8px 10px",lineHeight:1.6}},
+            "To disable notifications:",
+            e("div",{style:{marginTop:4}},
+              e("div",null,"1. Tap the 🔒 lock icon in your browser address bar"),
+              e("div",null,"2. Tap Notifications"),
+              e("div",null,"3. Select Block"),
+              e("div",null,"4. Reload the app")
             )
           )
         )
