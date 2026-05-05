@@ -709,12 +709,13 @@ function ProfilePanel(props) {
               }),
               e("div",{style:{fontWeight:700,color:"#2c2416"}},uname)
             ),
-            myProfile.bio&&e("div",{style:{fontSize:13,color:"#2c2416",marginBottom:4,lineHeight:1.5}},myProfile.bio),
-            myProfile.location&&e("div",{style:{fontSize:12,color:"#9a8a70"}},"📍 "+myProfile.location),
-            myProfile.website&&e("a",{href:myProfile.website.startsWith("http")?myProfile.website:"https://"+myProfile.website,target:"_blank",style:{fontSize:12,color:"#2e7d32",display:"block",marginTop:3}},"🌐 "+myProfile.website.replace(/https?:\/\//,"")),
-            myProfile.twitter&&e("div",{style:{fontSize:12,color:"#1da1f2",marginTop:3}},"𝕏 @"+myProfile.twitter),
-            myProfile.instagram&&e("div",{style:{fontSize:12,color:"#e1306c",marginTop:3}},"📸 @"+myProfile.instagram),
-            myProfile.youtube&&e("div",{style:{fontSize:12,color:"#ff0000",marginTop:3}},"▶ "+myProfile.youtube)
+            myProfile&&myProfile.bio&&e("div",{style:{fontSize:13,color:"#2c2416",marginBottom:4,lineHeight:1.5}},myProfile.bio),
+            myProfile&&myProfile.location&&e("div",{style:{fontSize:12,color:"#9a8a70"}},"📍 "+myProfile.location),
+            myProfile&&myProfile.website&&e("a",{href:myProfile.website.startsWith("http")?myProfile.website:"https://"+myProfile.website,target:"_blank",style:{fontSize:12,color:"#2e7d32",display:"block",marginTop:3}},"🌐 "+myProfile.website.replace(/https?:\/\//,"")),
+            myProfile&&myProfile.twitter&&e("div",{style:{fontSize:12,color:"#1da1f2",marginTop:3}},"𝕏 @"+myProfile.twitter),
+            myProfile&&myProfile.instagram&&e("div",{style:{fontSize:12,color:"#e1306c",marginTop:3}},"📸 @"+myProfile.instagram),
+            myProfile&&myProfile.youtube&&e("div",{style:{fontSize:12,color:"#ff0000",marginTop:3}},"▶ "+myProfile.youtube),
+            !myProfile&&e("div",{style:{fontSize:12,color:"#9a8a70",fontStyle:"italic"}},"No profile set up yet — tap Edit to add your bio and socials.")
           )
       ),
     user && e("div",null,
