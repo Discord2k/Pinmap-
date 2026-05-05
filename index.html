@@ -941,6 +941,7 @@ function App() {
   var s48=useState(false); var adminLoading=s48[0]; var setAdminLoading=s48[1];
   var s49=useState([]); var activeUsers=s49[0]; var setActiveUsers=s49[1];
   var s50=useState([]); var savedPins=s50[0]; var setSavedPins=s50[1];
+  var s55=useState(false); var showExpiringOnly=s55[0]; var setShowExpiringOnly=s55[1];
   var s51=useState(null); var myProfile=s51[0]; var setMyProfile=s51[1];
   var s52=useState(null); var viewProfile=s52[0]; var setViewProfile=s52[1];
   var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
@@ -1327,9 +1328,12 @@ function App() {
     }
 
     var now = new Date();
+    var soon = new Date(now.getTime()+7*24*60*60*1000);
     var layerPins = pins.filter(function(p){
       // Hide expired pins from map
       if(p.expires_at && new Date(p.expires_at) < now && p.owner!==uname) return false;
+      // Expiring filter
+      if(showExpiringOnly) return p.expires_at && new Date(p.expires_at)>now && new Date(p.expires_at)<soon && p.privacy==="public";
       if(mapLayer==="mine")   return p.owner===uname;
       if(mapLayer==="public") return p.privacy==="public"||p.owner===uname;
       if(mapLayer==="none")   return false;
@@ -1369,7 +1373,7 @@ function App() {
         }
       }, 200);
     }
-  },[pins,activeFilter,mapLayer,uname,mapZoom]);
+  },[pins,activeFilter,mapLayer,uname,mapZoom,showExpiringOnly]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
@@ -1945,6 +1949,23 @@ function App() {
       )
     ),
 
+    showExpiringOnly && e("div",{style:{
+      position:"fixed",
+      top:"calc(56px + env(safe-area-inset-top,0px))",
+      left:16,right:16,
+      background:"#e65100",color:"#fff",
+      padding:"8px 14px",borderRadius:10,
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      zIndex:9996,boxShadow:"0 2px 12px rgba(0,0,0,0.2)",
+      fontSize:12
+    }},
+      e("span",null,"⏰ Showing expiring pins only"),
+      e("button",{
+        style:{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:4,padding:"2px 8px",cursor:"pointer",fontSize:11},
+        onClick:function(){setShowExpiringOnly(false);}
+      },"✕ Clear")
+    ),
+
     notifPin && e("div",{style:{
       position:"fixed",
       top:"calc(70px + env(safe-area-inset-top,0px))",
@@ -2208,6 +2229,60 @@ function App() {
                   );
                 })
               )
+            ),
+
+            e("div",{
+              style:{fontSize:11,color:"#9a8a70",marginTop:10,marginBottom:6,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+              e("span",null,"⏰ Expiring soon"),
+              e("button",{
+                style:{fontSize:10,padding:"2px 8px",borderRadius:6,cursor:"pointer",fontFamily:"Courier New,monospace",
+                  background:showExpiringOnly?"#e65100":"none",
+                  color:showExpiringOnly?"#fff":"#e65100",
+                  border:"1px solid #e65100"
+                },
+                onClick:function(){
+                  setShowExpiringOnly(function(prev){
+                    var next=!prev;
+                    if(next){
+                      setMapLayer("public");
+                      setActiveFilter(null);
+                      setOpen(false);
+                    } else {
+                      setActiveFilter(null);
+                    }
+                    return next;
+                  });
+                }
+              }, showExpiringOnly?"✕ Clear filter":"Show on map")
+            ),
+            e("div",{style:{display:"flex",flexDirection:"column",gap:4,marginBottom:8}},
+              (function(){
+                var now = new Date();
+                var soon = new Date(now.getTime()+7*24*60*60*1000);
+                var expiringPins = pins.filter(function(p){
+                  return p.expires_at && new Date(p.expires_at)>now && new Date(p.expires_at)<soon && p.privacy==="public";
+                }).sort(function(a,b){return new Date(a.expires_at)-new Date(b.expires_at);}).slice(0,5);
+                if(!expiringPins.length) return [e("div",{key:"none",style:{fontSize:12,color:"#c8b89a",padding:"6px 0"}},"No pins expiring in the next 7 days")];
+                return expiringPins.map(function(p){
+                  var diff=new Date(p.expires_at)-now;
+                  var days=Math.floor(diff/864e5);
+                  var hrs=Math.floor((diff%864e5)/36e5);
+                  var timeStr=days>0?days+"d "+hrs+"h":hrs+"h";
+                  return e("div",{key:p.id,
+                    style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",background:"#fff8e1",borderRadius:8,border:"1px solid #ffe082",cursor:"pointer"},
+                    onClick:function(){focusPin(p);}
+                  },
+                    e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                      e("span",{style:{fontSize:16}},getPinIcon(p.tags)),
+                      e("div",null,
+                        e("div",{style:{fontSize:12,fontWeight:700,color:"#2c2416"}},p.name),
+                        e("div",{style:{fontSize:10,color:"#9a8a70"}},"@"+p.owner+(p.tags&&p.tags[0]?" · #"+p.tags[0]:""))
+                      )
+                    ),
+                    e("div",{style:{fontSize:11,fontWeight:700,color:"#e65100",flexShrink:0}},"⏰ "+timeStr)
+                  );
+                });
+              })()
             ),
 
             e("div",{style:{fontSize:11,color:"#9a8a70",marginTop:10,marginBottom:4}},
