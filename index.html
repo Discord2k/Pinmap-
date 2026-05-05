@@ -2168,7 +2168,8 @@ function App() {
       e("div",{style:{display:"flex",borderBottom:"1px solid #e8dcc4",flexShrink:0,background:"rgba(250,246,236,0.8)"}},
         TABS.map(function(t){
           return e("button",{key:t[0],onClick:function(){setTab(t[0]);},
-            style:{flex:1,padding:"9px 2px",background:"none",border:"none",cursor:"pointer",fontSize:15,color:tab===t[0]?"#2e7d32":"#4a3f35",borderBottom:tab===t[0]?"2px solid #2e7d32":"2px solid transparent",fontFamily:"Courier New,monospace",fontWeight:tab===t[0]?700:500}},
+            style:{flex:1,padding:"8px 2px",background:"none",border:"none",cursor:"pointer",fontSize:11,color:tab===t[0]?"#2e7d32":"#4a3f35",borderBottom:tab===t[0]?"2px solid #2e7d32":"2px solid transparent",fontFamily:"Courier New,monospace",fontWeight:tab===t[0]?700:500,display:"flex",flexDirection:"column",alignItems:"center",gap:2}},
+            e("span",{style:{fontSize:14}},{"search":"🔍","mine":"📍","add":"➕","nearby":"📡","profile":"👤","admin":"⚙️"}[t[0]]||""),
             t[0]==="mine"
               ? e("span",{style:{position:"relative",display:"inline-flex",alignItems:"center",gap:3}},
                   t[1],
