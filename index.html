@@ -310,7 +310,7 @@ var S = {
   btn:{background:"#2e7d32",color:"#fff",border:"none",padding:"7px 12px",fontWeight:700,fontSize:13,cursor:"pointer",borderRadius:4,whiteSpace:"nowrap"},
   miniBtn:{background:"none",border:"1px solid #d0c4a8",color:"#6a5a40",padding:"2px 7px",fontSize:12,cursor:"pointer",borderRadius:10},
   chip:{background:"none",border:"1px solid #c8b89a",color:"#2e7d32",padding:"3px 8px",fontSize:12,cursor:"pointer",borderRadius:12},
-  secHead:{fontSize:11,letterSpacing:1,color:"#9a8a70",textTransform:"uppercase",marginBottom:7,borderBottom:"1px solid #e8dcc4",paddingBottom:4},
+  secHead:{fontSize:12,letterSpacing:1,color:"#7a6a58",textTransform:"uppercase",marginBottom:7,borderBottom:"1px solid #e8dcc4",paddingBottom:4},
   hint:{fontSize:13,color:"#9a8a70",lineHeight:1.65},
   card:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:5,padding:"7px 9px",marginBottom:6,cursor:"pointer",position:"relative"}
 };
@@ -375,7 +375,7 @@ function Onboarding(props) {
       ),
       e("div",{style:{fontSize:18,fontWeight:700,color:"#2c2416",marginBottom:10,textAlign:"center"}},info.title),
       e("div",{style:{fontSize:14,color:"#5a4a30",lineHeight:1.75,textAlign:"center",marginBottom:24}},info.body),
-      e("div",{style:{fontSize:12,color:"#b0a080",textAlign:"center",marginBottom:16}},
+      e("div",{style:{fontSize:14,color:"#b0a080",textAlign:"center",marginBottom:16}},
         (step+1)+" of "+total
       ),
       e("div",{style:{display:"flex",gap:8}},
@@ -458,19 +458,19 @@ function Comments(props) {
         borderLeft:isReply?"3px solid #2e7d32":""
       }},
         isReply&&e("div",{style:{fontSize:10,color:"#2e7d32",marginBottom:2}},"↩ replying to @"+parentOwner),
-        e("div",{style:{fontSize:12,fontWeight:700,color:"#2e7d32",marginBottom:2}},"@"+c.owner),
-        e("div",{style:{fontSize:16,color:"#2c2416",lineHeight:1.5,paddingRight:20}},c.body),
+        e("div",{style:{fontSize:13,fontWeight:700,color:"#2e7d32",marginBottom:2}},"@"+c.owner),
+        e("div",{style:{fontSize:15,color:"#2c2416",lineHeight:1.6,paddingRight:20}},c.body),
         e("div",{style:{display:"flex",alignItems:"center",gap:8,marginTop:5}},
           e("button",{
-            style:{background:"none",border:"none",fontSize:11,color:myUpvote?"#2e7d32":"#9a8a70",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:3},
+            style:{background:"none",border:"none",fontSize:12,color:myUpvote?"#2e7d32":"#9a8a70",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:3},
             onClick:function(){toggleUpvote(c);}
           },"👍 "+((c.upvotes||[]).length||"")),
           !isReply&&uname&&e("button",{
-            style:{background:"none",border:"none",fontSize:11,color:"#9a8a70",cursor:"pointer",padding:0},
+            style:{background:"none",border:"none",fontSize:12,color:"#9a8a70",cursor:"pointer",padding:0},
             onClick:function(){setReplyTo(replyTo&&replyTo.id===c.id?null:c);setDraft("");}
           },"↩ Reply"),
           c.owner===uname&&e("button",{
-            style:{position:"absolute",top:6,right:6,background:"none",border:"none",fontSize:11,color:"#c05050",cursor:"pointer"},
+            style:{position:"absolute",top:6,right:6,background:"none",border:"none",fontSize:12,color:"#c05050",cursor:"pointer"},
             onClick:function(){del(c.id);}
           },"x")
         )
@@ -533,7 +533,7 @@ function PinCard(props) {
       " - "+pin.privacy,
       props.dist!==undefined && e("span",{style:{color:"#2e7d32",marginLeft:4}},props.dist.toFixed(1)+"km")
     ),
-    e("div",{style:{fontSize:12,marginBottom:4}},(pin.tags||[]).map(function(t){return e("span",{key:t,style:{color:tagColor(t),marginRight:3}},"#"+t);})),
+    e("div",{style:{fontSize:13,marginBottom:4}},(pin.tags||[]).map(function(t){return e("span",{key:t,style:{color:tagColor(t),marginRight:3}},"#"+t);})),
     e("div",{style:{display:"flex",gap:4},onClick:function(ev){ev.stopPropagation();}},
       notOwner && e(React.Fragment,null,
         e("button",{
@@ -722,7 +722,7 @@ function ProfilePanel(props) {
       e("div",{style:S.secHead},"Notifications"),
       e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc",marginBottom:14}},
         e("div",null,
-          e("div",{style:{fontSize:16,fontWeight:700,color:"#2c2416"}},"Push notifications"),
+          e("div",{style:{fontSize:17,fontWeight:700,color:"#2c2416"}},"Push notifications"),
           e("div",{style:{fontSize:11,color:"#9a8a70"}},"New comments on your pins")
         ),
         e("button",{
@@ -759,7 +759,7 @@ function ProfilePanel(props) {
         savedPins.map(function(pin){
           return e("div",{key:pin.id,style:{background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc",padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
             e("div",{style:{cursor:"pointer",flex:1},onClick:function(){focusPin(pin);}},
-              e("div",{style:{fontSize:16,fontWeight:700,color:"#2c2416"}},"🔖 "+pin.name),
+              e("div",{style:{fontSize:17,fontWeight:700,color:"#2c2416"}},"🔖 "+pin.name),
               e("div",{style:{fontSize:11,color:"#9a8a70"}},"@"+pin.owner+(pin.tags&&pin.tags[0]?" · #"+pin.tags[0]:""))
             ),
             e("button",{
@@ -2186,7 +2186,7 @@ function App() {
         },
           e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#c62828",flexShrink:0}}),
           e("div",null,
-            e("div",{style:{fontSize:16,fontWeight:700,color:"#2c2416"}},"New comments on your pins"),
+            e("div",{style:{fontSize:17,fontWeight:700,color:"#2c2416"}},"New comments on your pins"),
             e("div",{style:{fontSize:11,color:"#6a5a40"}},"Tap to view your pins")
           )
         ),
@@ -2517,7 +2517,7 @@ function App() {
         return "⏰ "+(days>0?days+"d ":"")+hrs+"h";
       })()))
     ),
-      e("div",{style:{fontSize:15,color:"#9a8a70",marginBottom:6}},
+      e("div",{style:{fontSize:13,color:"#9a8a70",marginBottom:6}},
         e("span",{
           style:{color:"#2e7d32",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"},
           onClick:function(){loadUserProfile(selPin.owner);}
@@ -2532,7 +2532,7 @@ function App() {
         }, userFollows.some(function(f){return f.following===selPin.owner;})?"Following":"+ Follow"),
         selPin.saved_from&&e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)
       ),
-      selPin.description&&e("div",{style:{fontSize:16,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
+      selPin.description&&e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
       e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}},
         (selPin.tags||[]).map(function(t){
           return e("span",{key:t,style:{fontSize:12,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
