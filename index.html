@@ -744,9 +744,12 @@ function ProfilePanel(props) {
           e("span",{style:{fontSize:18,lineHeight:1}},"✓"),
           e("div",{style:{flex:1}},
             e("div",{style:{fontSize:12,fontWeight:700,color:"#2e7d32"}},"Notifications enabled"),
-            e("div",{style:{fontSize:11,color:"#4a7a4a",cursor:"pointer",textDecoration:"underline"},
+            e("div",{style:{fontSize:11,color:"#4a7a4a",cursor:"pointer",textDecoration:"underline",lineHeight:1.5},
               onClick:function(){flash("To disable: tap the 🔒 lock in your browser address bar → Notifications → Block, then reload the app.");}
-            },"How to disable")
+            },
+              e("div",null,"Tap here to learn"),
+              e("div",null,"how to disable")
+            )
           )
         )
       )
