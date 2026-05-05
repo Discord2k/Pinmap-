@@ -725,32 +725,28 @@ function ProfilePanel(props) {
           e("div",{style:{fontSize:17,fontWeight:700,color:"#2c2416"}},"Push notifications"),
           e("div",{style:{fontSize:11,color:"#9a8a70"}},"New comments on your pins")
         ),
-        e("button",{
-          style:{fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Courier New,monospace",fontWeight:700,
-            background:pushEnabled?"#2e7d32":"none",
-            color:pushEnabled?"#fff":"#9a8a70",
-            border:"1px solid "+(pushEnabled?"#2e7d32":"#d0c4a8")
-          },
-          onClick:function(){
-            if(!pushEnabled){
+        e("div",{style:{display:"flex",gap:6}},
+          !pushEnabled && e("button",{
+            style:{fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Courier New,monospace",fontWeight:700,
+              background:"none",color:"#9a8a70",border:"1px solid #d0c4a8"},
+            onClick:function(){
               if(!("Notification" in window)){flash("Notifications not supported on this browser");return;}
-              if(Notification.permission==="denied"){flash("Notifications blocked - check browser settings");return;}
+              if(Notification.permission==="denied"){flash("Notifications blocked — go to browser settings → Site settings → Notifications → Allow");return;}
               flash("Requesting permission...");
-              subscribeToPush(props.uname).then(function(result){
-                if(Notification.permission==="granted"){
-                  setPushEnabled(true);
-                  flash("Notifications enabled!");
-                } else {
-                  flash("Permission not granted");
-                }
-              }).catch(function(e){
-                flash("Error: "+e.message);
-              });
-            } else {
-              flash("Notifications already enabled");
+              subscribeToPush(props.uname).then(function(){
+                if(Notification.permission==="granted"){setPushEnabled(true);flash("Notifications enabled!");}
+                else{flash("Permission not granted");}
+              }).catch(function(e){flash("Error: "+e.message);});
             }
-          }
-        }, pushEnabled?"Enabled":"Enable")
+          },"Enable"),
+          pushEnabled && e("button",{
+            style:{fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Courier New,monospace",fontWeight:700,
+              background:"#2e7d32",color:"#fff",border:"1px solid #2e7d32"},
+            onClick:function(){
+              flash("To disable: tap the lock icon in your browser address bar → Notifications → Block. Then reload the app.");
+            }
+          },"✓ Enabled — tap for help disabling")
+        )
       )
     ),
     savedPins.length>0&&e("div",null,
