@@ -626,32 +626,89 @@ function ProfilePanel(props) {
       ),
       editingProfile
         ? e("div",{style:{marginBottom:14}},
+            e("div",{style:{marginBottom:10,display:"flex",alignItems:"center",gap:12}},
+              e("div",{style:{width:56,height:56,borderRadius:"50%",overflow:"hidden",background:"#e8dcc4",flexShrink:0,border:"2px solid #d0c4a8"}},
+                e("img",{
+                  src:profileForm.avatar_url||userAvatar(user)||"https://ui-avatars.com/api/?name="+encodeURIComponent(uname)+"&background=2e7d32&color=fff&size=56",
+                  style:{width:"100%",height:"100%",objectFit:"cover"}
+                })
+              ),
+              e("div",{style:{flex:1}},
+                e("label",{style:{fontSize:10,color:"#9a8a70",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:1}},"Profile Photo"),
+                e("input",{
+                  type:"file",accept:"image/*",
+                  style:{fontSize:11,color:"#9a8a70",width:"100%"},
+                  onChange:function(ev){
+                    var file=ev.target.files[0];
+                    if(!file) return;
+                    var reader=new FileReader();
+                    reader.onload=function(e2){
+                      var dataUrl=e2.target.result;
+                      // Resize to 256px max before uploading
+                      var img=new Image();
+                      img.onload=function(){
+                        var MAX=256, w=img.width, h=img.height;
+                        if(w>MAX||h>MAX){ if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;} }
+                        var canvas=document.createElement("canvas");
+                        canvas.width=w; canvas.height=h;
+                        canvas.getContext("2d").drawImage(img,0,0,w,h);
+                        canvas.toBlob(function(blob){
+                          var path="avatars/"+uname.replace(/ /g,"-").toLowerCase()+".jpg";
+                          fetch("https://uuxggoydnjvsssbenkkt.supabase.co/storage/v1/object/pin-images/"+path,{
+                            method:"POST",
+                            headers:{
+                              "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eGdnb3lkbmp2c3NzYmVua2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODg4OTgsImV4cCI6MjA5MjY2NDg5OH0.VniG6qm6Z9spdezyw-85k4liEuyC9i3B_T2Pxo-9nK0",
+                              "Content-Type":"image/jpeg",
+                              "x-upsert":"true"
+                            },
+                            body:blob
+                          }).then(function(r){return r.json();}).then(function(){
+                            var url="https://uuxggoydnjvsssbenkkt.supabase.co/storage/v1/object/public/pin-images/"+path+"?t="+Date.now();
+                            setProfileForm(function(f){return Object.assign({},f,{avatar_url:url});});
+                            flash("Photo uploaded ("+(Math.round(blob.size/1024))+"KB)!");
+                          }).catch(function(){flash("Upload failed");});
+                        },"image/jpeg",0.85);
+                      };
+                      img.src=dataUrl;
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }),
+                e("div",{style:{fontSize:10,color:"#c8b89a",marginTop:2}},"Leave empty to use your Google photo")
+              )
+            ),
             [
               ["bio","Bio","Tell people about yourself...","textarea"],
               ["location","Location","City, Country","text"],
               ["website","Website","yoursite.com","text"],
               ["twitter","Twitter / X","username (no @)","text"],
               ["instagram","Instagram","username (no @)","text"],
-              ["youtube","YouTube","channel name","text"],
-              ["avatar_url","Avatar URL","https://...","text"]
+              ["youtube","YouTube","channel name","text"]
             ].map(function(field,i){
               return e("div",{key:i,style:{marginBottom:8}},
                 e("label",{style:{fontSize:10,color:"#9a8a70",display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:1}},field[1]),
                 field[3]==="textarea"
                   ? e("textarea",{style:{width:"100%",padding:"7px 10px",border:"1px solid #d0c4a8",borderRadius:6,fontSize:12,background:"#faf6ed",color:"#2c2416",fontFamily:"Courier New,monospace",resize:"vertical",minHeight:60},
-                      placeholder:field[2],value:profileForm[field[0]],
+                      placeholder:field[2],value:profileForm[field[0]]||"",
                       onChange:function(ev){var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,Object.fromEntries([[k,v]]));});}
                     })
                   : e("input",{style:{width:"100%",padding:"7px 10px",border:"1px solid #d0c4a8",borderRadius:6,fontSize:12,background:"#faf6ed",color:"#2c2416",fontFamily:"Courier New,monospace"},
-                      placeholder:field[2],value:profileForm[field[0]],
+                      placeholder:field[2],value:profileForm[field[0]]||"",
                       onChange:function(ev){var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,Object.fromEntries([[k,v]]));});}
                     })
               );
             }),
             e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:saveProfile},"Save Profile")
           )
-        : myProfile&&e("div",{style:{marginBottom:14,padding:"10px 12px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc"}},
-            myProfile.avatar_url&&e("img",{src:myProfile.avatar_url,style:{width:48,height:48,borderRadius:"50%",objectFit:"cover",marginBottom:8,display:"block"}}),
+        : e("div",{style:{marginBottom:14,padding:"10px 12px",background:"#f0e8d4",borderRadius:8,border:"1px solid #e0d4bc"}},
+            e("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:8}},
+              e("img",{
+                src:(myProfile&&myProfile.avatar_url)||userAvatar(user)||"https://ui-avatars.com/api/?name="+encodeURIComponent(uname)+"&background=2e7d32&color=fff&size=48",
+                style:{width:48,height:48,borderRadius:"50%",objectFit:"cover",flexShrink:0},
+                onError:function(ev){ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(uname)+"&background=2e7d32&color=fff&size=48";}
+              }),
+              e("div",{style:{fontWeight:700,color:"#2c2416"}},uname)
+            ),
             myProfile.bio&&e("div",{style:{fontSize:13,color:"#2c2416",marginBottom:4,lineHeight:1.5}},myProfile.bio),
             myProfile.location&&e("div",{style:{fontSize:12,color:"#9a8a70"}},"📍 "+myProfile.location),
             myProfile.website&&e("a",{href:myProfile.website.startsWith("http")?myProfile.website:"https://"+myProfile.website,target:"_blank",style:{fontSize:12,color:"#2e7d32",display:"block",marginTop:3}},"🌐 "+myProfile.website.replace(/https?:\/\//,"")),
@@ -1439,7 +1496,8 @@ function App() {
   }
 
   function saveProfile(){
-    var profile = Object.assign({id:uname, updated_at:new Date().toISOString()}, profileForm);
+    var googleAv = userAvatar(user)||"";
+    var profile = Object.assign({id:uname, updated_at:new Date().toISOString(), google_avatar:googleAv}, profileForm);
     api.upsertProfile(profile).then(function(){
       setMyProfile(profile);
       setEditingProfile(false);
@@ -2447,7 +2505,7 @@ function App() {
             e("div",{style:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:8}},
               e("div",{style:{width:56,height:56,borderRadius:"50%",border:"3px solid #faf6ed",overflow:"hidden",background:"#e8dcc4",flexShrink:0}},
                 e("img",{
-                  src:(viewProfile&&viewProfile.avatar_url)||"https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=56",
+                  src:(viewProfile&&viewProfile.avatar_url)||(viewProfile&&viewProfile.google_avatar)||"https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=56",
                   style:{width:"100%",height:"100%",objectFit:"cover"},
                   onError:function(ev){ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=56";}
                 })
