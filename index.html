@@ -127,6 +127,55 @@ var ONBOARD_STEPS = [
 
 function uid() { return Math.random().toString(36).slice(2,10); }
 
+// ── Offline Queue (IndexedDB) ─────────────────────────────────────────────────
+var DB_NAME = "pinmap-offline", DB_VER = 1;
+var offlineDB = null;
+
+function openDB() {
+  if(offlineDB) return Promise.resolve(offlineDB);
+  return new Promise(function(res, rej) {
+    var req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if(!db.objectStoreNames.contains("pins"))     db.createObjectStore("pins",     {keyPath:"id"});
+      if(!db.objectStoreNames.contains("comments")) db.createObjectStore("comments", {keyPath:"id"});
+    };
+    req.onsuccess  = function(e) { offlineDB = e.target.result; res(offlineDB); };
+    req.onerror    = function(e) { rej(e); };
+  });
+}
+
+function dbGetAll(store) {
+  return openDB().then(function(db) {
+    return new Promise(function(res, rej) {
+      var tx = db.transaction(store, "readonly");
+      var req = tx.objectStore(store).getAll();
+      req.onsuccess = function() { res(req.result||[]); };
+      req.onerror   = rej;
+    });
+  });
+}
+
+function dbPut(store, item) {
+  return openDB().then(function(db) {
+    return new Promise(function(res, rej) {
+      var tx = db.transaction(store, "readwrite");
+      var req = tx.objectStore(store).put(item);
+      req.onsuccess = res; req.onerror = rej;
+    });
+  });
+}
+
+function dbDelete(store, id) {
+  return openDB().then(function(db) {
+    return new Promise(function(res, rej) {
+      var tx = db.transaction(store, "readwrite");
+      var req = tx.objectStore(store).delete(id);
+      req.onsuccess = res; req.onerror = rej;
+    });
+  });
+}
+
 var VAPID_PUBLIC_KEY = "BPoen_AN-pimyj0ChkbFQybVATvnu1KBdntypfR9YOHbGbLUAe9h6oKixV52HobZyHF3dh5cEVT4Puvci-L1Qj0";
 
 function urlBase64ToUint8Array(base64String) {
@@ -408,19 +457,26 @@ function Comments(props) {
       reply_to:replyTo?replyTo.id:null,
       upvotes:[],
       created_at:new Date().toISOString()};
-    api.addComment(c).then(function(){
-      setComments(function(prev){return prev.concat([c]);});
-      setDraft(""); setReplyTo(null); setSending(false);
-      // Notify pin owner if it's not their own comment
-      if(props.pinOwner && props.pinOwner !== props.uname) {
-        callEdgeFunction("new_comment", {
-          pinOwner: props.pinOwner,
-          commenterName: props.uname,
-          pinName: props.pinName || "a pin",
-          pinId: props.pinId
-        });
-      }
-    }).catch(function(){setSending(false);});
+    if(!navigator.onLine){
+      dbPut("comments", Object.assign({},c,{_offline:true})).then(function(){
+        setComments(function(prev){return prev.concat([Object.assign({},c,{_offline:true})]);});
+        setDraft(""); setReplyTo(null); setSending(false);
+        flash("📡 Comment saved offline — will sync when online");
+      });
+    } else {
+      api.addComment(c).then(function(){
+        setComments(function(prev){return prev.concat([c]);});
+        setDraft(""); setReplyTo(null); setSending(false);
+        if(props.pinOwner && props.pinOwner !== props.uname) {
+          callEdgeFunction("new_comment", {
+            pinOwner: props.pinOwner,
+            commenterName: props.uname,
+            pinName: props.pinName || "a pin",
+            pinId: props.pinId
+          });
+        }
+      }).catch(function(){setSending(false);});
+    }
   }
 
   function del(id){
@@ -513,6 +569,7 @@ function PinCard(props) {
       e("span",{style:{width:8,height:8,borderRadius:"50%",background:pin.color||tagColor(pin.tags&&pin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
       e("span",{style:{fontSize:14,lineHeight:1}},getPinIcon(pin.tags)),
       e("span",{style:{fontWeight:700,fontSize:17,color:"#2c2416"}},pin.name),
+      pin._offline&&e("span",{style:{fontSize:10,marginLeft:5,padding:"1px 5px",borderRadius:4,background:"#e3f2fd",color:"#1565c0",border:"1px solid #90caf9"}},"📡 offline"),
       pin.expires_at&&e("span",{style:{fontSize:10,marginLeft:5,padding:"1px 5px",borderRadius:4,
         background:new Date(pin.expires_at)<new Date()?"#ffebee":"#fff8e1",
         color:new Date(pin.expires_at)<new Date()?"#c62828":"#e65100",
@@ -951,6 +1008,8 @@ function App() {
   var s49=useState([]); var activeUsers=s49[0]; var setActiveUsers=s49[1];
   var s50=useState([]); var savedPins=s50[0]; var setSavedPins=s50[1];
   var s55=useState(false); var showExpiringOnly=s55[0]; var setShowExpiringOnly=s55[1];
+  var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
+  var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
   var s51=useState(null); var myProfile=s51[0]; var setMyProfile=s51[1];
   var s52=useState(null); var viewProfile=s52[0]; var setViewProfile=s52[1];
   var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
@@ -960,6 +1019,59 @@ function App() {
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
+
+  // Online/offline detection
+  useEffect(function(){
+    function goOnline()  { setIsOnline(true);  syncOfflineQueue(); }
+    function goOffline() {
+      setIsOnline(false);
+      // Register background sync
+      if(navigator.serviceWorker&&"SyncManager" in window){
+        navigator.serviceWorker.ready.then(function(reg){
+          reg.sync.register("pinmap-sync").catch(function(){});
+        });
+      }
+    }
+    window.addEventListener("online",  goOnline);
+    window.addEventListener("offline", goOffline);
+    // Listen for SW sync signal
+    function onSWMsg(e) { if(e.data&&e.data.type==="do-sync") syncOfflineQueue(); }
+    navigator.serviceWorker&&navigator.serviceWorker.addEventListener("message", onSWMsg);
+    return function(){
+      window.removeEventListener("online",  goOnline);
+      window.removeEventListener("offline", goOffline);
+      navigator.serviceWorker&&navigator.serviceWorker.removeEventListener("message", onSWMsg);
+    };
+  },[]);
+
+  // Update queue count on load
+  useEffect(function(){
+    Promise.all([dbGetAll("pins"), dbGetAll("comments")]).then(function(r){
+      setQueueCount((r[0]||[]).length + (r[1]||[]).length);
+    });
+  },[]);
+
+  // Sync offline queue to Supabase
+  function syncOfflineQueue(){
+    Promise.all([dbGetAll("pins"), dbGetAll("comments")]).then(function(results){
+      var pendingPins = results[0]||[];
+      var pendingComments = results[1]||[];
+      var total = pendingPins.length + pendingComments.length;
+      if(!total) return;
+      flash("Syncing "+total+" offline item"+(total>1?"s":"")+"...");
+      var pinPromises = pendingPins.map(function(pin){
+        return api.insert(pin).then(function(){ return dbDelete("pins", pin.id); });
+      });
+      var commentPromises = pendingComments.map(function(c){
+        return api.addComment(c).then(function(){ return dbDelete("comments", c.id); });
+      });
+      Promise.all(pinPromises.concat(commentPromises)).then(function(){
+        setQueueCount(0);
+        flash("✅ Synced "+total+" item"+(total>1?"s":"")+" successfully!");
+        api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });
+      }).catch(function(){ flash("Sync failed — will retry when online"); });
+    });
+  }
 
   // Presence tracking - ping every 60 seconds while app is open
   useEffect(function(){
@@ -1623,19 +1735,25 @@ function App() {
       var photoData = pin.photo;
       var doInsert = function(photoUrl) {
         var pinToSave = Object.assign({}, pin, {photo: photoUrl});
-        api.insert(pinToSave).then(function(){
-          setPins(function(p){return [pinToSave].concat(p);});
-          setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32",expires_at:""});
-          setPendingLL(null);setTab("mine");flash("Pin saved!");
-          // Notify followers if pin is public
-          if(pinToSave.privacy==="public") {
-            callEdgeFunction("new_pin", {
-              pinOwner: uname,
-              pinName: pinToSave.name,
-              pinId: pinToSave.id
-            });
-          }
-        }).catch(function(){flash("Save failed");});
+        if(!navigator.onLine){
+          // Save to offline queue
+          dbPut("pins", Object.assign({}, pinToSave, {_offline:true})).then(function(){
+            setPins(function(p){return [Object.assign({},pinToSave,{_offline:true})].concat(p);});
+            setQueueCount(function(c){return c+1;});
+            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32",expires_at:""});
+            setPendingLL(null);setTab("mine");
+            flash("📡 Offline — pin saved locally, will sync when online");
+          });
+        } else {
+          api.insert(pinToSave).then(function(){
+            setPins(function(p){return [pinToSave].concat(p);});
+            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2e7d32",expires_at:""});
+            setPendingLL(null);setTab("mine");flash("Pin saved!");
+            if(pinToSave.privacy==="public") {
+              callEdgeFunction("new_pin", {pinOwner:uname, pinName:pinToSave.name, pinId:pinToSave.id});
+            }
+          }).catch(function(){flash("Save failed");});
+        }
       };
       if(photoData && photoData.startsWith('data:')) {
         flash("Uploading photo...");
@@ -1973,6 +2091,44 @@ function App() {
         style:{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:4,padding:"2px 8px",cursor:"pointer",fontSize:11},
         onClick:function(){setShowExpiringOnly(false);}
       },"✕ Clear")
+    ),
+
+    !isOnline && e("div",{style:{
+      position:"fixed",
+      top:"calc(56px + env(safe-area-inset-top,0px))",
+      left:16,right:16,
+      background:"#c62828",color:"#fff",
+      padding:"8px 14px",borderRadius:10,
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      zIndex:9996,boxShadow:"0 2px 12px rgba(0,0,0,0.3)",
+      fontSize:12,fontFamily:"Courier New,monospace"
+    }},
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e("span",null,"📡"),
+        e("div",null,
+          e("div",{style:{fontWeight:700}},"No connection"),
+          queueCount>0&&e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.8)"}},
+            queueCount+" item"+(queueCount>1?"s":"")+" queued"
+          )
+        )
+      ),
+      e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},"Pins & comments work offline")
+    ),
+
+    isOnline && queueCount>0 && e("div",{style:{
+      position:"fixed",
+      top:"calc(56px + env(safe-area-inset-top,0px))",
+      left:16,right:16,
+      background:"#2e7d32",color:"#fff",
+      padding:"8px 14px",borderRadius:10,
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      zIndex:9996,boxShadow:"0 2px 12px rgba(0,0,0,0.2)",
+      fontSize:12,fontFamily:"Courier New,monospace"
+    }},
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e("span",null,"✅"),
+        e("div",null,"Back online — syncing "+queueCount+" item"+(queueCount>1?"s":"")+"...")
+      )
     ),
 
     notifPin && e("div",{style:{
