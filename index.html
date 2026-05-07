@@ -108,6 +108,31 @@ var WHATSNEW = [
   {emoji:"🔔", title:"Push notifications", body:"Get notified when someone comments on your pin or a followed user posts a new pin — even when the app is closed. Enable in Profile tab."},
   {emoji:"👥", title:"Follow users", body:"Follow other users from their profile. You will be notified when they post new public pins."}
 ];
+
+var ALL_FEATURES = [
+  {emoji:"📍", title:"Drop pins", body:"Tap anywhere on the map to place a pin. Add a name, description, hashtags, colour, photo and optional expiry date."},
+  {emoji:"🎨", title:"Pin colours & icons", body:"Choose from 9 colours for your pin. Icons are automatically assigned based on hashtags — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot and more."},
+  {emoji:"🔒", title:"Pin privacy", body:"Pins can be public (visible to all), private (only you), or shareable (via direct link)."},
+  {emoji:"⏰", title:"Expiring pins", body:"Set a date and time when adding a pin. It counts down and auto-deletes when expired — perfect for events and pop-up spots."},
+  {emoji:"🔖", title:"Pin saves", body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Find saved pins in your Profile tab."},
+  {emoji:"💬", title:"Comments & replies", body:"Tap any pin to leave a comment. Reply to comments with ↩ Reply. Threaded conversations keep discussions organised."},
+  {emoji:"👍", title:"Upvotes", body:"Upvote pins and comments with 👍. Tap again to remove your upvote."},
+  {emoji:"🔍", title:"Dual search", body:"Tap # Tags to search pins by hashtag or 📍 Places to search any address worldwide. Results update the map automatically."},
+  {emoji:"🔥", title:"Trending hashtags", body:"The Search tab shows the most active hashtags from the last 7 days. Follow tags to track your favourite topics."},
+  {emoji:"⏰", title:"Expiring soon", body:"The Search tab shows public pins expiring in the next 7 days. Tap Show on map to filter the map to only those pins."},
+  {emoji:"🗺", title:"Map layers", body:"Switch between Standard, Topographic, Satellite, Hiking Trails and Nautical chart views using the Layers button."},
+  {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle. Tap the cluster to zoom in and separate them."},
+  {emoji:"📡", title:"Nearby pins", body:"The Nearby tab shows public pins within a set radius of your current location."},
+  {emoji:"👤", title:"User profiles", body:"Tap any username to see their public profile — bio, socials, location and all their public pins on the map."},
+  {emoji:"👥", title:"Follow users", body:"Follow users from their profile or any pin. Get push notifications when they post new public pins."},
+  {emoji:"❤️", title:"Follow hashtags", body:"Follow hashtags in the Search tab to stay updated on topics you care about."},
+  {emoji:"🔔", title:"Push notifications", body:"Enable in your Profile tab to receive alerts for new comments and pins from users you follow — even when the app is closed."},
+  {emoji:"📋", title:"Mine tab", body:"View all your pins grouped by hashtag. Drill into each tag to see individual pins, comment counts and new activity badges."},
+  {emoji:"📤", title:"Export data", body:"Export all your pins as GeoJSON or GPX files from the Profile tab — compatible with Google Maps, QGIS and most mapping tools."},
+  {emoji:"👤", title:"Custom profile", body:"Set up your profile with a bio, location, website, social links and a custom photo uploaded from your device."},
+  {emoji:"📡", title:"Offline mode", body:"Drop pins and comments without a connection. They queue locally and sync automatically when you come back online. Visited map tiles are cached too."},
+  {emoji:"🛡", title:"Admin dashboard", body:"Visible only to the app owner. Shows active users, top pins, trending tags, push subscribers and live usage stats."}
+];
 var ONBOARD_STEPS = [
   {title:"Welcome to PINMAP!",body:"A social map for saving and sharing the places that matter to you. Drop pins, add hashtags, and discover locations shared by others. Let's show you around.",pos:"center"},
   {title:"The Menu Button",body:"Tap the hamburger button to open the full menu. Drag it anywhere on screen — its position is saved. A red badge appears when someone comments on your pins.",pos:"top"},
@@ -620,6 +645,7 @@ function ProfilePanel(props) {
   var setOnboardStep=props.setOnboardStep||function(){};
   var setShowWhatsNew=props.setShowWhatsNew||function(){};
   var setOpen=props.setOpen||function(){};
+  var setShowFeatures=props.setShowFeatures||function(){};
   var myProfile=props.myProfile||null;
   var editingProfile=props.editingProfile||false;
   var setEditingProfile=props.setEditingProfile||function(){};
@@ -657,11 +683,10 @@ function ProfilePanel(props) {
           style:{flex:1,padding:"8px 6px",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,
             fontSize:12,cursor:"pointer",fontFamily:"Courier New,monospace",color:"#2c2416"},
           onClick:function(){
-            localStorage.removeItem("pm-whatsnew-v10");
-            setShowWhatsNew(true);
+            setShowFeatures(true);
             setOpen(false);
           }
-        },"✨ What's New")
+        },"📋 Features")
       ),
       e("div",{style:{textAlign:"center"}},
         e("div",{style:{fontSize:10,color:"#c8b89a",fontFamily:"Courier New,monospace",lineHeight:1.7}},
@@ -1044,6 +1069,7 @@ function App() {
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
   var s58=useState(false); var offlineDismissed=s58[0]; var setOfflineDismissed=s58[1];
+  var s59=useState(false); var showFeatures=s59[0]; var setShowFeatures=s59[1];
   var s51=useState(null); var myProfile=s51[0]; var setMyProfile=s51[1];
   var s52=useState(null); var viewProfile=s52[0]; var setViewProfile=s52[1];
   var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
@@ -2696,7 +2722,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,
           userFollows:userFollows,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
-          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,myProfile:myProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
+          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
@@ -2792,6 +2818,32 @@ function App() {
     ),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew}),
+    showFeatures&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
+      e("div",{style:{background:"#faf6ed",border:"1px solid #c8b89a",borderRadius:16,padding:"24px 22px",maxWidth:420,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",maxHeight:"80vh",display:"flex",flexDirection:"column"}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}},
+          e("div",null,
+            e("div",{style:{fontSize:18,fontWeight:700,color:"#2e7d32"}},"All Features"),
+            e("div",{style:{fontSize:12,color:"#9a8a70"}},"Everything PINMAP can do")
+          ),
+          e("button",{style:{background:"none",border:"none",fontSize:22,color:"#9a8a70",cursor:"pointer"},onClick:function(){setShowFeatures(false);}},"×")
+        ),
+        e("div",{style:{overflowY:"auto",flex:1,marginBottom:16}},
+          ALL_FEATURES.map(function(item,i){
+            return e("div",{key:i,style:{display:"flex",gap:12,padding:"10px 0",borderBottom:i<ALL_FEATURES.length-1?"1px solid #e8dcc4":"none"}},
+              e("div",{style:{fontSize:24,flexShrink:0,width:32,textAlign:"center"}},item.emoji),
+              e("div",null,
+                e("div",{style:{fontWeight:700,fontSize:14,color:"#2c2416",marginBottom:2}},item.title),
+                e("div",{style:{fontSize:12,color:"#6a5a40",lineHeight:1.6}},item.body)
+              )
+            );
+          })
+        ),
+        e("button",{
+          style:{width:"100%",padding:"12px",background:"#2e7d32",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
+          onClick:function(){setShowFeatures(false);}
+        },"Got it!")
+      )
+    ),
     !showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard}),
 
     viewUser&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}},
