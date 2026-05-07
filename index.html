@@ -1010,6 +1010,7 @@ function App() {
   var s55=useState(false); var showExpiringOnly=s55[0]; var setShowExpiringOnly=s55[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
+  var s58=useState(false); var offlineDismissed=s58[0]; var setOfflineDismissed=s58[1];
   var s51=useState(null); var myProfile=s51[0]; var setMyProfile=s51[1];
   var s52=useState(null); var viewProfile=s52[0]; var setViewProfile=s52[1];
   var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
@@ -1025,7 +1026,7 @@ function App() {
     function goOnline()  { setIsOnline(true);  syncOfflineQueue(); }
     function goOffline() {
       setIsOnline(false);
-      // Register background sync
+      setOfflineDismissed(false);
       if(navigator.serviceWorker&&"SyncManager" in window){
         navigator.serviceWorker.ready.then(function(reg){
           reg.sync.register("pinmap-sync").catch(function(){});
@@ -2093,7 +2094,7 @@ function App() {
       },"✕ Clear")
     ),
 
-    !isOnline && e("div",{style:{
+    !isOnline && !offlineDismissed && e("div",{style:{
       position:"fixed",
       top:"calc(56px + env(safe-area-inset-top,0px))",
       left:16,right:16,
@@ -2101,18 +2102,25 @@ function App() {
       padding:"8px 14px",borderRadius:10,
       display:"flex",alignItems:"center",justifyContent:"space-between",
       zIndex:9996,boxShadow:"0 2px 12px rgba(0,0,0,0.3)",
-      fontSize:12,fontFamily:"Courier New,monospace"
+      fontSize:12,fontFamily:"Courier New,monospace",gap:10
     }},
-      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
-        e("span",null,"📡"),
+      e("div",{style:{display:"flex",alignItems:"center",gap:8,flex:1}},
+        e("span",{style:{fontSize:18}},"📡"),
         e("div",null,
           e("div",{style:{fontWeight:700}},"No connection"),
-          queueCount>0&&e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.8)"}},
-            queueCount+" item"+(queueCount>1?"s":"")+" queued"
+          e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.8)"}},
+            queueCount>0
+              ? queueCount+" item"+(queueCount>1?"s":"")+" queued — pins & comments still work"
+              : "Pins & comments still work offline"
           )
         )
       ),
-      e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},"Pins & comments work offline")
+      e("button",{
+        style:{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.4)",
+          color:"#fff",borderRadius:6,padding:"4px 10px",fontSize:12,cursor:"pointer",
+          fontFamily:"Courier New,monospace",flexShrink:0},
+        onClick:function(){setOfflineDismissed(true);}
+      },"OK")
     ),
 
     isOnline && queueCount>0 && e("div",{style:{
