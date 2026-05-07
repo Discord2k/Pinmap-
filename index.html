@@ -617,6 +617,9 @@ function ProfilePanel(props) {
   var flash=props.flash||function(){};
   var savedPins=props.savedPins||[];
   var toggleSavePin=props.toggleSavePin||function(){};
+  var setOnboardStep=props.setOnboardStep||function(){};
+  var setShowWhatsNew=props.setShowWhatsNew||function(){};
+  var setOpen=props.setOpen||function(){};
   var myProfile=props.myProfile||null;
   var editingProfile=props.editingProfile||false;
   var setEditingProfile=props.setEditingProfile||function(){};
@@ -638,11 +641,34 @@ function ProfilePanel(props) {
       !user && e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google"),
       user && e("button",{style:{marginTop:4,padding:"6px 14px",background:"none",border:"1px solid #d0c4a8",borderRadius:6,fontSize:12,color:"#9a8a70",cursor:"pointer",width:"100%"},onClick:props.onSignOut},"Sign out")
     ),
-    e("div",{style:{marginTop:16,paddingTop:12,borderTop:"1px solid #e8dcc4",textAlign:"center"}},
-      e("div",{style:{fontSize:10,color:"#c8b89a",fontFamily:"Courier New,monospace",lineHeight:1.7}},
-        e("div",null,"PINMAP · v169"),
-        e("div",null,"Built May 07, 2026"),
-        e("div",{style:{marginTop:4,fontSize:9,color:"#d4c8b0"}},"© 2026 Seth Gray · All rights reserved")
+    e("div",{style:{marginTop:16,paddingTop:12,borderTop:"1px solid #e8dcc4"}},
+      e("div",{style:{fontSize:11,fontWeight:700,color:"#9a8a70",textTransform:"uppercase",letterSpacing:1,marginBottom:8}},"Help & Reference"),
+      e("div",{style:{display:"flex",gap:8,marginBottom:12}},
+        e("button",{
+          style:{flex:1,padding:"8px 6px",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,
+            fontSize:12,cursor:"pointer",fontFamily:"Courier New,monospace",color:"#2c2416"},
+          onClick:function(){
+            localStorage.removeItem("pm-onboarded-v5");
+            setOnboardStep(0);
+            setOpen(false);
+          }
+        },"📖 Tutorial"),
+        e("button",{
+          style:{flex:1,padding:"8px 6px",background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,
+            fontSize:12,cursor:"pointer",fontFamily:"Courier New,monospace",color:"#2c2416"},
+          onClick:function(){
+            localStorage.removeItem("pm-whatsnew-v10");
+            setShowWhatsNew(true);
+            setOpen(false);
+          }
+        },"✨ What's New")
+      ),
+      e("div",{style:{textAlign:"center"}},
+        e("div",{style:{fontSize:10,color:"#c8b89a",fontFamily:"Courier New,monospace",lineHeight:1.7}},
+          e("div",null,"PINMAP · v172"),
+          e("div",null,"Built May 06, 2026"),
+          e("div",{style:{marginTop:4,fontSize:9,color:"#d4c8b0"}},"© 2026 Seth Gray · All rights reserved")
+        )
       )
     ),
     e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
@@ -2670,7 +2696,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,
           userFollows:userFollows,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
-          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,myProfile:myProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
+          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,myProfile:myProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
