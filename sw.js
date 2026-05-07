@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v169";
+var CACHE_NAME = "pinmap-v171";
 var TILE_CACHE = "pinmap-tiles-v1";
 var MAX_TILES = 1000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
