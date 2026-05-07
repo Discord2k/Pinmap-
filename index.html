@@ -638,6 +638,13 @@ function ProfilePanel(props) {
       !user && e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google"),
       user && e("button",{style:{marginTop:4,padding:"6px 14px",background:"none",border:"1px solid #d0c4a8",borderRadius:6,fontSize:12,color:"#9a8a70",cursor:"pointer",width:"100%"},onClick:props.onSignOut},"Sign out")
     ),
+    e("div",{style:{marginTop:16,paddingTop:12,borderTop:"1px solid #e8dcc4",textAlign:"center"}},
+      e("div",{style:{fontSize:10,color:"#c8b89a",fontFamily:"Courier New,monospace",lineHeight:1.7}},
+        e("div",null,"PINMAP · v169"),
+        e("div",null,"Built May 07, 2026"),
+        e("div",{style:{marginTop:4,fontSize:9,color:"#d4c8b0"}},"© 2026 Seth Gray · All rights reserved")
+      )
+    ),
     e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
       stats.map(function(s){
         return e("div",{key:s[2],style:{background:"#f0e8d4",border:"1px solid #d0c4a8",borderRadius:8,padding:"10px 8px",textAlign:"center"}},
@@ -1021,24 +1028,41 @@ function App() {
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
-  // Online/offline detection
+  // Online/offline detection with debounce to prevent flickering
   useEffect(function(){
-    function goOnline()  { setIsOnline(true);  syncOfflineQueue(); }
-    function goOffline() {
-      setIsOnline(false);
-      setOfflineDismissed(false);
-      if(navigator.serviceWorker&&"SyncManager" in window){
-        navigator.serviceWorker.ready.then(function(reg){
-          reg.sync.register("pinmap-sync").catch(function(){});
-        });
-      }
+    var offlineTimer = null;
+    var onlineTimer = null;
+
+    function goOnline() {
+      clearTimeout(offlineTimer);
+      // Debounce online detection by 1 second
+      onlineTimer = setTimeout(function(){
+        setIsOnline(true);
+        syncOfflineQueue();
+      }, 1000);
     }
+
+    function goOffline() {
+      clearTimeout(onlineTimer);
+      // Debounce offline detection by 2 seconds to avoid false triggers
+      offlineTimer = setTimeout(function(){
+        setIsOnline(false);
+        setOfflineDismissed(false);
+        if(navigator.serviceWorker&&"SyncManager" in window){
+          navigator.serviceWorker.ready.then(function(reg){
+            reg.sync.register("pinmap-sync").catch(function(){});
+          });
+        }
+      }, 2000);
+    }
+
     window.addEventListener("online",  goOnline);
     window.addEventListener("offline", goOffline);
-    // Listen for SW sync signal
     function onSWMsg(e) { if(e.data&&e.data.type==="do-sync") syncOfflineQueue(); }
     navigator.serviceWorker&&navigator.serviceWorker.addEventListener("message", onSWMsg);
     return function(){
+      clearTimeout(offlineTimer);
+      clearTimeout(onlineTimer);
       window.removeEventListener("online",  goOnline);
       window.removeEventListener("offline", goOffline);
       navigator.serviceWorker&&navigator.serviceWorker.removeEventListener("message", onSWMsg);
