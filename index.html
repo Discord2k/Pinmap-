@@ -2473,7 +2473,7 @@ function App() {
                 background:active?T.forest:"transparent",cursor:"pointer",textAlign:"left",width:"100%"}
             },
               e("span",{style:{fontSize:16,width:24,textAlign:"center"}},layer.icon),
-              e("span",{style:{fontSize:13,fontWeight:active?600:400,color:active?T.paper:T.ink}},layer.name)
+              e("span",{style:{fontSize:13,fontWeight:active?600:400,color:active?T.paper:T.ink}},layer.label||layer.name)
             );
           })
         )
@@ -2505,18 +2505,33 @@ function App() {
       )
     ),
 
-    // Bottom-right: Drop pin FAB
-    !open && e("div",{style:{position:"absolute",bottom:"calc(72px + env(safe-area-inset-bottom,0px))",right:14,zIndex:999}},
-      e("button",{
-        onClick:function(){setTab("add");setOpen(true);},
-        style:{display:"flex",alignItems:"center",gap:8,padding:"12px 18px",borderRadius:14,
-          background:T.forest,color:T.paper,border:"none",cursor:"pointer",
-          boxShadow:"0 4px 18px rgba(42,93,60,0.35)",fontFamily:T.font,fontWeight:600,fontSize:14}
-      },
-        e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},
-          e("path",{d:"M12 4v16M4 12h16",stroke:T.paper,strokeWidth:2.5,strokeLinecap:"round"})
+    // Bottom-right: touch to place hint
+    !open && !pendingLL && e("div",{style:{position:"absolute",bottom:"calc(72px + env(safe-area-inset-bottom,0px))",right:14,zIndex:999}},
+      e("div",{style:{
+        background:"rgba(246,241,228,0.92)",backdropFilter:"blur(8px)",
+        border:"1px solid "+T.border,borderRadius:10,
+        padding:"7px 12px",display:"flex",alignItems:"center",gap:6,
+        boxShadow:T.shadow
+      }},
+        e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none"},
+          e("path",{d:"M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",fill:T.forest,opacity:0.8}),
+          e("circle",{cx:12,cy:9,r:2.5,fill:T.paper})
         ),
-        "Drop pin"
+        e("span",{style:{fontSize:11,color:T.ink2,fontFamily:T.mono,letterSpacing:"0.06em",whiteSpace:"nowrap"}},"Touch map to place pin")
+      )
+    ),
+    !open && pendingLL && e("div",{style:{position:"absolute",bottom:"calc(72px + env(safe-area-inset-bottom,0px))",right:14,zIndex:999}},
+      e("div",{style:{
+        background:T.forest,
+        border:"none",borderRadius:10,
+        padding:"7px 12px",display:"flex",alignItems:"center",gap:6,
+        boxShadow:"0 4px 14px rgba(42,93,60,0.3)",cursor:"pointer"
+      },onClick:function(){setTab("add");setOpen(true);}},
+        e("svg",{width:14,height:14,viewBox:"0 0 28 36"},
+          e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:T.paper}),
+          e("circle",{cx:14,cy:14,r:5,fill:T.forest})
+        ),
+        e("span",{style:{fontSize:11,color:T.paper,fontFamily:T.mono,letterSpacing:"0.06em",whiteSpace:"nowrap",fontWeight:600}},"Pin placed — tap to fill details")
       )
     ),
 
@@ -2720,6 +2735,18 @@ function App() {
 
               )
         )
+      ),
+
+      tab==="mine" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",background:T.paper}},
+        e(MineTab,{
+          myPins:myPins, myTags:myTags, uname:uname,
+          activeFilter:activeFilter, setActiveFilter:setActiveFilter,
+          mapObj:mapObj, setSelPin:setSelPin, setOpen:setOpen,
+          unreadPinIds:unreadPinIds, commentCounts:commentCounts,
+          deletePin:deletePin, toggleUpvote:toggleUpvote,
+          saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
+          markCommentsSeen:markCommentsSeen
+        })
       ),
 
       tab==="add" && e("div",null,
