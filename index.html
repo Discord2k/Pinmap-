@@ -727,7 +727,6 @@ function ProfilePanel(props) {
   var setShowWhatsNew=props.setShowWhatsNew||function(){};
   var setOpen=props.setOpen||function(){};
   var setShowFeatures=props.setShowFeatures||function(){};
-  var setMyProfile=props.setMyProfile||function(){};
   var myProfile=props.myProfile||null;
   var editingProfile=props.editingProfile||false;
   var setEditingProfile=props.setEditingProfile||function(){};
@@ -1013,7 +1012,7 @@ function MineTab(props) {
       e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",color:T.ink3,textTransform:"uppercase",fontWeight:600,fontFamily:T.mono,marginBottom:8}},
         "Vol. II · Your Field Log"
       ),
-      e("div",{style:{fontSize:38,fontWeight:700,letterSpacing:"-0.02em",color:T.ink,lineHeight:1,marginBottom:10}},"My Pins"),
+      e("div",{style:{fontSize:38,fontWeight:700,letterSpacing:"-0.02em",color:T.ink,lineHeight:1,marginBottom:10}},"Field Log"),
       myPins.length>0 && e("div",{style:{fontSize:14,color:T.ink3}},
         myPins.length+" entr"+(myPins.length===1?"y":"ies")+" · "+totalUpvotes+" upvote"+(totalUpvotes===1?"":"s")+" received"
       )
@@ -1041,7 +1040,7 @@ function MineTab(props) {
           myTags.map(function(tag){
             var tp=myPins.filter(function(p){return (p.tags||[]).indexOf(tag)>=0;});
             var tagHasUnread=tp.some(function(p){return unreadPinIds.indexOf(p.id)>=0;});
-            var isOpen=expanded[tag]===true; // default collapsed
+            var isOpen=expanded[tag]!==false; // default open
             var tagComments=tp.reduce(function(s,p){return s+(commentCounts[p.id]||0);},0);
 
             return e("div",{key:tag,style:{borderBottom:"1px solid "+T.borderSoft}},
@@ -1203,7 +1202,6 @@ function App() {
   var s50=useState([]); var savedPins=s50[0]; var setSavedPins=s50[1];
   var s55=useState(false); var showExpiringOnly=s55[0]; var setShowExpiringOnly=s55[1];
   var s60=useState(null); var mapCenter=s60[0]; var setMapCenter=s60[1];
-  var s62=useState(false); var showFirstPin=s62[0]; var setShowFirstPin=s62[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
   var s58=useState(false); var offlineDismissed=s58[0]; var setOfflineDismissed=s58[1];
@@ -1977,12 +1975,7 @@ function App() {
           });
         } else {
           api.insert(pinToSave).then(function(){
-            setPins(function(p){
-              // Check if this is first pin before adding
-              var isFirst=p.filter(function(x){return x.owner===uname&&!x.saved_from;}).length===0;
-              if(isFirst) setTimeout(function(){setShowFirstPin(true);},600);
-              return [pinToSave].concat(p);
-            });
+            setPins(function(p){return [pinToSave].concat(p);});
             setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:""});
             setPendingLL(null);setTab("mine");flash("Pin saved!");
             if(pinToSave.privacy==="public") {
@@ -2519,20 +2512,9 @@ function App() {
           navigator.geolocation.getCurrentPosition(
             function(pos){
               var lat=pos.coords.latitude, lng=pos.coords.longitude;
-              if(mapObj.current){
-                mapObj.current.setView([lat,lng],15);
-                // Remove old dot
-                if(window._userDotMarker){ window._userDotMarker.remove(); }
-                // Add pulsing blue dot
-                var dotIcon=window.L.divIcon({
-                  className:"",
-                  html:'<div style="width:16px;height:16px;border-radius:50%;background:#2979ff;border:3px solid #fff;box-shadow:0 0 0 4px rgba(41,121,255,0.25);animation:pmpulse 2s infinite"></div>',
-                  iconSize:[16,16],iconAnchor:[8,8]
-                });
-                window._userDotMarker=window.L.marker([lat,lng],{icon:dotIcon,zIndexOffset:1000}).addTo(mapObj.current);
-              }
+              if(mapObj.current) mapObj.current.setView([lat,lng],15);
               setUserLL({lat:lat,lng:lng});
-              flash("Your location");
+              flash("📍 Location found");
             },
             function(err){flash("Location unavailable — check permissions");},
             {enableHighAccuracy:true,timeout:8000}
@@ -2975,7 +2957,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,
           userFollows:userFollows,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
-          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
+          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
@@ -3066,28 +3048,6 @@ function App() {
     ),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew}),
-
-    showFirstPin&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
-      e("div",{style:{background:T.paper,border:"none",borderRadius:20,padding:"28px 24px",maxWidth:360,width:"100%",boxShadow:T.shadowLg,animation:"scaleIn 0.25s cubic-bezier(0.34,1.2,0.64,1) both",textAlign:"center"}},
-        e("div",{style:{fontSize:48,marginBottom:12}},"🎉"),
-        e("div",{style:{fontSize:22,fontWeight:700,color:T.ink,marginBottom:8,letterSpacing:"-0.01em"}},"Your first pin!"),
-        e("div",{style:{fontSize:15,color:T.ink2,lineHeight:1.6,marginBottom:20}},
-          "Congratulations on dropping your first pin on PINMAP! ",
-          e("strong",null,uname),
-          " is now on the map. Keep exploring and sharing the places that matter to you."
-        ),
-        e("div",{style:{display:"flex",flexDirection:"column",gap:8}},
-          e("button",{
-            style:Object.assign({},S.btn,{width:"100%"}),
-            onClick:function(){setShowFirstPin(false);setTab("mine");setOpen(true);}
-          },"View in My Pins"),
-          e("button",{
-            style:{width:"100%",padding:"11px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:14,color:T.ink2,cursor:"pointer"},
-            onClick:function(){setShowFirstPin(false);}
-          },"Keep Exploring")
-        )
-      )
-    ),
     showFeatures&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",border:"none",boxShadow:"0 -4px 40px rgba(0,0,0,0.12)",borderRadius:16,padding:"24px 22px",maxWidth:420,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",maxHeight:"80vh",display:"flex",flexDirection:"column"}},
         e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}},
