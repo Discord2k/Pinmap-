@@ -34,10 +34,9 @@
       --forestPale: #dde6dc;
       --border:     #d8cfb8;
       --borderSoft: #e6dfca;
-      
-      /* THE OFFSET FIX */
-      --nav-height: 70px;
-      --universal-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 12px));
+      /* UNIVERSAL PADDING FIX */
+      --nav-height: 75px;
+      --universal-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 15px));
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body {
@@ -55,12 +54,136 @@
     .pm-pin { background:none!important; border:none!important; }
     #map { height:100%!important; width:100%!important; position:absolute!important; top:0!important; left:0!important; }
 
-    /* FORCED POSITIONING VIA CSS */
+    /* FORCED POSITIONING VIA CSS TO OVERRIDE JS */
     .pm-detail { 
       position: absolute !important;
       bottom: var(--universal-bottom) !important; 
       left: 16px !important; 
       right: 16px !important;
-      top: 40% !important; /* Locks height to ensure scrollability */
-      padding-bottom: 110px !important; /* Extra space to clear the nav bar */
-      z-index: 10
+      top: 42% !important; /* Fixed height to ensure content is scrollable */
+      padding-bottom: 120px !important; /* Significant buffer to clear nav bar */
+      z-index: 1001 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow-y: auto !important;
+    }
+
+    .pm-toast { 
+      bottom: calc(var(--universal-bottom) + 16px) !important; 
+      z-index: 1002 !important;
+    }
+
+    .bubble {
+      bottom: var(--universal-bottom) !important;
+      z-index: 1000 !important;
+    }
+
+    input,textarea,button,select { font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif; letter-spacing:-0.005em; -webkit-font-smoothing:antialiased; }
+    .mono { font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace; font-feature-settings:"tnum"; }
+    input:focus,textarea:focus { outline:none; border-color:var(--forest)!important; box-shadow:0 0 0 3px rgba(42,93,60,0.10); }
+    button:active { transform:scale(0.97); }
+    @keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+    .pm-slideup { animation:slideUp 0.3s cubic-bezier(0.34,1.1,0.64,1) both; }
+    #err { display:none; position:fixed; top:0; left:0; right:0; background:#fff3cd; border-bottom:2px solid #ffc107; padding:12px 16px; font-size:12px; z-index:99999; white-space:pre-wrap; word-break:break-all; max-height:40vh; overflow-y:auto; }
+  </style>
+</head>
+<body>
+  <div id="err"></div>
+  <div id="root"></div>
+
+  <script>
+    function showErr(msg){var el=document.getElementById("err");el.style.display="block";el.textContent+=msg+"\n---\n";}
+    window.onerror=function(msg,src,line){showErr("JS ERROR: "+msg+"\nAt: "+src+":"+line);return false;};
+    window.addEventListener("unhandledrejection",function(ev){showErr("PROMISE: "+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason)));});
+    
+    const e = React.createElement;
+    const { useState, useEffect, useRef } = React;
+
+    const SB_URL = "https://uuxggoydnjvsssbenkkt.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eGdnb3lkbmp2c3NzYmVua2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODg4OTgsImV4cCI6MjA5MjY2NDg5OH0.VniG6qm6Z9spdezyw-85k4liEuyC9i3B_T2Pxo-9nK0";
+    const sb = supabase.createClient(SB_URL, SB_KEY);
+
+    /* (Re-inserting all logic from original source provided in image_f25731.png) */
+    function sbWithUser(uname) {
+      return supabase.createClient(SB_URL, SB_KEY, {
+        global: { headers: { "x-pinmap-user": uname || "" } }
+      });
+    }
+
+    const api = {
+      list: function(){ return sb.from("pins").select("*").order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
+      insert: function(pin){ return sb.from("pins").insert(pin).select().then(function(r){return r.data;}); },
+      update: function(id,p,uname){ return sbWithUser(uname).from("pins").update(p).eq("id",id).then(function(r){return r.data;}); },
+      upvotePin: function(id,upvotes){ return sb.from("pins").update({upvotes:upvotes}).eq("id",id); },
+      savePin: function(id,savedBy){ return sb.from("pins").update({saved_by:savedBy}).eq("id",id); },
+      getComments: function(pinId){ return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
+      addComment: function(c){ return sb.from("comments").insert(c).select().then(function(r){return r.data;}); },
+      signInGoogle: function(){ return sb.auth.signInWithOAuth({provider:"google"}); },
+      signOut: function(){ return sb.auth.signOut(); },
+      getSession: function(){ return sb.auth.getSession(); },
+      onAuthChange: function(cb){ return sb.auth.onAuthStateChange(cb); },
+      getTrending: function(){
+        var since=new Date(Date.now()-7*24*60*60*1000).toISOString();
+        return sb.from("pins").select("tags").eq("privacy","public").gte("created_at",since).then(function(r){
+          var counts={}; (r.data||[]).forEach(function(p){(p.tags||[]).forEach(function(t){counts[t]=(counts[t]||0)+1;});});
+          var result=[]; Object.keys(counts).forEach(function(k){result.push({tag:k,count:counts[k]});});
+          result.sort(function(a,b){return b.count-a.count;}); return result.slice(0,10);
+        });
+      }
+    };
+
+    function uid() { return Math.random().toString(36).slice(2,10); }
+    function tagColor(tag) { var h=0; for(var i=0;i<tag.length;i++) h=(h*31+tag.charCodeAt(i))>>>0; return ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"][h%8]; }
+    function getPinIcon(tags) {
+      var t=(tags||[]).join(" ").toLowerCase();
+      if(/pub|bar/.test(t)) return "🍺"; if(/hike|trail/.test(t)) return "🥾"; if(/fish/.test(t)) return "🎣"; return "📍";
+    }
+
+    /* Comments Component */
+    function Comments(props) {
+      var pinId=props.pinId, uname=props.uname;
+      const [comments, setComments] = useState([]);
+      const [draft, setDraft] = useState("");
+
+      useEffect(function(){ api.getComments(pinId).then(setComments); },[pinId]);
+
+      function submit(){
+        if(!draft.trim()) return;
+        var c={id:uid(),pin_id:pinId,owner:uname||"guest",body:draft.trim(),created_at:new Date().toISOString()};
+        api.addComment(c).then(function(){ setComments(prev => [...prev, c]); setDraft(""); });
+      }
+
+      return e("div", {style:{marginTop:12, borderTop:"1px solid #ddd", paddingTop:8}},
+        e("div", {style:{fontSize:12, fontWeight:700, marginBottom:8}}, "Comments ("+comments.length+")"),
+        comments.map(c => e("div", {key:c.id, style:{fontSize:13, marginBottom:4}}, 
+          e("b", {style:{color:"#2a5d3c"}}, "@"+c.owner+": "), c.body)),
+        e("div", {style:{display:"flex", gap:4, marginTop:8}},
+          e("input", {style:{flex:1, padding:6, fontSize:12}, value:draft, onChange: ev => setDraft(ev.target.value), placeholder:"Add comment..."}),
+          e("button", {onClick:submit, style:{padding:6, fontSize:12}}, "Post")
+        )
+      );
+    }
+
+    function App() {
+      const mapDiv=useRef(null);
+      const mapObj=useRef(null);
+      const [user, setUser] = useState(null);
+      const [pins, setPins] = useState([]);
+      const [selPin, setSelPin] = useState(null);
+      const [tab, setTab] = useState("map");
+      const [open, setOpen] = useState(false);
+
+      var uname = user ? (user.user_metadata?.full_name || user.email.split("@")[0]) : "guest";
+
+      useEffect(function(){
+        api.getSession().then(res => { if(res.data?.session?.user) setUser(res.data.session.user); });
+        api.onAuthChange((ev, ses) => setUser(ses?.user || null));
+        api.list().then(setPins);
+      },[]);
+
+      useEffect(function(){
+        if(!mapDiv.current || mapObj.current) return;
+        var map = window.L.map(mapDiv.current, {zoomControl:false}).setView([29.0824, -80.9355], 13);
+        window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+        mapObj.current = map;
+      },[]);
