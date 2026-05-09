@@ -192,7 +192,7 @@ var ONBOARD_STEPS = [
   {title:"Welcome to PINMAP!",body:"A social map for saving and sharing the places that matter to you. Drop pins, add hashtags, and discover locations shared by others. Let's show you around.",pos:"center"},
   {title:"The Bottom Tab Bar",body:"Use the tab bar at the bottom to navigate — Map, Search, Drop, Mine, Profile. The Mine tab shows a dot when you have new comments. Tap Map to return to the map at any time.",pos:"top"},
   {title:"Dual Search Bar",body:"Tap '# Tags' to search public pins by hashtag — the map auto-switches to show results. Tap '📍 Places' to search any address worldwide.",pos:"bottom"},
-  {title:"Drop a Pin",body:"Touch anywhere on the map to place your pin — a green indicator appears. Then tap 'Pin placed' or open the Drop tab to name it, add hashtags, a colour, photo, and optional expiry date.",pos:"center"},
+  {title:"Drop a Pin",body:"Touch anywhere on the map to place your pin — the Drop panel opens automatically. Give it a name, hashtags, colour, photo, and an optional expiry date for temporary spots. Hit Save to post it.",pos:"center"},
   {title:"Pin Saves",body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Saved pins appear in the Saved Pins section of your Profile tab — tap to jump straight to them.",pos:"center"},
   {title:"Expiring Pins",body:"When adding a pin you can set an optional expiry date. The pin shows a countdown badge and is automatically deleted when it expires — perfect for events.",pos:"center"},
   {title:"Pin Icons and Clustering",body:"Pins show an emoji based on their hashtag — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot. When zoomed out, nearby pins cluster — tap to zoom in.",pos:"center"},
@@ -1203,7 +1203,9 @@ function App() {
   var s50=useState([]); var savedPins=s50[0]; var setSavedPins=s50[1];
   var s55=useState(false); var showExpiringOnly=s55[0]; var setShowExpiringOnly=s55[1];
   var s60=useState(null); var mapCenter=s60[0]; var setMapCenter=s60[1];
+  var s63=useState(""); var quickSearch=s63[0]; var setQuickSearch=s63[1];
   var s62=useState(false); var showFirstPin=s62[0]; var setShowFirstPin=s62[1];
+  var s63=useState(""); var quickSearch=s63[0]; var setQuickSearch=s63[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
   var s58=useState(false); var offlineDismissed=s58[0]; var setOfflineDismissed=s58[1];
@@ -1530,7 +1532,7 @@ function App() {
       currentBase.current = [initTile];
       setTimeout(function(){map.invalidateSize();},300);
       map.on("moveend",function(){var c=map.getCenter();setMapCenter({lat:c.lat,lng:c.lng});});
-      map.on("click",function(ev){setPendingLL(ev.latlng);if(!open){setTab("add");setOpen(true);}flash("📍 Location set");});
+      map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("📍 Location set — fill details in Drop tab");});
       map.on("zoomend",function(){
         // Immediately remove all markers to prevent ghost clusters
         Object.values(markers.current).forEach(function(m){m.remove();});
@@ -1631,7 +1633,7 @@ function App() {
     var map=mapObj.current;
     var zoom=map.getZoom();
 
-    if(zoom<=10){
+    if(zoom<=12){
       var clPins=pins.filter(function(p){
         if(mapLayerRef.current==="mine") return p.owner===uname;
         if(mapLayerRef.current==="public") return p.privacy==="public"||p.owner===uname;
@@ -1647,7 +1649,7 @@ function App() {
         for(var cj=ci+1;cj<clPins.length;cj++){
           if(used[cj]) continue;
           var pt2=map.latLngToContainerPoint([clPins[cj].lat,clPins[cj].lng]);
-          if(Math.sqrt(Math.pow(pt1.x-pt2.x,2)+Math.pow(pt1.y-pt2.y,2))<80){grp.push(clPins[cj]);used[cj]=true;}
+          if(Math.sqrt(Math.pow(pt1.x-pt2.x,2)+Math.pow(pt1.y-pt2.y,2))<40){grp.push(clPins[cj]);used[cj]=true;}
         }
         clusters.push(grp);
       }
@@ -1668,7 +1670,7 @@ function App() {
           var cIcon=window.L.divIcon({className:"",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+clrColor+';border:3px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:'+(grp.length>9?12:14)+'px;font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+grp.length+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
           var cm=window.L.marker([clat,clng],{icon:cIcon});
           var grpCopy=grp.slice();
-          cm.on("click",function(){map.fitBounds(window.L.latLngBounds(grpCopy.map(function(p){return[p.lat,p.lng];})),{padding:[60,60],maxZoom:11});});
+          cm.on("click",function(){map.fitBounds(window.L.latLngBounds(grpCopy.map(function(p){return[p.lat,p.lng];})),{padding:[60,60],maxZoom:14});});
           cm.addTo(map); markers.current["cl_"+ci]=cm;
         }
       });
@@ -2431,17 +2433,64 @@ function App() {
       )
     ),
 
-    e("div",{style:{position:"absolute",top:"calc(16px + env(safe-area-inset-top,0px))",left:16,right:16,zIndex:999,display:"flex",alignItems:"center",gap:8}},
-      // Floating search bar
-      e("div",{style:{flex:1,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",border:"1px solid "+T.border,borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",boxShadow:T.shadow},
-        onClick:function(){setTab("search");setOpen(true);}
-      },
-        e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},
+    e("div",{style:{position:"absolute",top:"calc(12px + env(safe-area-inset-top,0px))",left:14,right:14,zIndex:999}},
+      // Quick search input
+      e("div",{style:{display:"flex",alignItems:"center",background:"rgba(246,241,228,0.97)",backdropFilter:"blur(16px)",border:"1px solid "+T.border,borderRadius:12,boxShadow:T.shadow,overflow:"hidden"}},
+        e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none",style:{marginLeft:14,flexShrink:0}},
           e("circle",{cx:"11",cy:"11",r:"8",stroke:T.ink3,strokeWidth:2}),
           e("path",{d:"M21 21l-4.35-4.35",stroke:T.ink3,strokeWidth:2,strokeLinecap:"round"})
         ),
-        e("span",{style:{fontSize:15,color:T.ink3,flex:1}},"Search tags or places…"),
-        !open && unreadCount>0 && e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#b85c2a",flexShrink:0}})
+        e("input",{
+          style:{flex:1,background:"transparent",border:"none",outline:"none",padding:"11px 10px",
+            fontSize:14,color:T.ink,fontFamily:T.font},
+          placeholder:"Quick search — #tag or place…",
+          value:quickSearch,
+          onChange:function(ev){setQuickSearch(ev.target.value);},
+          onKeyDown:function(ev){
+            if(ev.key==="Enter"){
+              var q=quickSearch.trim();
+              if(!q) return;
+              if(q.startsWith("#")||!q.includes(" ")){
+                // Tag search — filter map
+                var tag=q.replace(/^#/,"").toLowerCase();
+                setSearchTag(tag);
+                setActiveFilter(tag);
+                api.search(tag).then(function(data){
+                  if(Array.isArray(data)&&data.length>0){
+                    setPins(function(prev){var ids=new Set(prev.map(function(p){return p.id;}));return prev.concat(data.filter(function(r){return !ids.has(r.id);}));});
+                  }
+                });
+                flash("Showing #"+tag+" pins on map");
+              } else {
+                // Place search
+                fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}})
+                  .then(function(r){return r.json();}).then(function(data){
+                    if(data&&data[0]){
+                      var lat=parseFloat(data[0].lat),lng=parseFloat(data[0].lon);
+                      if(mapObj.current) mapObj.current.setView([lat,lng],14);
+                      flash("📍 "+data[0].display_name.split(",")[0]);
+                    } else {
+                      flash("Place not found");
+                    }
+                  }).catch(function(){flash("Search failed");});
+              }
+              setQuickSearch("");
+            }
+          }
+        }),
+        quickSearch && e("button",{
+          style:{background:"none",border:"none",padding:"0 12px",cursor:"pointer",color:T.ink3,fontSize:18,lineHeight:1},
+          onClick:function(){setQuickSearch("");setActiveFilter(null);}
+        },"×"),
+        !open && unreadCount>0 && e("div",{style:{width:7,height:7,borderRadius:"50%",background:"#b85c2a",marginRight:10,flexShrink:0}})
+      ),
+      // Advanced search link
+      e("div",{style:{textAlign:"center",marginTop:5}},
+        e("button",{
+          style:{background:"none",border:"none",fontSize:11,color:"rgba(26,32,28,0.5)",cursor:"pointer",
+            letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:T.mono,padding:"2px 8px"},
+          onClick:function(){setTab("search");setOpen(true);}
+        },"Advanced Search ›")
       )
     ),
 
@@ -2776,148 +2825,37 @@ function App() {
                   // Nearby
                   e("div",{style:{marginBottom:20}},
                     e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",color:T.ink3,textTransform:"uppercase",fontWeight:600,fontFamily:T.mono,marginBottom:12}},"Nearby"),
-                    (function(){
-                      var pub=pins.filter(function(p){return p.privacy==="public";});
-                      var sorted=userLL?pub.slice().sort(function(a,b){return distKm(userLL.lat,userLL.lng,a.lat,a.lng)-distKm(userLL.lat,userLL.lng,b.lat,b.lng);}):pub;
-                      return sorted.slice(0,5).map(function(p){
-                        var dist=userLL?distKm(userLL.lat,userLL.lng,p.lat,p.lng):null;
-                        return e("div",{key:p.id,
-                          style:{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",marginBottom:6,
-                            background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:12,cursor:"pointer"},
-                          onClick:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);}
-                        },
-                          e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0}},
-                            e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),
-                            e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})
-                          ),
-                          e("div",{style:{flex:1,minWidth:0}},
-                            e("div",{style:{fontWeight:600,fontSize:15,color:T.ink,marginBottom:1}},p.name),
-                            e("div",{style:{fontSize:12,color:T.ink3}},"@"+p.owner+(p.tags&&p.tags[0]?" · #"+p.tags[0]:""))
-                          ),
-                          dist!==null&&e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono,flexShrink:0}},dist.toFixed(1)+" km")
-                        );
-                      });
-                    })()
-                  )
-                )
-          )
-        )
-      ),
-
-      tab==="mine" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",background:T.paper}},
-        e(MineTab,{
-          myPins:myPins, myTags:myTags, uname:uname,
-          activeFilter:activeFilter, setActiveFilter:setActiveFilter,
-          mapObj:mapObj, setSelPin:setSelPin, setOpen:setOpen,
-          unreadPinIds:unreadPinIds, commentCounts:commentCounts,
-          deletePin:deletePin, toggleUpvote:toggleUpvote,
-          saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
-          markCommentsSeen:markCommentsSeen
-        })
-      ),
-
-      tab==="add" && e("div",null,
-          e("div",{style:{padding:"0 0 16px"}},
-            e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:6}},"Drop a pin"),
-            pendingLL && e("div",{style:{fontSize:12,color:T.ink3,fontFamily:T.mono}},
-              pendingLL.lat.toFixed(4)+"°N  "+Math.abs(pendingLL.lng).toFixed(4)+"°W"
-            )
-          ),
-          !user&&e("div",{style:{background:"#efe9d8",border:"1px solid #d8cfb8",borderRadius:8,padding:10,marginBottom:10,textAlign:"center"}},
-            e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8}},"Sign in to save pins to your account"),
-            e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
-          ),
-          e("div",{style:Object.assign({},S.hint,{marginBottom:8})},pendingLL?"Location: "+pendingLL.lat.toFixed(4)+", "+pendingLL.lng.toFixed(4):"Close this and tap the map to set a location"),
-          e("input",{style:S.input,placeholder:"Name / Place",value:form.name,onChange:function(ev){setForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
-          e("textarea",{style:Object.assign({},S.input,{height:52,resize:"none"}),placeholder:"Description (optional)",value:form.description,onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
-          e("input",{style:Object.assign({},S.input,{borderColor:form.tags&&checkBannedTags(form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean)).length>0?"#c62828":""}),placeholder:"#tags  space or comma separated",value:form.tags,onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
-          form.tags&&(function(){
-            var t=form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
-            var b=checkBannedTags(t);
-            return b.length>0?e("div",{style:{fontSize:11,color:"#c62828",marginBottom:6,marginTop:-4}},"Tag not allowed: #"+b.join(", #")):null;
-          })(),
-          e("button",{
-            style:{background:"none",border:"1px solid #d8cfb8",borderRadius:6,padding:"7px 12px",fontSize:13,color:"#3c4540",cursor:"pointer",display:"flex",alignItems:"center",gap:6,marginBottom:8,width:"100%"},
-            onClick:function(){takePhoto(function(compressed){setForm(function(f){return Object.assign({},f,{photo:compressed});});});}
-          }, "📷 "+(form.photo?"Photo attached - tap to change":"Add photo (optional)")),
-          form.photo&&e("div",{style:{position:"relative",marginBottom:8}},
-            e("img",{src:form.photo,style:{width:"100%",borderRadius:6,maxHeight:120,objectFit:"cover"}}),
-            e("button",{onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.5)",border:"none",color:"#fff",borderRadius:"50%",width:20,height:20,cursor:"pointer",fontSize:11}},"x")
-          ),
-          e("div",{style:{marginBottom:10}},
-            e("div",{style:{fontSize:11,letterSpacing:1,color:"#6f786f",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid #f6f1e4",paddingBottom:4}},"Pin color"),
-            e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}},
-              ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e","#f57f17","#00838f"].map(function(col){
-                return e("div",{key:col,
-                  onClick:function(){setForm(function(f){return Object.assign({},f,{color:col});});},
-                  style:{width:26,height:26,borderRadius:"50%",background:col,cursor:"pointer",
-                    border:form.color===col?"3px solid #2c2416":"3px solid transparent",
-                    boxSizing:"border-box",flexShrink:0}
-                });
-              }),
-              e("label",{style:{display:"flex",alignItems:"center",gap:4,fontSize:12,color:"#3c4540",cursor:"pointer"}},
-                "Custom:",
-                e("input",{type:"color",value:form.color||"#2a5d3c",
-                  onChange:function(ev){setForm(function(f){return Object.assign({},f,{color:ev.target.value});});},
-                  style:{width:26,height:26,borderRadius:"50%",border:"none",padding:0,cursor:"pointer",background:"none"}
-                })
-              )
-            )
-          ),
-          e("div",{style:{marginBottom:10}},
-            e("label",{style:{fontSize:11,color:"#6f786f",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:1}},"Expiry date (optional)"),
-            e("input",{
-              type:"datetime-local",
-              style:{width:"100%",padding:"8px 10px",border:"1px solid #d8cfb8",borderRadius:8,fontSize:13,background:"#f6f1e4",color:"#1a201c",fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"},
-              min:new Date().toISOString().slice(0,16),
-              value:form.expires_at||"",
-              onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}
-            })
-          ),
-          e("div",{style:{display:"flex",gap:10,marginBottom:6}},
-            ["public","private","shareable"].map(function(opt){
-              return e("label",{key:opt,style:{fontSize:13,cursor:"pointer",color:"#3c4540"}},
-                e("input",{type:"radio",name:"priv",checked:form.privacy===opt,onChange:function(){setForm(function(f){return Object.assign({},f,{privacy:opt});});}}),
-                " "+opt
-              );
-            })
-          ),
-          e("div",{style:{fontSize:12,color:"#6f786f",marginBottom:10,fontStyle:"italic"}},
-            form.privacy==="public"?"Searchable by everyone":form.privacy==="private"?"Only visible to you":"Link-only"
-          ),
-          e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:savePin},"SAVE PIN")
-        ),
-
-        tab==="nearby" && e("div",null,
-          e("div",{style:S.secHead},"Nearby pins"),
-          e("div",{style:Object.assign({},S.hint,{marginBottom:10})},userLL?"Location known":"Tap the GPS button on the map first"),
-          e("div",{style:{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}},
-            e("span",{style:{fontSize:13,color:"#3c4540"}},"Radius:"),
-            [5,10,25,50].map(function(r){
-              return e("button",{key:r,style:Object.assign({},S.chip,{background:nearbyKm===r?"#2a5d3c":"none",color:nearbyKm===r?"#fff":"#2a5d3c"}),onClick:function(){setNearbyKm(r);}},r+"km");
-            })
-          ),
-          e("button",{style:Object.assign({},S.btn,{width:"100%",marginBottom:10}),onClick:findNearby},"Find Nearby"),
-          nearbyRes&&(nearbyRes.length===0
-            ?e("div",{style:S.hint},"No pins within "+nearbyKm+"km.")
-            :nearbyRes.map(function(p){return e(PinCard,{key:p.id,pin:p,uname:uname,dist:p.dist,onFocus:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);},onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection});})
-          )
-        ),
-
-        tab==="admin" && uname==="Seth Gray" && e("div",null,
-          adminLoading
-            ? e("div",{style:{textAlign:"center",padding:24,color:"#6f786f"}},"Loading stats...")
-            : adminStats && e("div",null,
-                e("div",{style:{fontSize:13,fontWeight:700,color:"#2a5d3c",marginBottom:10,letterSpacing:2,textTransform:"uppercase"}},"Admin Dashboard"),
-
-                e("div",{style:{background:"#2a5d3c",borderRadius:10,padding:"12px 14px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}},
-                  e("div",null,
-                    e("div",{style:{fontSize:24,fontWeight:700,color:"#fff"}},"🟢 "+adminStats.activeCount),
-                    e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},adminStats.activeCount===1?"user active now":"users active now (last 5 min)")
-                  ),
-                  e("div",{style:{fontSize:12,color:"rgba(255,255,255,0.8)"}},
-                    adminStats.activeNow.map(function(u){return "@"+u.owner;}).join(", ")
-                  )
+                    e("div",{style:{display:"flex",flexDirection:"column",gap:0}},
+                      (function(){
+                        var pub=pins.filter(function(p){return p.privacy==="public";});
+                        var sorted=userLL
+                          ? pub.slice().sort(function(a,b){return distKm(userLL.lat,userLL.lng,a.lat,a.lng)-distKm(userLL.lat,userLL.lng,b.lat,b.lng);})
+                          : pub;
+                        var closest=sorted.slice(0,5);
+                        if(!closest.length) return e("div",{style:{fontSize:13,color:T.ink3,padding:"12px 0"}},"No public pins yet");
+                        return closest.map(function(p){
+                          var dist=userLL?distKm(userLL.lat,userLL.lng,p.lat,p.lng):null;
+                          var distLabel=dist===null?"":dist<1.6?"nearby":dist<16?dist.toFixed(1)+" km away":Math.round(dist)+" km away";
+                          var isFar=dist!==null&&dist>16;
+                          return e("div",{key:p.id,
+                            style:{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},
+                            onClick:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);}
+                          },
+                            e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0}},
+                              e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),
+                              e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})
+                            ),
+                            e("div",{style:{flex:1,minWidth:0}},
+                              e("div",{style:{fontWeight:600,fontSize:15,color:T.ink,marginBottom:1}},p.name),
+                              e("div",{style:{fontSize:12,color:T.ink3}},"@"+p.owner+(p.tags&&p.tags[0]?" · #"+p.tags[0]:""))
+                            ),
+                            e("div",{style:{fontSize:11,color:isFar?"#b85c2a":T.ink3,fontFamily:T.mono,flexShrink:0,textAlign:"right"}},
+                              distLabel
+                            )
+                          );
+                        });
+                      })()
+                    )
                 ),
 
                 e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
@@ -3238,7 +3176,6 @@ function App() {
         [
           {id:"map",label:"Map"},
           {id:"search",label:"Search"},
-          {id:"add",label:"Drop"},
           {id:"mine",label:"Mine"},
           {id:"profile",label:"Profile"}
         ].concat(uname==="Seth Gray"?[{id:"admin",label:"Admin"}]:[]).map(function(it){
@@ -3271,6 +3208,8 @@ function App() {
         })
       )
     )
+  )
+)
 
   );
 }
@@ -3302,6 +3241,6 @@ if("serviceWorker" in navigator){
   });
 }
 
-  </script>
+</script>
 </body>
 </html>
