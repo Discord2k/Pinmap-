@@ -35,8 +35,8 @@
       --border:     #d8cfb8;
       --borderSoft: #e6dfca;
       
-      /* 1. THE FIX: UNIVERSAL HEIGHT VARIABLES */
-      --nav-height: 72px; 
+      /* THE OFFSET FIX */
+      --nav-height: 70px;
       --universal-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 12px));
     }
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -55,85 +55,12 @@
     .pm-pin { background:none!important; border:none!important; }
     #map { height:100%!important; width:100%!important; position:absolute!important; top:0!important; left:0!important; }
 
-    /* 2. THE FIX: UPDATED CLASSES */
-    .pm-toast { 
-      bottom: calc(var(--universal-bottom) + 16px) !important; 
-    }
-    
+    /* FORCED POSITIONING VIA CSS */
     .pm-detail { 
-      /* Push the whole window up */
+      position: absolute !important;
       bottom: var(--universal-bottom) !important; 
-      left: 12px !important; 
-      right: 12px !important;
-      /* Add big padding inside so the last comment isn't hidden */
-      padding-bottom: 100px !important; 
-    }
-
-    .bubble {
-      bottom: var(--universal-bottom) !important;
-    }
-
-    /* Rest of your existing styles... */
-    input,textarea,button,select { font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif; letter-spacing:-0.005em; -webkit-font-smoothing:antialiased; }
-    .mono { font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace; font-feature-settings:"tnum"; }
-    .caps { font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600; }
-    input:focus,textarea:focus { outline:none; border-color:var(--forest)!important; box-shadow:0 0 0 3px rgba(42,93,60,0.10); }
-    button:active { transform:scale(0.97); }
-    @keyframes slideUp    { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
-    .pm-slideup  { animation:slideUp 0.3s cubic-bezier(0.34,1.1,0.64,1) both; }
-  </style>
-</head>
-<body>
-  <div id="err"></div>
-  <div id="root"></div>
-
-  <script>
-    /* ... (Logic remains identical to your source) ... */
-    const e = React.createElement;
-    const { useState, useEffect, useRef } = React;
-
-    const SB_URL = "https://uuxggoydnjvsssbenkkt.supabase.co";
-    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eGdnb3lkbmp2c3NzYmVua2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODg4OTgsImV4cCI6MjA5MjY2NDg5OH0.VniG6qm6Z9spdezyw-85k4liEuyC9i3B_T2Pxo-9nK0";
-    const sb = supabase.createClient(SB_URL, SB_KEY);
-
-    /* (All function definitions: api, uploadPhoto, etc.) */
-    
-    function App() {
-      // ... (State hooks)
-
-      return e("div", {style:{position:"relative",height:"100vh",width:"100%",overflow:"hidden"}},
-        /* Map ... */
-
-        /* 3. THE FIX: APPLIED TO DETAIL WINDOW */
-        selPin && e("div", {
-          className:"detail pm-detail pm-slideup", 
-          style:{
-            position:"absolute",
-            top:"45%",
-            background:"rgba(255,253,248,0.97)",
-            border:"1px solid #d8cfb8",
-            borderRadius:12,
-            padding:"14px 15px",
-            overflowY:"auto",
-            zIndex:1001,
-            boxShadow:"0 8px 32px rgba(0,0,0,0.13)",
-            display:"flex",
-            flexDirection:"column"
-          }
-        },
-          /* Pin content ... */
-          e(Comments, {pinId:selPin.id, uname:uname, pinOwner:selPin.owner, pinName:selPin.name})
-        ),
-
-        /* Bottom Nav Bar */
-        e("div", {style:{position:"fixed",left:0,right:0,bottom:0,zIndex:1005,background:"#f6f1e4",borderTop:"1px solid #e6dfca",paddingBottom:"env(safe-area-inset-bottom,0px)"}},
-          e("div", {style:{display:"flex",height:"70px"}},
-             /* Tab buttons... */
-          )
-        )
-      );
-    }
-    ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
-  </script>
-</body>
-</html>
+      left: 16px !important; 
+      right: 16px !important;
+      top: 40% !important; /* Locks height to ensure scrollability */
+      padding-bottom: 110px !important; /* Extra space to clear the nav bar */
+      z-index: 10
