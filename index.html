@@ -2908,6 +2908,102 @@ function App() {
               )
         ),
 
+      tab==="mine" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",background:T.paper}},
+        e(MineTab,{
+          myPins:myPins, myTags:myTags, uname:uname,
+          activeFilter:activeFilter, setActiveFilter:setActiveFilter,
+          mapObj:mapObj, setSelPin:setSelPin, setOpen:setOpen,
+          unreadPinIds:unreadPinIds, commentCounts:commentCounts,
+          deletePin:deletePin, toggleUpvote:toggleUpvote,
+          saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
+          markCommentsSeen:markCommentsSeen
+        })
+      ),
+
+      tab==="add" && e("div",{style:{padding:"22px",overflowY:"auto"}},
+        e("div",{style:{padding:"0 0 16px"}},
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:6}},"Drop a pin"),
+          pendingLL && e("div",{style:{fontSize:12,color:T.forest,fontFamily:T.mono,marginTop:4}},
+            pendingLL.lat.toFixed(4)+"°N  "+Math.abs(pendingLL.lng).toFixed(4)+"°W"
+          )
+        ),
+        !user && e("div",{style:{background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,padding:14,marginBottom:12,textAlign:"center"}},
+          e("div",{style:{fontSize:13,color:T.ink2,marginBottom:8}},"Sign in to save pins to your account"),
+          e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
+        ),
+        e("div",{style:{position:"relative",marginBottom:10}},
+          e("input",{style:S.input,placeholder:"Name / Place",value:form.name,
+            onChange:function(ev){setForm(function(f){return Object.assign({},f,{name:ev.target.value});});}})
+        ),
+        e("textarea",{style:Object.assign({},S.input,{resize:"vertical",minHeight:70}),
+          placeholder:"Description (optional)",value:form.description,
+          onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
+        e("input",{style:S.input,placeholder:"#tags — space or comma separated",value:form.tags,
+          onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}},
+          ["#2a5d3c","#b85c2a","#1565c0","#c62828","#6a1b9a","#00695c","#4e342e","#37474f","#f57f17"].map(function(c){
+            return e("button",{key:c,onClick:function(){setForm(function(f){return Object.assign({},f,{color:c});});},
+              style:{width:28,height:28,borderRadius:"50%",background:c,border:form.color===c?"3px solid "+T.ink:"3px solid transparent",cursor:"pointer"}});
+          })
+        ),
+        e("div",{style:{display:"flex",gap:6,marginBottom:12}},
+          ["public","private","shareable"].map(function(p){
+            return e("button",{key:p,
+              style:{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+(form.privacy===p?T.forest:T.border),
+                background:form.privacy===p?T.forestPale:"transparent",color:form.privacy===p?T.forest:T.ink2,
+                fontSize:12,cursor:"pointer",fontWeight:form.privacy===p?600:400,textTransform:"capitalize"},
+              onClick:function(){setForm(function(f){return Object.assign({},f,{privacy:p});})}},p);
+          })
+        ),
+        !pendingLL && e("div",{style:{background:T.paper2,border:"1px dashed "+T.border,borderRadius:10,padding:"16px",marginBottom:12,textAlign:"center",color:T.ink3,fontSize:13}},
+          "Close this panel and touch the map to set a location"
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},"Photo"),
+          e("input",{type:"file",accept:"image/*",style:{fontSize:12,color:T.ink3},onChange:handlePhoto})
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},"Expires (optional)"),
+          e("input",{type:"datetime-local",style:S.input,value:form.expires_at,
+            onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}})
+        ),
+        e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:savePin},"Save Pin")
+      ),
+
+      tab==="nearby" && e("div",{style:{padding:"22px",overflowY:"auto"}},
+        e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:16}},"Nearby Pins"),
+        e("div",{style:{fontSize:13,color:T.ink3,marginBottom:16}},
+          userLL ? "Showing pins closest to your location" : "Tap the GPS button on the map to find your location"
+        ),
+        (function(){
+          var pub=pins.filter(function(p){return p.privacy==="public";});
+          var sorted=userLL
+            ? pub.slice().sort(function(a,b){return distKm(userLL.lat,userLL.lng,a.lat,a.lng)-distKm(userLL.lat,userLL.lng,b.lat,b.lng);})
+            : pub;
+          return sorted.slice(0,10).map(function(p){
+            var dist=userLL?distKm(userLL.lat,userLL.lng,p.lat,p.lng):null;
+            return e("div",{key:p.id,
+              style:{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},
+              onClick:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);}
+            },
+              e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0}},
+                e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),
+                e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})
+              ),
+              e("div",{style:{flex:1,minWidth:0}},
+                e("div",{style:{fontWeight:600,fontSize:15,color:T.ink,marginBottom:1}},p.name),
+                e("div",{style:{fontSize:12,color:T.ink3}},"@"+p.owner+(p.tags&&p.tags[0]?" · #"+p.tags[0]:""))
+              ),
+              dist!==null && e("div",{style:{fontSize:11,color:dist>16?"#b85c2a":T.ink3,fontFamily:T.mono,flexShrink:0}},
+                dist<1.6?"nearby":dist.toFixed(1)+" km"
+              )
+            );
+          });
+        })()
+      ),
+
+
+
         tab==="profile" && e("div",null,
           e(ProfilePanel,{
           user:user,uname:uname,myPins:myPins,
