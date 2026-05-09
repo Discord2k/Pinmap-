@@ -1532,7 +1532,7 @@ function App() {
       currentBase.current = [initTile];
       setTimeout(function(){map.invalidateSize();},300);
       map.on("moveend",function(){var c=map.getCenter();setMapCenter({lat:c.lat,lng:c.lng});});
-      map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("📍 Location set — fill details in Drop tab");});
+      map.on("click",function(ev){setPendingLL(ev.latlng);if(!open){setTab("add");setOpen(true);}flash("📍 Location set");});
       map.on("zoomend",function(){
         // Immediately remove all markers to prevent ghost clusters
         Object.values(markers.current).forEach(function(m){m.remove();});
@@ -2906,6 +2906,8 @@ function App() {
 
                 e("button",{style:{width:"100%",padding:10,background:"#efe9d8",border:"1px solid #d8cfb8",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"},onClick:loadAdminStats},"↺ Refresh")
               )
+    )
+  )
         ),
 
       tab==="mine" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",background:T.paper}},
@@ -3304,8 +3306,6 @@ function App() {
         })
       )
     )
-  )
-)
 
   );
 }
