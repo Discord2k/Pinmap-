@@ -731,6 +731,7 @@ function ProfilePanel(props) {
   var setOpen=props.setOpen||function(){};
   var setShowFeatures=props.setShowFeatures||function(){};
   var setMyProfile=props.setMyProfile||function(){};
+  var setShowImport=props.setShowImport||function(){};
   var myProfile=props.myProfile||null;
   var editingProfile=props.editingProfile||false;
   var setEditingProfile=props.setEditingProfile||function(){};
@@ -2945,7 +2946,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,
           userFollows:userFollows,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
-          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,
+          flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
