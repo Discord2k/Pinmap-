@@ -414,8 +414,8 @@ styleEl.textContent=[
   ".detail{animation:fade .15s ease both}",
   ".onb-card{animation:onbfade .2s ease both}",
   ".fab-btn{bottom:calc(40px + env(safe-area-inset-bottom,0px))!important;right:calc(20px + env(safe-area-inset-right,0px))!important}",
-  ".pm-toast{bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}",
-  ".pm-detail{bottom:calc(28px + env(safe-area-inset-bottom,0px))!important;left:16px!important;right:16px!important}",
+  ".pm-toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}",
+  ".pm-detail{bottom:calc(68px + env(safe-area-inset-bottom,0px))!important;left:16px!important;right:16px!important}",
   ".pm-search{top:calc(16px + env(safe-area-inset-top,0px))!important}",
   ".pm-filter{top:calc(14px + env(safe-area-inset-top,0px))!important}",
   ".pm-gps{top:calc(70px + env(safe-area-inset-top,0px))!important;right:calc(14px + env(safe-area-inset-right,0px))!important}",
@@ -941,6 +941,15 @@ function ProfilePanel(props) {
         e("div",{style:{flex:1,fontSize:15,color:T.ink}},"All features"),
         e("div",{style:{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}},"View",e("div",{style:{color:T.ink3,fontSize:16}},">"))
       ),
+      e("div",{style:{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},
+        onClick:function(){setShowImport(true);}
+      },
+        e("div",{style:{flex:1}},
+          e("div",{style:{fontSize:15,color:T.ink}},"Import Pins"),
+          e("div",{style:{fontSize:12,color:T.ink3,marginTop:2}},"KML · GPX · GeoJSON · CSV")
+        ),
+        e("div",{style:{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}},"Import",e("div",{style:{color:T.ink3,fontSize:16}},">"))
+      ),
       // About
       e("div",{style:{display:"flex",alignItems:"center",padding:"14px 0"}},
         e("div",{style:{flex:1,fontSize:15,color:T.ink}},"About"),
@@ -1208,6 +1217,11 @@ function App() {
   var s60=useState(null); var mapCenter=s60[0]; var setMapCenter=s60[1];
   var s63=useState(""); var quickSearch=s63[0]; var setQuickSearch=s63[1];
   var s62=useState(false); var showFirstPin=s62[0]; var setShowFirstPin=s62[1];
+  var s64=useState(false); var showImport=s64[0]; var setShowImport=s64[1];
+  var s65=useState("#2a5d3c"); var importColor=s65[0]; var setImportColor=s65[1];
+  var s66=useState(""); var importTags=s66[0]; var setImportTags=s66[1];
+  var s67=useState(null); var importPreview=s67[0]; var setImportPreview=s67[1];
+  var s68=useState(false); var importLoading=s68[0]; var setImportLoading=s68[1];
   var s63=useState(""); var quickSearch=s63[0]; var setQuickSearch=s63[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
@@ -1223,6 +1237,93 @@ function App() {
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
+
+  function parseImportFile(file, onDone) {
+    var name = file.name.toLowerCase();
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var text = ev.target.result;
+      var pins = [];
+      try {
+        if (name.endsWith(".geojson") || name.endsWith(".json")) {
+          var gj = JSON.parse(text);
+          var features = gj.features || (gj.type === "Feature" ? [gj] : []);
+          features.forEach(function(f) {
+            if (f.geometry && f.geometry.type === "Point") {
+              var c = f.geometry.coordinates;
+              var p = f.properties || {};
+              pins.push({ name: p.name || p.title || "Imported Pin", description: p.description || p.desc || "", lat: c[1], lng: c[0] });
+            }
+          });
+        } else if (name.endsWith(".gpx")) {
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(text, "text/xml");
+          var wpts = Array.from(doc.querySelectorAll("wpt"));
+          var trks = Array.from(doc.querySelectorAll("trkpt,rtept"));
+          wpts.concat(trks).forEach(function(pt) {
+            var lat = parseFloat(pt.getAttribute("lat")), lng = parseFloat(pt.getAttribute("lon"));
+            if (!isNaN(lat) && !isNaN(lng)) {
+              var n = pt.querySelector("name"); var d = pt.querySelector("desc") || pt.querySelector("cmt");
+              pins.push({ name: (n && n.textContent) || "GPX Point", description: (d && d.textContent) || "", lat: lat, lng: lng });
+            }
+          });
+        } else if (name.endsWith(".kml")) {
+          var parser2 = new DOMParser();
+          var doc2 = parser2.parseFromString(text, "text/xml");
+          Array.from(doc2.querySelectorAll("Placemark")).forEach(function(pm) {
+            var coords = pm.querySelector("coordinates");
+            var n2 = pm.querySelector("name"); var d2 = pm.querySelector("description");
+            if (coords) {
+              var parts = coords.textContent.trim().split(/[,\s]+/);
+              var lng2 = parseFloat(parts[0]), lat2 = parseFloat(parts[1]);
+              if (!isNaN(lat2) && !isNaN(lng2))
+                pins.push({ name: (n2 && n2.textContent) || "KML Placemark", description: (d2 && d2.textContent) || "", lat: lat2, lng: lng2 });
+            }
+          });
+        } else if (name.endsWith(".csv")) {
+          var lines = text.split("\n").filter(Boolean);
+          var headers = lines[0].split(",").map(function(h){return h.trim().toLowerCase().replace(/"/g,"");});
+          var li = headers.indexOf("lat") >= 0 ? headers.indexOf("lat") : headers.findIndex(function(h){return h.includes("lat");});
+          var lo = headers.indexOf("lng") >= 0 ? headers.indexOf("lng") : headers.indexOf("lon") >= 0 ? headers.indexOf("lon") : headers.findIndex(function(h){return h.includes("lon")||h.includes("lng");});
+          var ni = headers.indexOf("name") >= 0 ? headers.indexOf("name") : 0;
+          var di = headers.indexOf("description") >= 0 ? headers.indexOf("description") : headers.indexOf("desc");
+          lines.slice(1).forEach(function(line) {
+            var cells = line.split(",").map(function(c){return c.trim().replace(/"/g,"");});
+            var lat = parseFloat(cells[li]), lng = parseFloat(cells[lo]);
+            if (!isNaN(lat) && !isNaN(lng))
+              pins.push({ name: cells[ni] || "CSV Pin", description: di >= 0 ? (cells[di] || "") : "", lat: lat, lng: lng });
+          });
+        }
+      } catch(e) { flash("Parse error: " + e.message); }
+      onDone(pins);
+    };
+    reader.readAsText(file);
+  }
+
+  function doImport() {
+    if (!importPreview || !importPreview.length) { flash("No pins to import"); return; }
+    setImportLoading(true);
+    var tags = importTags.split(/[,\s]+/).filter(Boolean).map(function(t){return t.replace(/^#/,"");});
+    var toSave = importPreview.map(function(p) {
+      return { name: p.name, description: p.description, lat: p.lat, lng: p.lng,
+               tags: tags, color: importColor, privacy: "public", owner: uname,
+               created_at: new Date().toISOString() };
+    });
+    var saved = 0;
+    function saveNext(i) {
+      if (i >= toSave.length) {
+        setImportLoading(false);
+        setShowImport(false);
+        setImportPreview(null);
+        setImportTags("");
+        flash("Imported " + saved + " pins!");
+        api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });
+        return;
+      }
+      api.addPin(toSave[i], uname).then(function(){ saved++; saveNext(i+1); }).catch(function(){ saveNext(i+1); });
+    }
+    saveNext(0);
+  }
 
   // Clear places results when panel closes
   useEffect(function(){
@@ -2856,7 +2957,7 @@ function App() {
 
     
 
-    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"45%",bottom:"calc(16px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:12,padding:"14px 15px",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
+    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"45%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:12,padding:"14px 15px",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
       e("button",{
       style:{position:"absolute",top:10,right:10,width:36,height:36,borderRadius:"50%",
         background:"rgba(26,32,28,0.72)",border:"2px solid rgba(246,241,228,0.6)",
@@ -2935,6 +3036,87 @@ function App() {
     ),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew}),
+
+    showImport&&e("div",{style:{position:"fixed",top:0,left:0,right:0,bottom:"calc(60px + env(safe-area-inset-bottom,0px))",background:T.paper,zIndex:2000,display:"flex",flexDirection:"column",overflow:"hidden"}},
+      // Header
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 22px 16px",borderBottom:"1px solid "+T.borderSoft,flexShrink:0}},
+        e("div",{style:{fontSize:19,fontWeight:700,color:T.ink}},"Import Pins"),
+        e("button",{style:{width:34,height:34,borderRadius:"50%",background:"rgba(26,32,28,0.08)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"},
+          onClick:function(){setShowImport(false);setImportPreview(null);setImportTags("");setImportColor("#2a5d3c");}},
+          e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},e("path",{d:"M18 6L6 18M6 6l12 12",stroke:T.ink,strokeWidth:2.5,strokeLinecap:"round"}))
+        )
+      ),
+      // Body
+      e("div",{style:{flex:1,overflowY:"auto",padding:"22px"}},
+        // Step 1: Tags
+        e("div",{style:{marginBottom:20}},
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:8}},"Step 1 — Tags for imported pins"),
+          e("input",{style:Object.assign({},S.input,{marginBottom:0}),placeholder:"#tags — space or comma separated",value:importTags,
+            onChange:function(ev){setImportTags(ev.target.value);}})
+        ),
+        // Step 2: Color
+        e("div",{style:{marginBottom:20}},
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}},"Step 2 — Pin colour"),
+          e("div",{style:{display:"flex",gap:10,flexWrap:"wrap"}},
+            ["#2a5d3c","#1565c0","#b85c2a","#c62828","#6a1b9a","#00695c","#e65100","#4e342e","#37474f","#f57f17"].map(function(c){
+              return e("button",{key:c,
+                onClick:function(){setImportColor(c);},
+                style:{width:36,height:36,borderRadius:"50%",background:c,
+                  border:importColor===c?"3px solid "+T.ink:"3px solid transparent",cursor:"pointer",
+                  boxShadow:importColor===c?"0 0 0 2px "+T.paper+", 0 0 0 4px "+c:"none"}});
+            })
+          )
+        ),
+        // Step 3: File
+        e("div",{style:{marginBottom:24}},
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}},"Step 3 — Choose file"),
+          e("label",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,padding:"28px 20px",border:"2px dashed "+T.border,borderRadius:14,background:T.paper2,cursor:"pointer",textAlign:"center"}},
+            e("svg",{width:32,height:32,viewBox:"0 0 24 24",fill:"none"},
+              e("path",{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",stroke:T.ink3,strokeWidth:1.8,strokeLinecap:"round"}),
+              e("polyline",{points:"17 8 12 3 7 8",stroke:T.ink3,strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"}),
+              e("line",{x1:"12",y1:"3",x2:"12",y2:"15",stroke:T.ink3,strokeWidth:1.8,strokeLinecap:"round"})
+            ),
+            e("div",{style:{fontSize:14,color:T.ink2,fontWeight:500}},"Tap to choose file"),
+            e("div",{style:{fontSize:12,color:T.ink3}},"KML · GPX · GeoJSON · CSV"),
+            e("input",{type:"file",accept:".kml,.gpx,.geojson,.json,.csv",style:{display:"none"},
+              onChange:function(ev){
+                var file=ev.target.files&&ev.target.files[0];
+                if(!file) return;
+                parseImportFile(file,function(pins){
+                  setImportPreview(pins);
+                  if(pins.length===0) flash("No pins found in file");
+                  else flash(pins.length+" pins ready to import");
+                });
+              }})
+          )
+        ),
+        // Preview
+        importPreview&&importPreview.length>0&&e("div",{style:{marginBottom:20}},
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}},
+            "Preview — "+importPreview.length+" pin"+(importPreview.length!==1?"s":"")+" found"
+          ),
+          e("div",{style:{border:"1px solid "+T.borderSoft,borderRadius:10,overflow:"hidden"}},
+            importPreview.slice(0,8).map(function(p,i){
+              return e("div",{key:i,style:{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderBottom:i<Math.min(importPreview.length,8)-1?"1px solid "+T.borderSoft:"none"}},
+                e("div",{style:{width:10,height:10,borderRadius:"50%",background:importColor,flexShrink:0}}),
+                e("div",{style:{flex:1,minWidth:0}},
+                  e("div",{style:{fontSize:14,fontWeight:600,color:T.ink,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},p.name),
+                  e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},p.lat.toFixed(4)+"°N "+Math.abs(p.lng).toFixed(4)+"°W")
+                )
+              );
+            }),
+            importPreview.length>8&&e("div",{style:{padding:"8px 14px",fontSize:12,color:T.ink3,textAlign:"center"}},
+              "…and "+(importPreview.length-8)+" more"
+            )
+          )
+        ),
+        importPreview&&importPreview.length>0&&e("button",{
+          style:Object.assign({},S.btn,{width:"100%",opacity:importLoading?0.6:1}),
+          onClick:doImport,
+          disabled:importLoading
+        },importLoading?"Importing…":"Import "+importPreview.length+" Pin"+(importPreview.length!==1?"s":""))
+      )
+    ),
 
     showFirstPin&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:T.paper,border:"none",borderRadius:20,padding:"28px 24px",maxWidth:360,width:"100%",boxShadow:T.shadowLg,animation:"scaleIn 0.25s cubic-bezier(0.34,1.2,0.64,1) both",textAlign:"center"}},
