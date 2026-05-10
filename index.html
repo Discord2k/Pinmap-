@@ -94,8 +94,12 @@
   <div id="root"></div>
 
   <script>
-    if(window.location.search.includes("debug=1")) {
-      function showErr(msg){var el=document.getElementById("err");el.style.display="block";el.textContent+=msg+"\n---\n";}
+    if(window.location.search.includes("debug=1") || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      function showErr(msg){
+        var el=document.getElementById("err");
+        if(el) { el.style.display="block"; el.textContent+=msg+"\n---\n"; }
+        alert(msg);
+      }
       window.onerror=function(msg,src,line){showErr("JS ERROR: "+msg+"\nAt: "+src+":"+line);return false;};
       window.addEventListener("unhandledrejection",function(ev){showErr("PROMISE: "+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason)));});
       window.addEventListener("error",function(ev){if(ev.target&&ev.target.src)showErr("LOAD FAILED: "+ev.target.src);},true);
