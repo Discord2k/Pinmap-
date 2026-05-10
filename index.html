@@ -1628,6 +1628,9 @@ function App() {
       var session=res.data&&res.data.session;
       if(session&&session.user){ setUser(session.user); setSplashDone(true); }
       setSessionChecked(true);
+    }).catch(function(err){
+      console.error("Auth error:", err);
+      setSessionChecked(true);
     });
     var sub=api.onAuthChange(function(event,session){
       if(session&&session.user){ setUser(session.user); setSplashDone(true); }
