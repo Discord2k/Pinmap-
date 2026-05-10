@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v213";
+var CACHE_NAME = "pinmap-v212";
 var TILE_CACHE = "pinmap-tiles-v1";
 var MAX_TILES = 1000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -120,10 +120,23 @@ function syncQueue() {
 
 // ── Push Notifications ────────────────────────────────────────────────────────
 self.addEventListener("push", function(event) {
-  console.log("push ping received");
+  var title = "PINMAP";
+  var body = "You have a new notification - tap to view";
+  
+  if (event.data) {
+    try {
+      var data = event.data.json();
+      if (data.title) title = data.title;
+      if (data.body) body = data.body;
+    } catch(e) {
+      var text = event.data.text();
+      if (text) body = text;
+    }
+  }
+
   event.waitUntil(
-    self.registration.showNotification("PINMAP", {
-      body: "You have a new notification - tap to view",
+    self.registration.showNotification(title, {
+      body: body,
       icon: "/icon-192.png",
       badge: "/icon-192.png",
       data: { checkNotifications: true },

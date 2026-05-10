@@ -11,6 +11,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="PINMAP" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
+  <meta name="description" content="A social map for saving and sharing the places that matter to you. Drop pins, add hashtags, discover nearby locations." />
+  <meta property="og:title" content="PINMAP — A Field Atlas" />
+  <meta property="og:description" content="Drop pins, add hashtags, and share your favourite spots." />
+  <meta property="og:image" content="https://pin-map.com/icon-512.png" />
+  <meta property="og:url" content="https://pin-map.com" />
+  <meta name="twitter:card" content="summary_large_image" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
@@ -88,10 +94,12 @@
   <div id="root"></div>
 
   <script>
-    function showErr(msg){var el=document.getElementById("err");el.style.display="block";el.textContent+=msg+"\n---\n";}
-    window.onerror=function(msg,src,line){showErr("JS ERROR: "+msg+"\nAt: "+src+":"+line);return false;};
-    window.addEventListener("unhandledrejection",function(ev){showErr("PROMISE: "+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason)));});
-    window.addEventListener("error",function(ev){if(ev.target&&ev.target.src)showErr("LOAD FAILED: "+ev.target.src);},true);
+    if(window.location.search.includes("debug=1")) {
+      function showErr(msg){var el=document.getElementById("err");el.style.display="block";el.textContent+=msg+"\n---\n";}
+      window.onerror=function(msg,src,line){showErr("JS ERROR: "+msg+"\nAt: "+src+":"+line);return false;};
+      window.addEventListener("unhandledrejection",function(ev){showErr("PROMISE: "+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason)));});
+      window.addEventListener("error",function(ev){if(ev.target&&ev.target.src)showErr("LOAD FAILED: "+ev.target.src);},true);
+    }
   </script>
 
   <script>
@@ -219,6 +227,7 @@ var ONBOARD_STEPS = [
 ];
 
 function uid() { return Math.random().toString(36).slice(2,10); }
+function formatLL(lat, lng, prec) { prec=prec||2; return Math.abs(lat).toFixed(prec)+"°"+(lat>=0?"N":"S")+" "+Math.abs(lng).toFixed(prec)+"°"+(lng>=0?"E":"W"); }
 
 // ── Offline Queue (IndexedDB) ─────────────────────────────────────────────────
 var DB_NAME = "pinmap-offline", DB_VER = 1;
@@ -293,24 +302,19 @@ async function callEdgeFunction(type, data) {
 async function subscribeToPush(uname) {
   if(!("serviceWorker" in navigator)){throw new Error("Service worker not supported");}
   if(!("PushManager" in window)){throw new Error("Push not supported on this browser");}
-  console.log("subscribeToPush called for:", uname);
   var reg = await navigator.serviceWorker.ready;
   var existing = await reg.pushManager.getSubscription();
   if(existing){
-    console.log("Already subscribed");
     await savePushSubscription(existing, uname);
     return;
   }
   var permission = await Notification.requestPermission();
-  console.log("Permission:", permission);
   if(permission !== "granted") throw new Error("Permission denied");
   var sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
   });
-  console.log("Subscribed:", sub.endpoint);
   await savePushSubscription(sub, uname);
-  console.log("Saved to DB");
 }
 
 async function savePushSubscription(sub, uname) {
@@ -318,7 +322,6 @@ async function savePushSubscription(sub, uname) {
   // Check if already exists first
   var existing = await sb.from("push_subscriptions").select("id").eq("endpoint", json.endpoint).single();
   if(existing.data) {
-    console.log("Push subscription already exists, skipping");
     return;
   }
   var result = await sb.from("push_subscriptions").insert({
@@ -328,7 +331,6 @@ async function savePushSubscription(sub, uname) {
     p256dh: json.keys.p256dh,
     auth: json.keys.auth
   });
-  console.log("Push subscription saved:", result.error ? result.error.message : "OK");
 }
 
 var BANNED_TAGS = [
@@ -480,7 +482,7 @@ function Splash(props) {
       // Top meta strip
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:"calc(52px + env(safe-area-inset-top,0px))"}},
         e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:"rgba(246,241,228,0.5)",fontFamily:"'JetBrains Mono',monospace"}},"EDITION 01 · 2026"),
-        e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:"rgba(246,241,228,0.5)",fontFamily:"'JetBrains Mono',monospace"}},"28.54°N 81.38°W")
+        e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:"rgba(246,241,228,0.5)",fontFamily:"'JetBrains Mono',monospace"}},formatLL(28.54, -81.38, 2))
       ),
       // Hero
       e("div",{style:{flex:1,display:"flex",flexDirection:"column",justifyContent:"center"}},
@@ -964,7 +966,7 @@ function ProfilePanel(props) {
       // About
       e("div",{style:{display:"flex",alignItems:"center",padding:"14px 0"}},
         e("div",{style:{flex:1,fontSize:15,color:T.ink}},"About"),
-        e("div",{style:{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}},"v 183",e("div",{style:{color:T.ink3,fontSize:16}},">"))
+        e("div",{style:{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}},"v 1.0.0",e("div",{style:{color:T.ink3,fontSize:16}},">"))
       )
     ),
 
@@ -977,7 +979,7 @@ function ProfilePanel(props) {
 
     // ── Footer ────────────────────────────────────────────────────────────────
     e("div",{style:{padding:"32px 22px",textAlign:"center",color:T.ink4,fontSize:10,lineHeight:1.7,fontFamily:T.mono,letterSpacing:"0.1em",textTransform:"uppercase"}},
-      "PINMAP · V 183 · Built May 2026",e("br",null),
+      "PINMAP · V 1.0.0 · Built May 2026",e("br",null),
       "© 2026 Seth Gray · All rights reserved"
     )
   );
@@ -1102,7 +1104,7 @@ function MineTab(props) {
                 var commentCount=commentCounts[p.id]||0;
                 var upvoteCount=(p.upvotes&&Array.isArray(p.upvotes))?p.upvotes.length:0;
                 var pinHasUnread=unreadPinIds.indexOf(p.id)>=0;
-                var coordStr=p.lat&&p.lng?p.lat.toFixed(2)+"°N "+Math.abs(p.lng).toFixed(2)+"°W":"";
+                var coordStr=p.lat&&p.lng?formatLL(p.lat, p.lng, 2):"";
 
                 return e("div",{key:p.id,
                   style:{display:"flex",gap:14,padding:"14px 22px 14px 38px",
@@ -1205,7 +1207,6 @@ function App() {
   var s23=useState("mine"); var mapLayer=s23[0]; var setMapLayer=s23[1];
   var s25=useState("osm"); var baseLayer=s25[0]; var setBaseLayer=s25[1];
   var s26=useState(false); var layerMenuOpen=s26[0]; var setLayerMenuOpen=s26[1];
-  var s27=useState(false); var updateReady=s27[0]; var setUpdateReady=s27[1];
   var s28=useState(null); var viewUser=s28[0]; var setViewUser=s28[1];
   var s29=useState([]); var userPins=s29[0]; var setUserPins=s29[1];
   var s30=useState(false); var userPinsLoading=s30[0]; var setUserPinsLoading=s30[1];
@@ -1233,7 +1234,6 @@ function App() {
   var s66=useState(""); var importTags=s66[0]; var setImportTags=s66[1];
   var s67=useState(null); var importPreview=s67[0]; var setImportPreview=s67[1];
   var s68=useState(false); var importLoading=s68[0]; var setImportLoading=s68[1];
-  var s63=useState(""); var quickSearch=s63[0]; var setQuickSearch=s63[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
   var s58=useState(false); var offlineDismissed=s58[0]; var setOfflineDismissed=s58[1];
@@ -1316,7 +1316,7 @@ function App() {
     setImportLoading(true);
     var tags = importTags.split(/[,\s]+/).filter(Boolean).map(function(t){return t.replace(/^#/,"");});
     var toSave = importPreview.map(function(p) {
-      return { name: p.name, description: p.description, lat: p.lat, lng: p.lng,
+      return { id: uid(), name: p.name, description: p.description, lat: p.lat, lng: p.lng,
                tags: tags, color: importColor, privacy: "public", owner: uname,
                created_at: new Date().toISOString() };
     });
@@ -1331,7 +1331,7 @@ function App() {
         api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });
         return;
       }
-      api.addPin(toSave[i], uname).then(function(){ saved++; saveNext(i+1); }).catch(function(){ saveNext(i+1); });
+      api.insert(toSave[i]).then(function(){ saved++; saveNext(i+1); }).catch(function(){ saveNext(i+1); });
     }
     saveNext(0);
   }
@@ -1691,10 +1691,6 @@ function App() {
     });
     // Clean up old seen notifications (older than 7 days)
     api.deleteOldNotifs(uname);
-    // Clean up expired pins
-    api.deleteExpired().then(function(r){
-      if(r.data&&r.data.length>0) api.list().then(function(d){if(Array.isArray(d))setPins(d);});
-    });
     // Subscribe to push once - only if not already enabled
     if(!pushEnabled && "PushManager" in window && Notification.permission==="granted"){
       subscribeToPush(uname).then(function(){
@@ -1758,19 +1754,11 @@ function App() {
     var zoom=map.getZoom();
 
     if(zoom<=12){
-      var now=new Date();
-      var soon=new Date(now.getTime()+7*24*60*60*1000);
       var clPins=pins.filter(function(p){
-        // Exclude expired pins (same logic as individual pins)
-        if(p.expires_at && new Date(p.expires_at)<now && p.owner!==uname) return false;
-        // Expiring-only filter
-        if(showExpiringOnly) return p.expires_at && new Date(p.expires_at)>now && new Date(p.expires_at)<soon && p.privacy==="public";
-        // Layer filter — exact same as individual pin renderer
-        if(mapLayerRef.current==="mine")   return p.owner===uname;
+        if(mapLayerRef.current==="mine") return p.owner===uname;
         if(mapLayerRef.current==="public") return p.privacy==="public"||p.owner===uname;
-        if(mapLayerRef.current==="none")   return false;
-        // Default: only show public pins or own pins (never other users' private pins)
-        return p.privacy==="public"||p.owner===uname;
+        if(mapLayerRef.current==="none") return false;
+        return true;
       });
       if(activeFilter) clPins=clPins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;});
       var clusters=[], used=new Array(clPins.length).fill(false);
@@ -1984,6 +1972,7 @@ function App() {
           mapObj.current.fitBounds(bounds,{padding:[60,60]});
         }
       });
+    api.getProfile(owner).then(function(data){setViewProfile(data||{});});
   }
 
   function saveProfile(){
@@ -2535,7 +2524,7 @@ function App() {
         onClick:function(){
           if(notifPin._notifId) api.markNotifSeen(notifPin._notifId);
           setNotifPin(null);
-          if(notifPin._remaining>1){ setTimeout(function(){onCheckNotif();},400); }
+          if(notifPin._remaining>1){ setTimeout(function(){ window.dispatchEvent(new Event("pinmap-check-notifications")); },400); }
         }
       },"Got it ✓")
     ),
@@ -2719,8 +2708,8 @@ function App() {
       e("div",{style:{background:"rgba(246,241,228,0.90)",backdropFilter:"blur(8px)",border:"1px solid "+T.border,borderRadius:8,padding:"4px 10px",boxShadow:T.shadow}},
         e("span",{style:{fontSize:10,color:T.ink3,fontFamily:T.mono,letterSpacing:"0.06em"}},
           mapCenter
-            ? mapCenter.lat.toFixed(2)+"°N "+Math.abs(mapCenter.lng).toFixed(2)+"°W · Z "+mapZoom
-            : "28.54°N 81.38°W · Z "+mapZoom
+            ? formatLL(mapCenter.lat, mapCenter.lng, 2)+" · Z "+mapZoom
+            : formatLL(28.54, -81.38, 2)+" · Z "+mapZoom
         )
       )
     ),
@@ -2883,7 +2872,7 @@ function App() {
         adminStats&&e("div",null,
           e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
             [["📍","Total Pins",adminStats.totalPins],["💬","Total Comments",adminStats.totalComments],
-             ["👤","Total Users",adminStats.totalUsers],["🔥","Active (7d)",adminStats.activeUsers]
+             ["👤","Total Users",adminStats.totalUsers],["🔥","Active (7d)",adminStats.activeCount]
             ].map(function(s,i){
               return e("div",{key:i,style:{background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,padding:"14px",textAlign:"center"}},
                 e("div",{style:{fontSize:11,marginBottom:4}},s[0]),
@@ -2923,7 +2912,7 @@ function App() {
         e("div",{style:{padding:"0 0 16px"}},
           e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:6}},"Drop a pin"),
           pendingLL && e("div",{style:{fontSize:12,color:T.forest,fontFamily:T.mono,marginTop:4}},
-            pendingLL.lat.toFixed(4)+"°N  "+Math.abs(pendingLL.lng).toFixed(4)+"°W"
+            formatLL(pendingLL.lat, pendingLL.lng, 4)
           )
         ),
         !user && e("div",{style:{background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,padding:14,marginBottom:12,textAlign:"center"}},
@@ -3079,8 +3068,7 @@ function App() {
               background:"none",border:"1px solid #d8cfb8",
               color:selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"#e65100":"#6f786f"},
             onClick:function(){toggleSavePin(selPin);}
-          },selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"🔖 Saved":"🔖 Save"),
-          e("button",{style:{background:"none",border:"1px solid #d8cfb8",color:"#3c4540",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){saveToCollection(selPin);}},"⭐ Save")
+          },selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"🔖 Saved":"🔖 Save")
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
           e("button",{style:{background:"none",border:"1px solid #2e7d32",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){openEdit(selPin);}},"Edit"),
@@ -3164,7 +3152,7 @@ function App() {
                 e("div",{style:{width:10,height:10,borderRadius:"50%",background:importColor,flexShrink:0}}),
                 e("div",{style:{flex:1,minWidth:0}},
                   e("div",{style:{fontSize:14,fontWeight:600,color:T.ink,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},p.name),
-                  e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},p.lat.toFixed(4)+"°N "+Math.abs(p.lng).toFixed(4)+"°W")
+                  e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},formatLL(p.lat, p.lng, 4))
                 )
               );
             }),
@@ -3207,7 +3195,7 @@ function App() {
         e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}},
           e("div",null,
             e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}},"All Features"),
-            e("div",{style:{fontSize:12,color:"#6f786f"}},"Everything PINMAP can do")
+            e("div",{style:{fontSize:11,color:"#6f786f"}},"v 1.0.0")
           ),
           e("button",{style:{background:"none",border:"none",fontSize:22,color:"#6f786f",cursor:"pointer"},onClick:function(){setShowFeatures(false);}},"×")
         ),
@@ -3263,10 +3251,10 @@ function App() {
             viewProfile&&viewProfile.location&&e("div",{style:{fontSize:12,color:"#6f786f",marginTop:2}},"📍 "+viewProfile.location),
             viewProfile&&viewProfile.bio&&e("div",{style:{fontSize:12,color:"#5a4a38",marginTop:6,lineHeight:1.5}},viewProfile.bio),
             e("div",{style:{display:"flex",gap:10,marginTop:6,flexWrap:"wrap"}},
-              viewProfile&&viewProfile.website&&e("a",{href:viewProfile.website.startsWith("http")?viewProfile.website:"https://"+viewProfile.website,target:"_blank",style:{fontSize:11,color:"#2a5d3c",textDecoration:"none"}},"🌐 "+viewProfile.website.replace(/https?:\/\//,"")),
-              viewProfile&&viewProfile.twitter&&e("a",{href:"https://twitter.com/"+viewProfile.twitter,target:"_blank",style:{fontSize:11,color:"#1da1f2",textDecoration:"none"}},"𝕏 @"+viewProfile.twitter),
-              viewProfile&&viewProfile.instagram&&e("a",{href:"https://instagram.com/"+viewProfile.instagram,target:"_blank",style:{fontSize:11,color:"#e1306c",textDecoration:"none"}},"📸 @"+viewProfile.instagram),
-              viewProfile&&viewProfile.youtube&&e("a",{href:"https://youtube.com/@"+viewProfile.youtube,target:"_blank",style:{fontSize:11,color:"#ff0000",textDecoration:"none"}},"▶ "+viewProfile.youtube)
+              viewProfile&&viewProfile.website&&e("a",{href:viewProfile.website.startsWith("http")?viewProfile.website:"https://"+viewProfile.website,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#2a5d3c",textDecoration:"none"}},"🌐 "+viewProfile.website.replace(/https?:\/\//,"")),
+              viewProfile&&viewProfile.twitter&&e("a",{href:"https://twitter.com/"+viewProfile.twitter,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#1da1f2",textDecoration:"none"}},"𝕏 @"+viewProfile.twitter),
+              viewProfile&&viewProfile.instagram&&e("a",{href:"https://instagram.com/"+viewProfile.instagram,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#e1306c",textDecoration:"none"}},"📸 @"+viewProfile.instagram),
+              viewProfile&&viewProfile.youtube&&e("a",{href:"https://youtube.com/@"+viewProfile.youtube,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#ff0000",textDecoration:"none"}},"▶ "+viewProfile.youtube)
             ),
             e("div",{style:{fontSize:11,color:"#6f786f",marginTop:6}},userPinsLoading?"Loading...":(userPins.length+" public pins"))
           ),
