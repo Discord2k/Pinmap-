@@ -134,7 +134,16 @@ const api = {
   getUserFollows:   function(owner)        { return sb.from("user_follows").select("*").eq("owner",owner).then(function(r){return r.data||[];}); },
   getNotifications: function(owner)       { return sb.from("notifications").select("*").eq("owner",owner).eq("seen",false).order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
   getProfile:      function(id)          { return sb.from("profiles").select("*").eq("id",id).single().then(function(r){return r.data||null;}); },
-  upsertProfile:   function(profile)     { return sb.from("profiles").upsert(profile,{onConflict:"id"}); },
+  upsertProfile:   function(profile)     {
+    // Try update first, then insert if no row exists
+    return sb.from("profiles").update(profile).eq("id",profile.id).then(function(r){
+      if(r.error || (r.data && r.data.length===0)) {
+        // Row doesn't exist yet - insert it
+        return sb.from("profiles").insert(profile);
+      }
+      return r;
+    });
+  },
   markNotifSeen:    function(id)          { return sb.from("notifications").update({seen:true}).eq("id",id); },
   markAllNotifSeen: function(owner)       { return sb.from("notifications").update({seen:true}).eq("owner",owner).eq("seen",false); },
   deleteOldNotifs:  function(owner)       { 
@@ -190,6 +199,7 @@ var ALL_FEATURES = [
   {emoji:"📤", title:"Export data", body:"Export all your pins as GeoJSON or GPX files from the Profile tab — compatible with Google Maps, QGIS and most mapping tools."},
   {emoji:"👤", title:"Custom profile", body:"Set up your profile with a bio, location, website, social links and a custom photo uploaded from your device."},
   {emoji:"📡", title:"Offline mode", body:"Drop pins and comments without a connection. They queue locally and sync automatically when you come back online. Visited map tiles are cached too."},
+  {emoji:"🛡", title:"Admin dashboard", body:"Visible only to the app owner. Shows active users, top pins, trending tags, push subscribers and live usage stats."}
 ];
 var ONBOARD_STEPS = [
   {title:"Welcome to PINMAP!",body:"A social map for saving and sharing the places that matter to you. Drop pins, add hashtags, and discover locations shared by others. Let's show you around.",pos:"center"},
@@ -866,7 +876,7 @@ function ProfilePanel(props) {
         e("button",{style:Object.assign({},S.btn,{flex:1}),onClick:function(){
           var googleAv=userAvatar(user)||"";
           var profile=Object.assign({id:uname,updated_at:new Date().toISOString(),google_avatar:googleAv},profileForm);
-          api.upsertProfile(profile).then(function(){setMyProfile(profile);setEditingProfile(false);flash("Profile saved!");});
+          api.upsertProfile(profile).then(function(r){if(r&&r.error)flash("Save failed: "+r.error.message);else{setMyProfile(profile);setEditingProfile(false);flash("Profile saved!");}}).catch(function(e){flash("Save failed: "+e.message);});
         }},"Save"),
         e("button",{style:Object.assign({},S.btnOutline,{flex:1}),onClick:function(){setEditingProfile(false);}},"Cancel")
       )
@@ -1970,11 +1980,10 @@ function App() {
   function saveProfile(){
     var googleAv = userAvatar(user)||"";
     var profile = Object.assign({id:uname, updated_at:new Date().toISOString(), google_avatar:googleAv}, profileForm);
-    api.upsertProfile(profile).then(function(){
-      setMyProfile(profile);
-      setEditingProfile(false);
-      flash("Profile saved!");
-    });
+    api.upsertProfile(profile).then(function(r){
+      if(r&&r.error) flash("Save failed: "+r.error.message);
+      else { setMyProfile(profile); setEditingProfile(false); flash("Profile saved!"); }
+    }).catch(function(e){flash("Save failed: "+e.message);});
   }
 
   function toggleSavePin(pin){
