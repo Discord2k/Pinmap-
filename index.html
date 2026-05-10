@@ -1649,16 +1649,14 @@ function App() {
       map.on("moveend",function(){var c=map.getCenter();setMapCenter({lat:c.lat,lng:c.lng});});
       map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("📍 Location set — fill details in Drop tab");});
       map.on("zoomstart",function(){
-        // Clear ALL markers immediately when zoom starts - prevents ghost clusters
-        Object.values(markers.current).forEach(function(m){
-          try { m.remove(); } catch(e) {}
-        });
+        // Clear ALL markers immediately - prevents ghost clusters
+        if(window._pinLayer) window._pinLayer.clearLayers();
+        Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){}; });
         markers.current = {};
       });
       map.on("zoomend",function(){
-        Object.values(markers.current).forEach(function(m){
-          try { m.remove(); } catch(e) {}
-        });
+        if(window._pinLayer) window._pinLayer.clearLayers();
+        Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){}; });
         markers.current = {};
         setMapZoom(map.getZoom());
       });
@@ -1751,7 +1749,10 @@ function App() {
 
   useEffect(function(){
     if(!mapObj.current||!window.L) return;
-    Object.values(markers.current).forEach(function(m){m.remove();});
+    // Clear ALL existing markers atomically
+    if(window._pinLayer){ window._pinLayer.clearLayers(); }
+    else { window._pinLayer = window.L.layerGroup().addTo(mapObj.current); }
+    Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){} });
     markers.current={};
     var map=mapObj.current;
     var zoom=map.getZoom();
@@ -1787,14 +1788,14 @@ function App() {
           var icon=window.L.divIcon({className:"pm-pin",html:'<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.18))"><path d="M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z" fill="'+color+'" stroke="#f6f1e4" stroke-width="1.5"/>'+innerHtml+'</svg>',iconSize:[28,36],iconAnchor:[14,36]});
           var m=window.L.marker([pin.lat,pin.lng],{icon:icon});
           m.on("click",function(){if(pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none"))setMapLayer("public");setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
-          m.addTo(map); markers.current[pin.id]=m;
+          m.addTo(window._pinLayer); markers.current[pin.id]=m;
         } else {
           var sz=grp.length>99?52:grp.length>9?46:40;
           var cIcon=window.L.divIcon({className:"",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+clrColor+';border:3px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;cursor:pointer;font-size:'+(grp.length>9?12:14)+'px;font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+grp.length+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
           var cm=window.L.marker([clat,clng],{icon:cIcon});
           var grpCopy=grp.slice();
           cm.on("click",function(){map.fitBounds(window.L.latLngBounds(grpCopy.map(function(p){return[p.lat,p.lng];})),{padding:[60,60],maxZoom:14});});
-          cm.addTo(map); markers.current["cl_"+ci]=cm;
+          cm.addTo(window._pinLayer); markers.current["cl_"+ci]=cm;
         }
       });
       if(focusPinId.current){
@@ -1830,7 +1831,7 @@ function App() {
         iconSize:[30,38],
         iconAnchor:[15,38]
       });
-      var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(mapObj.current);
+      var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(window._pinLayer);
       m.on("click",function(){if(pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none")){setMapLayer("public");flash("Switched to show all public pins");}setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
       markers.current[pin.id]=m;
     });
@@ -2562,6 +2563,43 @@ function App() {
         !open&&unreadCount>0&&e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#b85c2a",flexShrink:0}})
       )
     ),
+    // Active filter chip on map
+    activeFilter && !open && e("div",{style:{
+      position:"absolute",
+      top:"calc(68px + env(safe-area-inset-top,0px))",
+      left:"50%",
+      transform:"translateX(-50%)",
+      zIndex:999,
+      display:"flex",
+      alignItems:"center",
+      gap:6,
+      background:T.forest,
+      color:T.paper,
+      borderRadius:20,
+      padding:"5px 8px 5px 14px",
+      fontSize:13,
+      fontWeight:600,
+      boxShadow:T.shadowLg,
+      whiteSpace:"nowrap",
+      cursor:"default"
+    }},
+      e("span",null,"#"+activeFilter),
+      e("button",{
+        style:{
+          width:22,height:22,borderRadius:"50%",
+          background:"rgba(246,241,228,0.25)",
+          border:"none",color:T.paper,cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontSize:13,lineHeight:1,flexShrink:0
+        },
+        onClick:function(){
+          setActiveFilter(null);
+          setSearchResults(null);
+          setSearchTag("");
+        }
+      },"×")
+    ),
+
     // Right-side map controls
     e("div",{style:{position:"absolute",top:"calc(80px + env(safe-area-inset-top,0px))",right:14,zIndex:999,display:"flex",flexDirection:"column",gap:8}},
 
