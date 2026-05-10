@@ -875,7 +875,7 @@ function ProfilePanel(props) {
       e("div",{style:{display:"flex",gap:8}},
         e("button",{style:Object.assign({},S.btn,{flex:1}),onClick:function(){
           var googleAv=userAvatar(user)||"";
-          var profile=Object.assign({id:uname,updated_at:new Date().toISOString(),google_avatar:googleAv},profileForm);
+          var profile=Object.assign({id:uname,updated_at:new Date().toISOString()},profileForm);
           api.upsertProfile(profile).then(function(r){if(r&&r.error)flash("Save failed: "+r.error.message);else{setMyProfile(profile);setEditingProfile(false);flash("Profile saved!");}}).catch(function(e){flash("Save failed: "+e.message);});
         }},"Save"),
         e("button",{style:Object.assign({},S.btnOutline,{flex:1}),onClick:function(){setEditingProfile(false);}},"Cancel")
@@ -1978,8 +1978,7 @@ function App() {
   }
 
   function saveProfile(){
-    var googleAv = userAvatar(user)||"";
-    var profile = Object.assign({id:uname, updated_at:new Date().toISOString(), google_avatar:googleAv}, profileForm);
+    var profile = Object.assign({id:uname, updated_at:new Date().toISOString()}, profileForm);
     api.upsertProfile(profile).then(function(r){
       if(r&&r.error) flash("Save failed: "+r.error.message);
       else { setMyProfile(profile); setEditingProfile(false); flash("Profile saved!"); }
