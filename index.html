@@ -103,10 +103,11 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 // Supabase client with owner header for RLS
+// Use the authenticated sb client for all writes - JWT handles identity
 function sbWithUser(uname) {
-  return supabase.createClient(SB_URL, SB_KEY, {
-    global: { headers: { "x-pinmap-user": uname || "" } }
-  });
+  // sb already carries the Supabase Auth JWT from signInWithOAuth
+  // RLS policies use pinmap_username() which reads from the JWT
+  return sb;
 }
 
 const api = {
