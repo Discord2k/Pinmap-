@@ -1758,11 +1758,19 @@ function App() {
     var zoom=map.getZoom();
 
     if(zoom<=12){
+      var now=new Date();
+      var soon=new Date(now.getTime()+7*24*60*60*1000);
       var clPins=pins.filter(function(p){
-        if(mapLayerRef.current==="mine") return p.owner===uname;
+        // Exclude expired pins (same logic as individual pins)
+        if(p.expires_at && new Date(p.expires_at)<now && p.owner!==uname) return false;
+        // Expiring-only filter
+        if(showExpiringOnly) return p.expires_at && new Date(p.expires_at)>now && new Date(p.expires_at)<soon && p.privacy==="public";
+        // Layer filter — exact same as individual pin renderer
+        if(mapLayerRef.current==="mine")   return p.owner===uname;
         if(mapLayerRef.current==="public") return p.privacy==="public"||p.owner===uname;
-        if(mapLayerRef.current==="none") return false;
-        return true;
+        if(mapLayerRef.current==="none")   return false;
+        // Default: only show public pins or own pins (never other users' private pins)
+        return p.privacy==="public"||p.owner===uname;
       });
       if(activeFilter) clPins=clPins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;});
       var clusters=[], used=new Array(clPins.length).fill(false);
