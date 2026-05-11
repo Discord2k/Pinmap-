@@ -84,6 +84,9 @@ function App() {
   var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
   var s54=useState({bio:"",location:"",website:"",twitter:"",instagram:"",youtube:"",avatar_url:""}); var profileForm=s54[0]; var setProfileForm=s54[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
+  var s69=useState(function(){try{return JSON.parse(localStorage.getItem("pm-drafts")||"[]");}catch(e){return [];}}); var drafts=s69[0]; var setDrafts=s69[1];
+
+  React.useEffect(function(){ localStorage.setItem("pm-drafts", JSON.stringify(drafts)); }, [drafts]);
 
   var uname = userName(user);
 
@@ -1203,11 +1206,11 @@ function App() {
 
   // Recent tags: from pins sorted by created_at desc, deduplicated, max 4
   var BASE_LAYERS = [
-    {id:"osm",       label:"Standard",  icon:"🗺", url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors"},
-    {id:"topo",      label:"Topo",      icon:"▲",  url:"https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",                                               attr:"(c) OpenTopoMap contributors"},
+    {id:"osm",       label:"Standard",  icon:"🗺", url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors"},
+    {id:"topo",      label:"Topo",      icon:"▲",  url:"https://a.tile.opentopomap.org/{z}/{x}/{y}.png",                                               attr:"(c) OpenTopoMap contributors"},
     {id:"satellite", label:"Satellite", icon:"🛰",  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",  attr:"(c) Esri"},
-    {id:"trails",    label:"Trails",    icon:"🥾",  url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors", overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
-    {id:"seamap",    label:"Sea",       icon:"⚓",  url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenSeaMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
+    {id:"trails",    label:"Trails",    icon:"🥾",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors", overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
+    {id:"seamap",    label:"Sea",       icon:"⚓",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenSeaMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
   ];
 
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
@@ -1543,6 +1546,57 @@ function App() {
           e("circle",{cx:"12",cy:"12",r:"7",stroke:T.forest,strokeWidth:1.5,fill:"none"}),
           e("path",{d:"M12 2v4M12 18v4M2 12h4M18 12h4",stroke:T.ink2,strokeWidth:1.5,strokeLinecap:"round"})
         )
+      ),
+
+      // Offline Download button
+      e("button",{
+        onClick:function(){
+          if(!mapObj.current) return;
+          var b = mapObj.current.getBounds();
+          var zMin = mapZoom > 11 ? mapZoom - 1 : 11;
+          var zMax = 16;
+          var tiles = [];
+          for(var z = zMin; z <= zMax; z++){
+            var pNW = mapObj.current.project(b.getNorthWest(), z);
+            var pSE = mapObj.current.project(b.getSouthEast(), z);
+            var tNW = pNW.divideBy(256).floor();
+            var tSE = pSE.divideBy(256).floor();
+            for(var x = tNW.x; x <= tSE.x; x++){
+              for(var y = tNW.y; y <= tSE.y; y++){
+                if(baseLayer==="osm"||baseLayer==="trails"||baseLayer==="seamap") {
+                  tiles.push("https://a.tile.openstreetmap.org/"+z+"/"+x+"/"+y+".png");
+                  if(baseLayer==="trails") tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
+                  if(baseLayer==="seamap") tiles.push("https://tiles.openseamap.org/seamark/"+z+"/"+x+"/"+y+".png");
+                }
+                else if(baseLayer==="topo") tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
+              }
+            }
+          }
+          tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
+          if(tiles.length > 8000) { flash("Region too large ("+tiles.length+" tiles). Zoom in to download."); return; }
+          if(!window.confirm("Download "+tiles.length+" map tiles for offline use?")) return;
+          flash("Downloading "+tiles.length+" tiles...");
+          var loaded = 0;
+          function fetchBatch(idx) {
+            if(idx >= tiles.length) { flash("✅ Offline map downloaded!"); return; }
+            var batch = tiles.slice(idx, idx+20);
+            Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
+              .then(function(){
+                loaded += batch.length;
+                if(loaded % 100 === 0 || loaded === tiles.length) flash("Downloading: " + Math.round((loaded/tiles.length)*100) + "%");
+                fetchBatch(idx+20);
+              });
+          }
+          fetchBatch(0);
+        },
+        style:{width:40,height:40,borderRadius:10,
+          background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
+          border:"1px solid "+T.border,
+          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:T.shadow}
+      },
+        e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none"},
+          e("path",{d:"M12 4v12m0 0l-4-4m4 4l4-4M4 20h16",stroke:T.forest,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"})
+        )
       )
     ),
 
@@ -1762,6 +1816,22 @@ function App() {
           e("div",{style:{fontSize:13,color:T.ink2,marginBottom:8}},"Sign in to save pins to your account"),
           e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
         ),
+        drafts.length > 0 && e("div",{style:{marginBottom:16}},
+          e("div",{style:{fontSize:11,color:T.ink3,marginBottom:8}},"Your Drafts"),
+          drafts.map(function(d){
+            return e("div",{key:d.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:6,cursor:"pointer"},onClick:function(){
+              setForm(d.form);
+              if(d.pendingLL){ setPendingLL(d.pendingLL); if(mapObj.current) mapObj.current.setView([d.pendingLL.lat, d.pendingLL.lng]); }
+              else setPendingLL(null);
+            }},
+              e("div",{style:{flex:1}},
+                e("div",{style:{fontWeight:600,fontSize:14,color:T.ink}},d.form.name || "Untitled Draft"),
+                e("div",{style:{fontSize:11,color:T.ink3}},new Date(d.date).toLocaleString())
+              ),
+              e("button",{style:{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:5,fontSize:18,lineHeight:1},onClick:function(ev){ev.stopPropagation();setDrafts(function(ds){return ds.filter(function(x){return x.id!==d.id;});});}},"×")
+            );
+          })
+        ),
         e("div",{style:{position:"relative",marginBottom:10}},
           e("input",{style:S.input,placeholder:"Name / Place",value:form.name,
             onChange:function(ev){setForm(function(f){return Object.assign({},f,{name:ev.target.value});});}})
@@ -1798,7 +1868,10 @@ function App() {
           e("input",{type:"datetime-local",style:S.input,value:form.expires_at,
             onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}})
         ),
-        e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:savePin},"Save Pin")
+        e("div",{style:{display:"flex",gap:8}},
+          e("button",{style:Object.assign({},S.btn,{flex:1,background:"transparent",color:T.ink2,border:"1px solid "+T.border}),onClick:saveDraft},"Save Draft"),
+          e("button",{style:Object.assign({},S.btn,{flex:2}),onClick:savePin},"Publish Pin")
+        )
       ),
 
       tab==="nearby" && e("div",{style:{padding:"22px",overflowY:"auto"}},

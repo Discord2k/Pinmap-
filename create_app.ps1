@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$html = Get-Content -Raw -Path "..\index.html"
+$html = Get-Content -Raw -Path "legacy_backup\index.html"
 $lines = $html -split "`n"
 $startLineMatch = $lines -match "function App\(\) \{"
 if ($startLineMatch.Count -eq 0) { throw "Could not find start of App" }
