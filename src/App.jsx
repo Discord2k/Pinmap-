@@ -92,6 +92,20 @@ function App() {
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
+  function saveDraft() {
+    if(!form.name.trim() && !pendingLL) { flash("Add a name or location first"); return; }
+    var draft = {
+      id: "draft_"+Date.now(),
+      form: Object.assign({}, form),
+      pendingLL: pendingLL ? {lat: pendingLL.lat, lng: pendingLL.lng} : null,
+      date: new Date().toISOString()
+    };
+    setDrafts(function(d){return [draft].concat(d);});
+    flash("Saved to drafts");
+    setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:""});
+    setPendingLL(null);
+  }
+
   function parseImportFile(file, onDone) {
     var name = file.name.toLowerCase();
     var reader = new FileReader();
