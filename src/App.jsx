@@ -85,6 +85,7 @@ function App() {
   var s54=useState({bio:"",location:"",website:"",twitter:"",instagram:"",youtube:"",avatar_url:""}); var profileForm=s54[0]; var setProfileForm=s54[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
   var s69=useState(function(){try{return JSON.parse(localStorage.getItem("pm-drafts")||"[]");}catch(e){return [];}}); var drafts=s69[0]; var setDrafts=s69[1];
+  var s70=useState(false); var offlineMode=s70[0]; var setOfflineMode=s70[1];
 
   React.useEffect(function(){ localStorage.setItem("pm-drafts", JSON.stringify(drafts)); }, [drafts]);
 
@@ -104,6 +105,53 @@ function App() {
     flash("Saved to drafts");
     setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:""});
     setPendingLL(null);
+  }
+
+  function downloadOfflineTiles() {
+    if(!mapObj.current) return;
+    var b = mapObj.current.getBounds();
+    var zMin = mapZoom > 11 ? mapZoom - 1 : 11;
+    var zMax = 16;
+    var tiles = [];
+    for(var z = zMin; z <= zMax; z++){
+      var pNW = mapObj.current.project(b.getNorthWest(), z);
+      var pSE = mapObj.current.project(b.getSouthEast(), z);
+      var tNW = pNW.divideBy(256).floor();
+      var tSE = pSE.divideBy(256).floor();
+      for(var x = tNW.x; x <= tSE.x; x++){
+        for(var y = tNW.y; y <= tSE.y; y++){
+          if(baseLayer==="osm"||baseLayer==="trails"||baseLayer==="seamap") {
+            tiles.push("https://a.tile.openstreetmap.org/"+z+"/"+x+"/"+y+".png");
+            if(baseLayer==="trails") tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
+            if(baseLayer==="seamap") tiles.push("https://tiles.openseamap.org/seamark/"+z+"/"+x+"/"+y+".png");
+          } else if(baseLayer==="topo") tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
+        }
+      }
+    }
+    tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
+    if(tiles.length > 8000) { flash("Region too large ("+tiles.length+" tiles). Zoom in first."); setOfflineMode(false); return; }
+    setOfflineMode(false);
+    flash("Downloading "+tiles.length+" tiles...");
+    var loaded = 0;
+    function fetchBatch(idx) {
+      if(idx >= tiles.length) { flash("✅ Offline map downloaded!"); return; }
+      var batch = tiles.slice(idx, idx+20);
+      Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
+        .then(function(){
+          loaded += batch.length;
+          if(loaded % 100 === 0 || loaded === tiles.length) flash("Downloading: " + Math.round((loaded/tiles.length)*100) + "%");
+          fetchBatch(idx+20);
+        });
+    }
+    fetchBatch(0);
+  }
+
+  function purgeOfflineTiles() {
+    caches.delete("pinmap-tiles-v2").then(function(){
+      flash("🗑 Offline tiles cleared!");
+    }).catch(function(){
+      flash("Could not clear tile cache");
+    });
   }
 
   function parseImportFile(file, onDone) {
@@ -1561,56 +1609,6 @@ function App() {
           e("path",{d:"M12 2v4M12 18v4M2 12h4M18 12h4",stroke:T.ink2,strokeWidth:1.5,strokeLinecap:"round"})
         )
       ),
-
-      // Offline Download button
-      e("button",{
-        onClick:function(){
-          if(!mapObj.current) return;
-          var b = mapObj.current.getBounds();
-          var zMin = mapZoom > 11 ? mapZoom - 1 : 11;
-          var zMax = 16;
-          var tiles = [];
-          for(var z = zMin; z <= zMax; z++){
-            var pNW = mapObj.current.project(b.getNorthWest(), z);
-            var pSE = mapObj.current.project(b.getSouthEast(), z);
-            var tNW = pNW.divideBy(256).floor();
-            var tSE = pSE.divideBy(256).floor();
-            for(var x = tNW.x; x <= tSE.x; x++){
-              for(var y = tNW.y; y <= tSE.y; y++){
-                if(baseLayer==="osm"||baseLayer==="trails"||baseLayer==="seamap") {
-                  tiles.push("https://a.tile.openstreetmap.org/"+z+"/"+x+"/"+y+".png");
-                  if(baseLayer==="trails") tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
-                  if(baseLayer==="seamap") tiles.push("https://tiles.openseamap.org/seamark/"+z+"/"+x+"/"+y+".png");
-                }
-                else if(baseLayer==="topo") tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
-              }
-            }
-          }
-          tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
-          if(tiles.length > 8000) { flash("Region too large ("+tiles.length+" tiles). Zoom in to download."); return; }
-          if(!window.confirm("Download "+tiles.length+" map tiles for offline use?")) return;
-          flash("Downloading "+tiles.length+" tiles...");
-          var loaded = 0;
-          function fetchBatch(idx) {
-            if(idx >= tiles.length) { flash("✅ Offline map downloaded!"); return; }
-            var batch = tiles.slice(idx, idx+20);
-            Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
-              .then(function(){
-                loaded += batch.length;
-                if(loaded % 100 === 0 || loaded === tiles.length) flash("Downloading: " + Math.round((loaded/tiles.length)*100) + "%");
-                fetchBatch(idx+20);
-              });
-          }
-          fetchBatch(0);
-        },
-        style:{width:40,height:40,borderRadius:10,
-          background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
-          border:"1px solid "+T.border,
-          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:T.shadow}
-      },
-        e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none"},
-          e("path",{d:"M12 4v12m0 0l-4-4m4 4l4-4M4 20h16",stroke:T.forest,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"})
-        )
       )
     ),
 
@@ -1628,6 +1626,74 @@ function App() {
     // Bottom-right: touch hint / pin placed indicator
 
 
+
+    // Offline reticle overlay
+    offlineMode && e("div", {style:{position:"fixed",inset:0,zIndex:2000,pointerEvents:"all"}},
+      // Dark vignette with cutout
+      e("div", {style:{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)"}},
+        // Top bar
+        e("div", {style:{position:"absolute",top:0,left:0,right:0,height:"calc(18% + env(safe-area-inset-top,0px))",background:"rgba(0,0,0,0.55)"}}),
+        // Bottom bar
+        e("div", {style:{position:"absolute",bottom:0,left:0,right:0,height:"calc(18% + env(safe-area-inset-bottom,0px))",background:"rgba(0,0,0,0.55)"}}),
+        // Left bar
+        e("div", {style:{position:"absolute",top:"calc(18% + env(safe-area-inset-top,0px))",bottom:"calc(18% + env(safe-area-inset-bottom,0px))",left:0,width:"10%",background:"rgba(0,0,0,0.55)"}}),
+        // Right bar
+        e("div", {style:{position:"absolute",top:"calc(18% + env(safe-area-inset-top,0px))",bottom:"calc(18% + env(safe-area-inset-bottom,0px))",right:0,width:"10%",background:"rgba(0,0,0,0.55)"}})
+      ),
+      // Reticle border
+      e("div", {style:{
+        position:"absolute",
+        top:"calc(18% + env(safe-area-inset-top,0px))",
+        bottom:"calc(18% + env(safe-area-inset-bottom,0px))",
+        left:"10%", right:"10%",
+        border:"2px solid rgba(246,241,228,0.9)",
+        borderRadius:4,
+        boxShadow:"0 0 0 1px rgba(0,0,0,0.4)"
+      }},
+        // Corner brackets
+        e("div",{style:{position:"absolute",top:-2,left:-2,width:20,height:20,borderTop:"3px solid #f6f1e4",borderLeft:"3px solid #f6f1e4",borderRadius:"4px 0 0 0"}}),
+        e("div",{style:{position:"absolute",top:-2,right:-2,width:20,height:20,borderTop:"3px solid #f6f1e4",borderRight:"3px solid #f6f1e4",borderRadius:"0 4px 0 0"}}),
+        e("div",{style:{position:"absolute",bottom:-2,left:-2,width:20,height:20,borderBottom:"3px solid #f6f1e4",borderLeft:"3px solid #f6f1e4",borderRadius:"0 0 0 4px"}}),
+        e("div",{style:{position:"absolute",bottom:-2,right:-2,width:20,height:20,borderBottom:"3px solid #f6f1e4",borderRight:"3px solid #f6f1e4",borderRadius:"0 0 4px 0"}})
+      ),
+      // Instruction text above reticle
+      e("div",{style:{
+        position:"absolute",top:"calc(18% + env(safe-area-inset-top,0px) - 36px)",
+        left:0,right:0,textAlign:"center",
+        color:"rgba(246,241,228,0.85)",fontSize:12,letterSpacing:"0.06em",
+        fontFamily:"Inter, system-ui, sans-serif"
+      }},"Pan & zoom the map, then download this area"),
+      // Buttons at bottom
+      e("div",{style:{
+        position:"absolute",
+        bottom:"calc(18% + env(safe-area-inset-bottom,0px) + 16px)",
+        left:0,right:0,
+        display:"flex",justifyContent:"center",gap:12,
+        padding:"0 24px"
+      }},
+        e("button",{
+          style:{
+            flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
+            border:"1px solid rgba(246,241,228,0.4)",
+            background:"rgba(26,32,28,0.7)",
+            color:"rgba(246,241,228,0.8)",fontSize:14,cursor:"pointer",
+            fontFamily:"Inter, system-ui, sans-serif"
+          },
+          onClick:function(){setOfflineMode(false);}
+        },"Cancel"),
+        e("button",{
+          style:{
+            flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
+            border:"none",
+            background:"#2a5d3c",
+            color:"#f6f1e4",fontSize:14,fontWeight:700,cursor:"pointer",
+            fontFamily:"Inter, system-ui, sans-serif",
+            boxShadow:"0 4px 16px rgba(0,0,0,0.3)"
+          },
+          onClick:downloadOfflineTiles
+        },"📥 Download")
+      )
+    ),
 
     loading && e("div",{style:{position:"absolute",top:70,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:20,padding:"5px 14px",fontSize:13,zIndex:999,color:"#6f786f"}},"Loading..."),
 
@@ -1930,7 +1996,9 @@ function App() {
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
-          onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");}
+          onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");},
+          onStartOfflineMode:function(){setOpen(false);setOfflineMode(true);},
+          onPurgeOfflineTiles:purgeOfflineTiles
         })
         )
 

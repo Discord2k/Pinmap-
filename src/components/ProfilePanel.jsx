@@ -25,6 +25,8 @@ export function ProfilePanel(props) {
   var profileForm = props.profileForm || {};
   var setProfileForm = props.setProfileForm || function(){};
   var saveProfile = props.saveProfile || function(){};
+  var onStartOfflineMode = props.onStartOfflineMode || function(){};
+  var onPurgeOfflineTiles = props.onPurgeOfflineTiles || function(){};
   
   var own = myPins.filter(function(p){return !p.saved_from;});
   var saved = myPins.filter(function(p){return p.saved_from;});
@@ -254,6 +256,28 @@ export function ProfilePanel(props) {
               <div style={{fontSize:12,color:T.ink3,marginTop:2}}>KML · GPX · GeoJSON · CSV</div>
             </div>
             <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>Import <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
+          </div>
+
+          {/* Offline Maps */}
+          <div style={{padding:"16px 0"}}>
+            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}}>Offline Maps</div>
+            <div style={{fontSize:12,color:T.ink3,marginBottom:12,lineHeight:1.5}}>Cache map tiles for use without a signal. Navigate to your destination, then download.</div>
+            <div style={{display:"flex",gap:8}}>
+              <button
+                style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"11px 0",borderRadius:10,border:"none",background:T.forest,color:T.paper,fontSize:13,fontWeight:600,cursor:"pointer"}}
+                onClick={onStartOfflineMode}
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Download Region
+              </button>
+              <button
+                style={{padding:"11px 14px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",color:T.ink3,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}
+                onClick={onPurgeOfflineTiles}
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Purge
+              </button>
+            </div>
           </div>
           
           <div style={{display:"flex",alignItems:"center",padding:"14px 0"}}>
