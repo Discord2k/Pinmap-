@@ -529,7 +529,15 @@ function App() {
     var name = nameOverride || uname;
     if(!name || name==="guest") return;
     var lastSeen = localStorage.getItem("pm-comments-seen-"+name);
-    var lastSeenTime = lastSeen ? new Date(lastSeen) : new Date(0);
+    // If this user has never had a "seen" timestamp, seed it to right now so
+    // all existing comments are treated as already-read. Only comments posted
+    // AFTER this first check will ever appear as new.
+    if(!lastSeen) {
+      var now = new Date().toISOString();
+      localStorage.setItem("pm-comments-seen-"+name, now);
+      lastSeen = now;
+    }
+    var lastSeenTime = new Date(lastSeen);
     var myPinIds = pinsData.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
     if(!myPinIds.length) return;
     sb.from("comments").select("id,pin_id,created_at").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
