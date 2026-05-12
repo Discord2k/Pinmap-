@@ -86,6 +86,10 @@ function App() {
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
   var s69=useState(function(){try{return JSON.parse(localStorage.getItem("pm-drafts")||"[]");}catch(e){return [];}}); var drafts=s69[0]; var setDrafts=s69[1];
   var s70=useState(false); var offlineMode=s70[0]; var setOfflineMode=s70[1];
+  // reticle box: {top,left,width,height} in viewport-px, initialised when offlineMode opens
+  var s71=useState(null); var reticleBox=s71[0]; var setReticleBox=s71[1];
+  var reticleDrag=useRef(null); // {startX,startY,origTop,origLeft}
+  var reticleResize=useRef(null); // {corner,startX,startY,origBox}
 
   React.useEffect(function(){ localStorage.setItem("pm-drafts", JSON.stringify(drafts)); }, [drafts]);
 
@@ -107,15 +111,43 @@ function App() {
     setPendingLL(null);
   }
 
-  function downloadOfflineTiles() {
+  // Disable / re-enable all Leaflet map gestures while the reticle is open
+  React.useEffect(function(){
     if(!mapObj.current) return;
-    var b = mapObj.current.getBounds();
+    var m = mapObj.current;
+    if(offlineMode){
+      // Initialise reticle to centre 70% of the viewport
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var rw = Math.round(vw * 0.70), rh = Math.round(vh * 0.54);
+      setReticleBox({ top: Math.round((vh-rh)/2), left: Math.round((vw-rw)/2), width: rw, height: rh });
+      // Lock the map so touch/scroll gestures don't zoom the whole viewport
+      m.dragging.disable();
+      m.touchZoom.disable();
+      m.doubleClickZoom.disable();
+      m.scrollWheelZoom.disable();
+      if(m.tap) m.tap.disable();
+    } else {
+      m.dragging.enable();
+      m.touchZoom.enable();
+      m.doubleClickZoom.enable();
+      m.scrollWheelZoom.enable();
+      if(m.tap) m.tap.enable();
+    }
+  }, [offlineMode]);
+
+  function downloadOfflineTiles() {
+    if(!mapObj.current || !reticleBox) return;
+    var map = mapObj.current;
+    // Convert reticle pixel corners to lat/lng using the frozen map state
+    var rb = reticleBox;
+    var llNW = map.containerPointToLatLng(window.L.point(rb.left, rb.top));
+    var llSE = map.containerPointToLatLng(window.L.point(rb.left + rb.width, rb.top + rb.height));
     var zMin = mapZoom > 11 ? mapZoom - 1 : 11;
     var zMax = 16;
     var tiles = [];
     for(var z = zMin; z <= zMax; z++){
-      var pNW = mapObj.current.project(b.getNorthWest(), z);
-      var pSE = mapObj.current.project(b.getSouthEast(), z);
+      var pNW = map.project(llNW, z);
+      var pSE = map.project(llSE, z);
       var tNW = pNW.divideBy(256).floor();
       var tSE = pSE.divideBy(256).floor();
       for(var x = tNW.x; x <= tSE.x; x++){
@@ -1626,73 +1658,132 @@ function App() {
 
 
 
-    // Offline reticle overlay
-    offlineMode && e("div", {style:{position:"fixed",inset:0,zIndex:2000,pointerEvents:"all"}},
-      // Dark vignette with cutout
-      e("div", {style:{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)"}},
-        // Top bar
-        e("div", {style:{position:"absolute",top:0,left:0,right:0,height:"calc(18% + env(safe-area-inset-top,0px))",background:"rgba(0,0,0,0.55)"}}),
-        // Bottom bar
-        e("div", {style:{position:"absolute",bottom:0,left:0,right:0,height:"calc(18% + env(safe-area-inset-bottom,0px))",background:"rgba(0,0,0,0.55)"}}),
-        // Left bar
-        e("div", {style:{position:"absolute",top:"calc(18% + env(safe-area-inset-top,0px))",bottom:"calc(18% + env(safe-area-inset-bottom,0px))",left:0,width:"10%",background:"rgba(0,0,0,0.55)"}}),
-        // Right bar
-        e("div", {style:{position:"absolute",top:"calc(18% + env(safe-area-inset-top,0px))",bottom:"calc(18% + env(safe-area-inset-bottom,0px))",right:0,width:"10%",background:"rgba(0,0,0,0.55)"}})
-      ),
-      // Reticle border
-      e("div", {style:{
-        position:"absolute",
-        top:"calc(18% + env(safe-area-inset-top,0px))",
-        bottom:"calc(18% + env(safe-area-inset-bottom,0px))",
-        left:"10%", right:"10%",
-        border:"2px solid rgba(246,241,228,0.9)",
-        borderRadius:4,
-        boxShadow:"0 0 0 1px rgba(0,0,0,0.4)"
-      }},
-        // Corner brackets
-        e("div",{style:{position:"absolute",top:-2,left:-2,width:20,height:20,borderTop:"3px solid #f6f1e4",borderLeft:"3px solid #f6f1e4",borderRadius:"4px 0 0 0"}}),
-        e("div",{style:{position:"absolute",top:-2,right:-2,width:20,height:20,borderTop:"3px solid #f6f1e4",borderRight:"3px solid #f6f1e4",borderRadius:"0 4px 0 0"}}),
-        e("div",{style:{position:"absolute",bottom:-2,left:-2,width:20,height:20,borderBottom:"3px solid #f6f1e4",borderLeft:"3px solid #f6f1e4",borderRadius:"0 0 0 4px"}}),
-        e("div",{style:{position:"absolute",bottom:-2,right:-2,width:20,height:20,borderBottom:"3px solid #f6f1e4",borderRight:"3px solid #f6f1e4",borderRadius:"0 0 4px 0"}})
-      ),
-      // Instruction text above reticle
-      e("div",{style:{
-        position:"absolute",top:"calc(18% + env(safe-area-inset-top,0px) - 36px)",
-        left:0,right:0,textAlign:"center",
-        color:"rgba(246,241,228,0.85)",fontSize:12,letterSpacing:"0.06em",
-        fontFamily:"Inter, system-ui, sans-serif"
-      }},"Pan & zoom the map, then download this area"),
-      // Buttons at bottom
-      e("div",{style:{
-        position:"absolute",
-        bottom:"calc(18% + env(safe-area-inset-bottom,0px) + 16px)",
-        left:0,right:0,
-        display:"flex",justifyContent:"center",gap:12,
-        padding:"0 24px"
-      }},
-        e("button",{
+    // Offline reticle overlay — draggable + resizable selection box
+    offlineMode && reticleBox && (function(){
+      var rb = reticleBox;
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var MIN_SIZE = 80;
+
+      // ── pointer helpers for drag ────────────────────────────────
+      function onReticlePtrDown(ev) {
+        ev.stopPropagation();
+        var clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        var clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+        reticleDrag.current = { startX:clientX, startY:clientY, origTop:rb.top, origLeft:rb.left };
+      }
+      function onReticlePtrMove(ev) {
+        ev.preventDefault();
+        var clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        var clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+        // drag
+        if(reticleDrag.current && !reticleResize.current) {
+          var dx = clientX - reticleDrag.current.startX;
+          var dy = clientY - reticleDrag.current.startY;
+          var newTop  = Math.max(0, Math.min(vh - rb.height, reticleDrag.current.origTop  + dy));
+          var newLeft = Math.max(0, Math.min(vw - rb.width,  reticleDrag.current.origLeft + dx));
+          setReticleBox(function(b){ return Object.assign({},b,{top:newTop,left:newLeft}); });
+        }
+        // resize
+        if(reticleResize.current) {
+          var d = reticleResize.current;
+          var ddx = clientX - d.startX, ddy = clientY - d.startY;
+          var nb = Object.assign({},d.origBox);
+          if(d.corner==='se'){ nb.width=Math.max(MIN_SIZE,d.origBox.width+ddx); nb.height=Math.max(MIN_SIZE,d.origBox.height+ddy); }
+          if(d.corner==='sw'){ var nw=Math.max(MIN_SIZE,d.origBox.width-ddx); nb.left=d.origBox.left+(d.origBox.width-nw); nb.width=nw; nb.height=Math.max(MIN_SIZE,d.origBox.height+ddy); }
+          if(d.corner==='ne'){ nb.width=Math.max(MIN_SIZE,d.origBox.width+ddx); var nh=Math.max(MIN_SIZE,d.origBox.height-ddy); nb.top=d.origBox.top+(d.origBox.height-nh); nb.height=nh; }
+          if(d.corner==='nw'){ var nw2=Math.max(MIN_SIZE,d.origBox.width-ddx); nb.left=d.origBox.left+(d.origBox.width-nw2); nb.width=nw2; var nh2=Math.max(MIN_SIZE,d.origBox.height-ddy); nb.top=d.origBox.top+(d.origBox.height-nh2); nb.height=nh2; }
+          setReticleBox(nb);
+        }
+      }
+      function onReticlePtrUp() {
+        reticleDrag.current = null;
+        reticleResize.current = null;
+      }
+      function onResizePtrDown(corner, ev) {
+        ev.stopPropagation();
+        var clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        var clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+        reticleResize.current = { corner:corner, startX:clientX, startY:clientY, origBox: Object.assign({},rb) };
+      }
+
+      // ── shade outside the reticle using 4 bars ─────────────────
+      var shadeStyle = {position:"absolute",background:"rgba(0,0,0,0.58)"};
+
+      return e("div", {
+        style:{position:"fixed",inset:0,zIndex:2000,pointerEvents:"all",userSelect:"none"},
+        onMouseMove:onReticlePtrMove, onTouchMove:onReticlePtrMove,
+        onMouseUp:onReticlePtrUp,   onTouchEnd:onReticlePtrUp
+      },
+        // Shade: top
+        e("div",{style:Object.assign({},shadeStyle,{top:0,left:0,right:0,height:rb.top})}),
+        // Shade: bottom
+        e("div",{style:Object.assign({},shadeStyle,{top:rb.top+rb.height,left:0,right:0,bottom:0})}),
+        // Shade: left
+        e("div",{style:Object.assign({},shadeStyle,{top:rb.top,left:0,width:rb.left,height:rb.height})}),
+        // Shade: right
+        e("div",{style:Object.assign({},shadeStyle,{top:rb.top,left:rb.left+rb.width,right:0,height:rb.height})}),
+
+        // ── Reticle box (draggable) ────────────────────────────────
+        e("div", {
           style:{
-            flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
-            border:"1px solid rgba(246,241,228,0.4)",
-            background:"rgba(26,32,28,0.7)",
-            color:"rgba(246,241,228,0.8)",fontSize:14,cursor:"pointer",
-            fontFamily:"Inter, system-ui, sans-serif"
+            position:"absolute",
+            top:rb.top, left:rb.left, width:rb.width, height:rb.height,
+            border:"2px solid rgba(246,241,228,0.92)",
+            borderRadius:6,
+            boxSizing:"border-box",
+            cursor:"grab",
+            touchAction:"none"
           },
-          onClick:function(){setOfflineMode(false);}
-        },"Cancel"),
-        e("button",{
-          style:{
-            flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
-            border:"none",
-            background:"#2a5d3c",
-            color:"#f6f1e4",fontSize:14,fontWeight:700,cursor:"pointer",
-            fontFamily:"Inter, system-ui, sans-serif",
-            boxShadow:"0 4px 16px rgba(0,0,0,0.3)"
-          },
-          onClick:downloadOfflineTiles
-        },"📥 Download")
-      )
-    ),
+          onMouseDown:onReticlePtrDown,
+          onTouchStart:onReticlePtrDown
+        },
+          // ── Corner resize handles ────────────────────────────────
+          // NW
+          e("div",{style:{position:"absolute",top:-2,left:-2,width:22,height:22,cursor:"nwse-resize",borderTop:"3px solid #f6f1e4",borderLeft:"3px solid #f6f1e4",borderRadius:"4px 0 0 0",touchAction:"none"},onMouseDown:function(ev){onResizePtrDown('nw',ev);},onTouchStart:function(ev){onResizePtrDown('nw',ev);}}),
+          // NE
+          e("div",{style:{position:"absolute",top:-2,right:-2,width:22,height:22,cursor:"nesw-resize",borderTop:"3px solid #f6f1e4",borderRight:"3px solid #f6f1e4",borderRadius:"0 4px 0 0",touchAction:"none"},onMouseDown:function(ev){onResizePtrDown('ne',ev);},onTouchStart:function(ev){onResizePtrDown('ne',ev);}}),
+          // SW
+          e("div",{style:{position:"absolute",bottom:-2,left:-2,width:22,height:22,cursor:"nesw-resize",borderBottom:"3px solid #f6f1e4",borderLeft:"3px solid #f6f1e4",borderRadius:"0 0 0 4px",touchAction:"none"},onMouseDown:function(ev){onResizePtrDown('sw',ev);},onTouchStart:function(ev){onResizePtrDown('sw',ev);}}),
+          // SE
+          e("div",{style:{position:"absolute",bottom:-2,right:-2,width:22,height:22,cursor:"nwse-resize",borderBottom:"3px solid #f6f1e4",borderRight:"3px solid #f6f1e4",borderRadius:"0 0 4px 0",touchAction:"none"},onMouseDown:function(ev){onResizePtrDown('se',ev);},onTouchStart:function(ev){onResizePtrDown('se',ev);}}),
+
+          // Instruction label inside reticle
+          e("div",{style:{
+            position:"absolute",top:"50%",left:0,right:0,
+            transform:"translateY(-50%)",
+            textAlign:"center",
+            color:"rgba(246,241,228,0.7)",fontSize:11,letterSpacing:"0.08em",
+            pointerEvents:"none",fontFamily:"Inter, system-ui, sans-serif"
+          }},"✥ Drag to move · corners to resize")
+        ),
+
+        // ── Action bar below the reticle ───────────────────────────
+        e("div",{style:{
+          position:"absolute",
+          top: Math.min(rb.top + rb.height + 16, vh - 80),
+          left:0,right:0,
+          display:"flex",justifyContent:"center",gap:12,
+          padding:"0 24px"
+        }},
+          e("button",{
+            style:{flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
+              border:"1px solid rgba(246,241,228,0.4)",
+              background:"rgba(26,32,28,0.82)",
+              color:"rgba(246,241,228,0.85)",fontSize:14,cursor:"pointer",
+              fontFamily:"Inter, system-ui, sans-serif"},
+            onClick:function(){setOfflineMode(false);}
+          },"Cancel"),
+          e("button",{
+            style:{flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
+              border:"none",background:"#2a5d3c",
+              color:"#f6f1e4",fontSize:14,fontWeight:700,cursor:"pointer",
+              fontFamily:"Inter, system-ui, sans-serif",
+              boxShadow:"0 4px 16px rgba(0,0,0,0.3)"},
+            onClick:downloadOfflineTiles
+          },"📥 Download")
+        )
+      );
+    })(),
 
     loading && e("div",{style:{position:"absolute",top:70,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:20,padding:"5px 14px",fontSize:13,zIndex:999,color:"#6f786f"}},"Loading..."),
 
