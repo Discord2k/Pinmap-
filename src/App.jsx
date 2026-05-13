@@ -654,13 +654,20 @@ function App() {
     if(!def) return;
     // Remove current base and overlay
     if(currentBase.current){ currentBase.current.forEach(function(l){l.remove();}); }
+    // OpenTopoMap only has tiles up to z17 — cap zoom for topo only
+    var layerMaxZoom = baseLayer === "topo" ? 17 : 19;
+    mapObj.current.setMaxZoom(layerMaxZoom);
+    // If currently zoomed past the new max, pull back
+    if(mapObj.current.getZoom() > layerMaxZoom){
+      mapObj.current.setZoom(layerMaxZoom);
+    }
     // Add new base
     var layers = [];
-    var base = window.L.tileLayer(def.url,{attribution:def.attr,maxZoom:19});
+    var base = window.L.tileLayer(def.url,{attribution:def.attr,maxZoom:layerMaxZoom});
     base.addTo(mapObj.current);
     layers.push(base);
     if(def.overlay){
-      var ov = window.L.tileLayer(def.overlay,{attribution:def.attr,maxZoom:19,opacity:0.85});
+      var ov = window.L.tileLayer(def.overlay,{attribution:def.attr,maxZoom:layerMaxZoom,opacity:0.85});
       ov.addTo(mapObj.current);
       layers.push(ov);
     }
