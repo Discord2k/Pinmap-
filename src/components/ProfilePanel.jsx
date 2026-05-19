@@ -164,9 +164,16 @@ export function ProfilePanel(props) {
           <div style={{display:"flex",gap:8}}>
             <button style={Object.assign({},S.btn,{flex:1})} onClick={() => {
               var profile=Object.assign({id:uname,updated_at:new Date().toISOString()},profileForm);
+              console.log("🚀 SENDING PROFILE PAYLOAD:", profile);
               api.upsertProfile(profile).then(function(r){
+                console.log("📥 SUPABASE RESPONSE:", r);
                 if(r&&r.error) flash("Save failed: "+r.error.message);
-                else { setMyProfile(profile); setEditingProfile(false); flash("Profile saved!"); }
+                else { 
+                  var savedData = (r.data && r.data.length > 0) ? r.data[0] : profile;
+                  setMyProfile(savedData); 
+                  setEditingProfile(false); 
+                  flash("Profile saved!"); 
+                }
               }).catch(function(e){flash("Save failed: "+e.message);});
             }}>Save</button>
             <button style={Object.assign({},S.btnOutline,{flex:1})} onClick={() => setEditingProfile(false)}>Cancel</button>
