@@ -85,8 +85,8 @@ DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON profiles;
 DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 CREATE POLICY "Profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own profile" ON profiles FOR INSERT WITH CHECK (id = current_user);
-CREATE POLICY "Users can update their own profile" ON profiles FOR UPDATE USING (id = current_user);
+CREATE POLICY "Users can insert their own profile" ON profiles FOR INSERT WITH CHECK (id = coalesce(NULLIF(auth.jwt() -> 'user_metadata' ->> 'full_name', ''), split_part(auth.jwt() ->> 'email', '@', 1)));
+CREATE POLICY "Users can update their own profile" ON profiles FOR UPDATE USING (id = coalesce(NULLIF(auth.jwt() -> 'user_metadata' ->> 'full_name', ''), split_part(auth.jwt() ->> 'email', '@', 1)));
 
 -- FOLLOWS (Tag Follows)
 DROP POLICY IF EXISTS "Users can view their own tag follows" ON follows;

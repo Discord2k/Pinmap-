@@ -35,10 +35,7 @@ export const api = {
   getNotifications: function(owner)       { return sb.from("notifications").select("*").eq("owner",owner).eq("seen",false).order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
   getProfile:      function(id)          { return sb.from("profiles").select("*").eq("id",id).single().then(function(r){return r.data||null;}); },
   upsertProfile:   function(profile)     {
-    return sb.from("profiles").update(profile).eq("id",profile.id).then(function(r){
-      if(r.error || (r.data && r.data.length===0)) {
-        return sb.from("profiles").insert(profile);
-      }
+    return sb.from("profiles").upsert(profile, { onConflict: 'id' }).select().then(function(r) {
       return r;
     });
   },
