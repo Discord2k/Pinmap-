@@ -2055,8 +2055,20 @@ function App() {
           "Close this panel and touch the map to set a location"
         ),
         e("div",{style:{marginBottom:12}},
-          e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},"Photo"),
-          e("input",{type:"file",accept:"image/*",style:{fontSize:12,color:T.ink3},onChange:handlePhoto})
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:6}},"Photo"),
+          form.photo
+            ? e("div",{style:{position:"relative",marginBottom:6}},
+                e("img",{src:form.photo,style:{width:"100%",borderRadius:6,maxHeight:130,objectFit:"cover"}}),
+                e("button",{
+                  onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},
+                  style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.55)",border:"none",color:"#fff",borderRadius:"50%",width:22,height:22,cursor:"pointer",fontSize:12,lineHeight:1}
+                },"x")
+              )
+            : null,
+          e("button",{
+            style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,color:T.ink,cursor:"pointer",background:T.paper2,border:"1px solid "+T.border,borderRadius:6,padding:"8px 12px",fontFamily:T.font},
+            onClick:function(){takePhoto(function(compressed){setForm(function(f){return Object.assign({},f,{photo:compressed});});});}
+          }, form.photo?"📷 Replace photo":"📷 Add photo")
         ),
         e("div",{style:{marginBottom:12}},
           e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},"Expires (optional)"),
