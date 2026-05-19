@@ -74,6 +74,8 @@ function App() {
   var s65=useState("#2a5d3c"); var importColor=s65[0]; var setImportColor=s65[1];
   var s66=useState(""); var importTags=s66[0]; var setImportTags=s66[1];
   var s67=useState(null); var importPreview=s67[0]; var setImportPreview=s67[1];
+  var s90=useState([]); var checkins=s90[0]; var setCheckins=s90[1];
+  var s91=useState(0); var selPinCheckinsCount=s91[0]; var setSelPinCheckinsCount=s91[1];
   var s68=useState(false); var importLoading=s68[0]; var setImportLoading=s68[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
@@ -637,6 +639,7 @@ function App() {
     api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
     api.getFollowers(uname).then(function(data){setFollowers(data||[]);});
     api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);});
+    api.getCheckins(uname).then(function(data){setCheckins(data||[]);});
     api.getProfile(uname).then(function(data){
       if(data) setMyProfile(data);
     });
@@ -649,6 +652,18 @@ function App() {
       }).catch(function(){});
     }
   },[user]);
+
+  useEffect(function(){
+    if(!selPin) {
+      setSelPinCheckinsCount(0);
+      return;
+    }
+    api.getPinCheckinsCount(selPin.id).then(function(count){
+      setSelPinCheckinsCount(count);
+    }).catch(function(){
+      setSelPinCheckinsCount(0);
+    });
+  }, [selPin]);
 
   // Switch base layer when baseLayer state changes
   useEffect(function(){
@@ -1123,6 +1138,42 @@ function App() {
       if(pins.find(function(p){return p.id===id;})){flash("Already saved");return;}
       var saved=Object.assign({},pin,{id:id,owner:uname,saved_from:pin.owner,privacy:"private",upvotes:[],saved_by:[]});
       api.insert(saved).then(function(){setPins(function(p){return [saved].concat(p);});flash("Saved!");}).catch(function(){flash("Failed");});
+    });
+  }
+
+  function checkinToPin(pin) {
+    requireAuth(function(){
+      if(pin.owner===uname){flash("You cannot check in to your own pin!");return;}
+      if(!navigator.geolocation){flash("Geolocation is not supported by your browser");return;}
+      flash("Verifying precise location...");
+      navigator.geolocation.getCurrentPosition(
+        function(pos){
+          var lat=pos.coords.latitude, lng=pos.coords.longitude;
+          setUserLL({lat:lat,lng:lng});
+          
+          if (!window.L) { flash("Map library not ready"); return; }
+          var pinLatLng = window.L.latLng(pin.lat, pin.lng);
+          var userLatLng = window.L.latLng(lat, lng);
+          var distanceMeters = pinLatLng.distanceTo(userLatLng);
+          
+          if(distanceMeters > 30){
+            flash("❌ Too far! You must be within 30 meters. You are " + Math.round(distanceMeters) + "m away.");
+            return;
+          }
+          
+          api.checkin(pin.id, uname, lat, lng).then(function(newCheckin){
+            setCheckins(function(prev){return prev.concat([newCheckin]);});
+            setSelPinCheckinsCount(function(c){return c+1;});
+            flash("✅ Checked in successfully!");
+          }).catch(function(err){
+            flash("Check-in failed: " + (err.message || "already checked in"));
+          });
+        },
+        function(err){
+          flash("Location access denied — check device settings");
+        },
+        {enableHighAccuracy:true,timeout:6000,maximumAge:0}
+      );
     });
   }
 
@@ -2119,7 +2170,7 @@ function App() {
 
         tab==="profile" && e("div",null,
           e(ProfilePanel,{
-          user:user,uname:uname,myPins:myPins,
+          user:user,uname:uname,myPins:myPins,checkinsCount:checkins.length,
           userFollows:userFollows,followers:followers,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
@@ -2185,7 +2236,10 @@ function App() {
           return e("span",{key:t,style:{fontSize:12,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
         })
       ),
-      e("div",{style:{fontSize:11,color:"#9a8f74",fontFamily:"monospace",marginBottom:10}},selPin.lat.toFixed(5)+", "+selPin.lng.toFixed(5)),
+      e("div",{style:{fontSize:11,color:"#9a8f74",fontFamily:"monospace",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+        e("span",null,selPin.lat.toFixed(5)+", "+selPin.lng.toFixed(5)),
+        e("span",{style:{color:"#6f786f",fontFamily:"sans-serif",fontWeight:500}}, "📍 " + (selPinCheckinsCount || 0) + " check-in" + (selPinCheckinsCount === 1 ? "" : "s"))
+      ),
       e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}},
         (uname&&selPin.owner!==uname)&&e(React.Fragment,null,
           e("button",{style:{background:"none",border:"1px solid #d8cfb8",color:"#3c4540",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){toggleUpvote(selPin.id);}},
@@ -2195,7 +2249,12 @@ function App() {
               background:"none",border:"1px solid #d8cfb8",
               color:selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"#e65100":"#6f786f"},
             onClick:function(){toggleSavePin(selPin);}
-          },selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"🔖 Saved":"🔖 Save")
+          },selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"🔖 Saved":"🔖 Save"),
+          (uname&&uname!=="guest"&&selPin.owner!==uname)&&(
+            checkins.some(function(c){return c.pin_id===selPin.id;})
+              ? e("button",{style:{fontSize:12,padding:"4px 10px",borderRadius:6,border:"1px solid #2a5d3c",background:"#dde6dc",color:"#2a5d3c",cursor:"default"},disabled:true},"✓ Checked In")
+              : e("button",{style:{fontSize:12,padding:"4px 10px",borderRadius:6,border:"1px solid #2a5d3c",background:"none",color:"#2a5d3c",cursor:"pointer"},onClick:function(){checkinToPin(selPin);}},"📍 Check In")
+          )
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
           e("button",{style:{background:"none",border:"1px solid #2e7d32",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){openEdit(selPin);}},"Edit"),

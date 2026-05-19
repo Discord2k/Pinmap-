@@ -131,6 +131,34 @@ CREATE POLICY "Users can update their own notifications" ON notifications FOR UP
 CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (owner = current_user);
 
 
+-- 2.5 CHECKINS Table Definition and RLS Policies
+CREATE TABLE IF NOT EXISTS public.checkins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pin_id UUID REFERENCES public.pins(id) ON DELETE CASCADE,
+  visitor TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  CONSTRAINT unique_visitor_pin UNIQUE (visitor, pin_id)
+);
+
+-- Grants for checkins
+GRANT SELECT, INSERT                  ON public.checkins TO authenticated;
+GRANT SELECT                          ON public.checkins TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE  ON public.checkins TO service_role;
+
+-- Enable RLS
+ALTER TABLE public.checkins ENABLE ROW LEVEL SECURITY;
+
+-- Policies for checkins
+DROP POLICY IF EXISTS "Check-ins are viewable by everyone" ON public.checkins;
+DROP POLICY IF EXISTS "Users can insert their own check-ins" ON public.checkins;
+CREATE POLICY "Check-ins are viewable by everyone" ON public.checkins FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own check-ins" ON public.checkins FOR INSERT WITH CHECK (
+  visitor = coalesce(NULLIF(auth.jwt() -> 'user_metadata' ->> 'full_name', ''), split_part(auth.jwt() ->> 'email', '@', 1))
+);
+
+
 -- 3. Set up Auto-Delete for Expired Pins (using pg_cron)
 -- Requires pg_cron extension to be enabled in Supabase Database settings.
 CREATE EXTENSION IF NOT EXISTS pg_cron;
@@ -142,3 +170,4 @@ SELECT cron.schedule(
     DELETE FROM public.pins WHERE expires_at < now();
   $$
 );
+

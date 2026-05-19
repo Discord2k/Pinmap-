@@ -1,7 +1,8 @@
 import React from 'react';
-import { userAvatar, userName, dlFile, toGeoJSON, toGPX } from '../utils/helpers';
+import { userAvatar } from '../utils/helpers';
 import { api, subscribeToPush } from '../utils/api';
 import { T, S } from '../utils/styles';
+import { UserBadges } from './UserBadges';
 
 export function ProfilePanel(props) {
   var user = props.user, uname = props.uname, myPins = props.myPins;
@@ -16,9 +17,7 @@ export function ProfilePanel(props) {
   var setPushEnabled = props.setPushEnabled || function(){};
   var flash = props.flash || function(){};
   var savedPins = props.savedPins || [];
-  var toggleSavePin = props.toggleSavePin || function(){};
   var setOnboardStep = props.setOnboardStep || function(){};
-  var setShowWhatsNew = props.setShowWhatsNew || function(){};
   var setOpen = props.setOpen || function(){};
   var setShowFeatures = props.setShowFeatures || function(){};
   var setMyProfile = props.setMyProfile || function(){};
@@ -28,12 +27,10 @@ export function ProfilePanel(props) {
   var setEditingProfile = props.setEditingProfile || function(){};
   var profileForm = props.profileForm || {};
   var setProfileForm = props.setProfileForm || function(){};
-  var saveProfile = props.saveProfile || function(){};
   var onStartOfflineMode = props.onStartOfflineMode || function(){};
   var onPurgeOfflineTiles = props.onPurgeOfflineTiles || function(){};
   
   var own = myPins.filter(function(p){return !p.saved_from;});
-  var saved = myPins.filter(function(p){return p.saved_from;});
   var upvotes = own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
   
   var avatar = userAvatar(user);
@@ -196,6 +193,13 @@ export function ProfilePanel(props) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Achievements ───────────────────────────────────────────────────────── */}
+      {!editingProfile && (
+        <div style={{padding:"0 22px 12px",borderBottom:"1px solid "+T.borderSoft}}>
+          <UserBadges pinsCount={own.length} checkinsCount={props.checkinsCount || 0} />
         </div>
       )}
 
