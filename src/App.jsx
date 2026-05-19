@@ -76,6 +76,7 @@ function App() {
   var s67=useState(null); var importPreview=s67[0]; var setImportPreview=s67[1];
   var s90=useState([]); var checkins=s90[0]; var setCheckins=s90[1];
   var s91=useState(0); var selPinCheckinsCount=s91[0]; var setSelPinCheckinsCount=s91[1];
+  var s95=useState(false); var showInsiderExplainer=s95[0]; var setShowInsiderExplainer=s95[1];
   var s68=useState(false); var importLoading=s68[0]; var setImportLoading=s68[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
@@ -2108,7 +2109,13 @@ function App() {
               style:{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+(form.privacy===p?T.forest:T.border),
                 background:form.privacy===p?T.forestPale:"transparent",color:form.privacy===p?T.forest:T.ink2,
                 fontSize:12,cursor:"pointer",fontWeight:form.privacy===p?600:400,textTransform:"capitalize"},
-              onClick:function(){setForm(function(f){return Object.assign({},f,{privacy:p});})}},p);
+              onClick:function(){
+                setForm(function(f){return Object.assign({},f,{privacy:p});});
+                if(p==="insider" && !localStorage.getItem("pm-seen-insider-explainer")){
+                  setShowInsiderExplainer(true);
+                  localStorage.setItem("pm-seen-insider-explainer","1");
+                }
+              }},p);
           })
         ),
         !pendingLL && e("div",{style:{background:T.paper2,border:"1px dashed "+T.border,borderRadius:10,padding:"16px",marginBottom:12,textAlign:"center",color:T.ink3,fontSize:13}},
@@ -2410,6 +2417,49 @@ function App() {
       )
     ),
     !showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard}),
+
+    showInsiderExplainer && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
+      e("div",{style:{background:"#f6f1e4",borderRadius:16,padding:"24px 22px",maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",display:"flex",flexDirection:"column"}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:14}},
+          e("span",{style:{fontSize:28}},"🕵️"),
+          e("div",null,
+            e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}},"Insider Pins"),
+            e("div",{style:{fontSize:12,color:"#6f786f"}},"The Secret Code Feature")
+          )
+        ),
+        e("div",{style:{fontSize:13,color:"#3c4540",lineHeight:1.6,marginBottom:18,maxHeight:"60vh",overflowY:"auto"}},
+          e("p",{style:{marginBottom:12}},
+            "An ",
+            e("strong",null,"Insider Pin"),
+            " is completely hidden from public maps, nearby lists, and trending tags by default. It can only be discovered by other users who search for its exact hashtag."
+          ),
+          e("div",{style:{background:"rgba(42,93,60,0.06)",border:"1px solid #c7dacb",borderRadius:10,padding:12,marginBottom:12}},
+            e("div",{style:{fontWeight:700,color:"#2a5d3c",fontSize:12.5,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}},"💡 Creative Ideas:"),
+            e("ul",{style:{paddingLeft:16,margin:0,display:"flex",flexDirection:"column",gap:8}},
+              e("li",null,
+                e("strong",null,"🔑 Secret Communities: "),
+                "Share hidden surf spots, fishing spots, or camps only with friends by giving them a specific tag (e.g. #mysecretcove)."
+              ),
+              e("li",null,
+                e("strong",null,"🧭 Scavenger Hunts: "),
+                "Set up local exploration games where finding the next pin requires searching for a keyword discovered at the previous spot."
+              ),
+              e("li",null,
+                e("strong",null,"🎉 Pop-up Events: "),
+                "Create temporary pins for meetups or exclusive pop-ups where only people 'in the know' can locate the event coordinates."
+              )
+            )
+          ),
+          e("p",{style:{margin:0,fontSize:12,fontStyle:"italic",color:"#6f786f"}},
+            "Make sure to assign a unique hashtag to this pin so your 'insiders' know what word to search for!"
+          )
+        ),
+        e("button",{
+          style:{width:"100%",padding:"12px",background:"#2a5d3c",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
+          onClick:function(){setShowInsiderExplainer(false);}
+        },"I Understand")
+      )
+    ),
 
     viewUser&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}},
       e("div",{style:{background:"#f6f1e4",borderRadius:"20px 20px 0 0",boxShadow:"0 -4px 32px rgba(0,0,0,0.12)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",width:"100%",maxWidth:480,maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 -8px 40px rgba(0,0,0,0.2)"}},
