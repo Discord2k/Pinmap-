@@ -154,8 +154,8 @@ export function ProfilePanel(props) {
               <div key={i} style={{marginBottom:10}}>
                 <div style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,marginBottom:4}}>{field[1]}</div>
                 {field[3]==="textarea"
-                  ? <textarea style={S.textarea} placeholder={field[2]} rows={3} value={profileForm[field[0]]||""} onChange={(ev)=>{var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,{[k]:v});});}} />
-                  : <input style={S.input} placeholder={field[2]} value={profileForm[field[0]]||""} onChange={(ev)=>{var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,{[k]:v});});}} />
+                  ? <textarea id={field[0]} name={field[0]} style={S.textarea} placeholder={field[2]} rows={3} value={profileForm[field[0]]||""} onChange={(ev)=>{var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,{[k]:v});});}} />
+                  : <input id={field[0]} name={field[0]} style={S.input} placeholder={field[2]} value={profileForm[field[0]]||""} onChange={(ev)=>{var k=field[0];var v=ev.target.value;setProfileForm(function(f){return Object.assign({},f,{[k]:v});});}} />
                 }
               </div>
             );
