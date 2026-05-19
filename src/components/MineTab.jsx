@@ -11,6 +11,7 @@ export function MineTab(props) {
   var totalUpvotes = myPins.reduce(function(s,p){return s+((p.upvotes&&Array.isArray(p.upvotes))?p.upvotes.length:0);},0);
   
   var [expanded, setExpanded] = useState({});
+  var [searchQuery, setSearchQuery] = useState("");
 
   function toggleGroup(tag){
     setExpanded(function(prev){
@@ -19,6 +20,22 @@ export function MineTab(props) {
       return next;
     });
   }
+
+  // Filter pins based on search query
+  var filteredPins = myPins;
+  if (searchQuery.trim()) {
+    var q = searchQuery.toLowerCase();
+    filteredPins = myPins.filter(function(p){
+      return (p.name && p.name.toLowerCase().indexOf(q) !== -1) ||
+             (p.description && p.description.toLowerCase().indexOf(q) !== -1) ||
+             (p.tags && p.tags.some(function(t){ return t.toLowerCase().indexOf(q) !== -1; }));
+    });
+  }
+
+  // Only show tags that have pins after filtering
+  var filteredTags = myTags.filter(function(tag){
+    return filteredPins.some(function(p){return (p.tags||[]).indexOf(tag)>=0;});
+  });
 
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -45,6 +62,18 @@ export function MineTab(props) {
           </g>
         </svg>
       </div>
+      
+      {/* Search Bar */}
+      {myPins.length > 0 && (
+        <div style={{padding:"14px 22px",borderBottom:"1px solid "+T.borderSoft,flexShrink:0,background:T.paper}}>
+          <input 
+            style={{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,borderRadius:12,padding:"10px 14px",fontSize:15,outline:"none",color:T.ink,fontFamily:T.font}}
+            placeholder="Search my pins..."
+            value={searchQuery}
+            onChange={(ev) => setSearchQuery(ev.target.value)}
+          />
+        </div>
+      )}
 
       {/* ── Content ────────────────────────────────────────────────────────────── */}
       {myPins.length === 0 ? (
@@ -56,8 +85,8 @@ export function MineTab(props) {
       ) : (
         <div style={{flex:1,overflowY:"auto"}}>
           {/* ── Tag groups ──────────────────────────────────────────────────── */}
-          {myTags.map(function(tag){
-            var tp = myPins.filter(function(p){return (p.tags||[]).indexOf(tag)>=0;});
+          {filteredTags.map(function(tag){
+            var tp = filteredPins.filter(function(p){return (p.tags||[]).indexOf(tag)>=0;});
             var tagHasUnread = tp.some(function(p){return unreadPinIds.indexOf(p.id)>=0;});
             var isOpen = expanded[tag]===true;
             var tagComments = tp.reduce(function(s,p){return s+(commentCounts[p.id]||0);},0);

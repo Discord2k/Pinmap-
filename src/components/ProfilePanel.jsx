@@ -6,6 +6,10 @@ import { T, S } from '../utils/styles';
 export function ProfilePanel(props) {
   var user = props.user, uname = props.uname, myPins = props.myPins;
   var userFollows = props.userFollows || [];
+  var followers = props.followers || [];
+  var [showAllFollowing, setShowAllFollowing] = React.useState(false);
+  var [showAllFollowers, setShowAllFollowers] = React.useState(false);
+  
   var toggleUserFollow = props.toggleUserFollow || function(){};
   var loadUserProfile = props.loadUserProfile || function(){};
   var pushEnabled = props.pushEnabled || false;
@@ -199,7 +203,7 @@ export function ProfilePanel(props) {
       {!editingProfile && userFollows.length>0 && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:12}}>{"Following · "+userFollows.length}</div>
-          {userFollows.map(function(f){
+          {(showAllFollowing ? userFollows : userFollows.slice(0,10)).map(function(f){
             return (
               <div key={f.following} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={() => loadUserProfile(f.following)}>
                 <div style={{width:40,height:40,borderRadius:20,background:T.forestPale,color:T.forest,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0}}>
@@ -218,6 +222,43 @@ export function ProfilePanel(props) {
               </div>
             );
           })}
+          {!showAllFollowing && userFollows.length > 10 && (
+            <button style={{width:"100%",padding:"12px",marginTop:12,borderRadius:10,border:"1px solid "+T.borderSoft,background:T.paper2,color:T.ink2,fontSize:13,fontWeight:600,cursor:"pointer"}} onClick={() => setShowAllFollowing(true)}>
+              Show all {userFollows.length}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Followers ───────────────────────────────────────────────────────────── */}
+      {!editingProfile && followers.length>0 && (
+        <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
+          <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:12}}>{"Followers · "+followers.length}</div>
+          {(showAllFollowers ? followers : followers.slice(0,10)).map(function(f){
+            var isFollowingBack = userFollows.some(function(uf){return uf.following === f.owner;});
+            return (
+              <div key={f.owner} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={() => loadUserProfile(f.owner)}>
+                <div style={{width:40,height:40,borderRadius:20,background:T.forestPale,color:T.forest,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0}}>
+                  {f.owner[0].toUpperCase()}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:15,color:T.ink}}>{f.owner}</div>
+                  <div style={{fontSize:13,color:T.ink3}}></div>
+                </div>
+                <button 
+                  style={{padding:"6px 14px",borderRadius:10,border:"1px solid "+(isFollowingBack?T.border:T.forest),background:isFollowingBack?"transparent":T.forestPale,fontSize:13,cursor:"pointer",color:isFollowingBack?T.ink2:T.forest,fontWeight:isFollowingBack?400:600}}
+                  onClick={(ev) => {ev.stopPropagation();toggleUserFollow(f.owner);}}
+                >
+                  {isFollowingBack ? "Following" : "Follow"}
+                </button>
+              </div>
+            );
+          })}
+          {!showAllFollowers && followers.length > 10 && (
+            <button style={{width:"100%",padding:"12px",marginTop:12,borderRadius:10,border:"1px solid "+T.borderSoft,background:T.paper2,color:T.ink2,fontSize:13,fontWeight:600,cursor:"pointer"}} onClick={() => setShowAllFollowers(true)}>
+              Show all {followers.length}
+            </button>
+          )}
         </div>
       )}
 

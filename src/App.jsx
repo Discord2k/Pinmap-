@@ -58,6 +58,7 @@ function App() {
   var s41=useState(13); var mapZoom=s41[0]; var setMapZoom=s41[1];
   var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
   var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
+  var s80=useState([]); var followers=s80[0]; var setFollowers=s80[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var s45=useState(false); var pushEnabled=s45[0]; var setPushEnabled=s45[1];
   var s46=useState(null); var notifPin=s46[0]; var setNotifPin=s46[1];
@@ -633,6 +634,7 @@ function App() {
     if(!user||!uname||uname==="guest") return;
     api.getFollows(uname).then(function(data){setFollows(data||[]);});
     api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
+    api.getFollowers(uname).then(function(data){setFollowers(data||[]);});
     api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);});
     api.getProfile(uname).then(function(data){
       if(data) setMyProfile(data);
@@ -2104,7 +2106,7 @@ function App() {
         tab==="profile" && e("div",null,
           e(ProfilePanel,{
           user:user,uname:uname,myPins:myPins,
-          userFollows:userFollows,toggleUserFollow:toggleUserFollow,
+          userFollows:userFollows,followers:followers,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},

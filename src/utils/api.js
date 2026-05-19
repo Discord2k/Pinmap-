@@ -32,6 +32,7 @@ export const api = {
   follow:         function(id,owner,tag){ return sb.from("follows").insert({id:id,owner:owner,tag:tag}).select().then(function(r){return r.data;}); },
   unfollow:       function(id,owner)    { return sbWithUser(owner).from("follows").delete().eq("id",id); },
   getUserFollows:   function(owner)        { return sb.from("user_follows").select("*").eq("owner",owner).then(function(r){return r.data||[];}); },
+  getFollowers:     function(uname)        { return sb.from("user_follows").select("*").eq("following",uname).then(function(r){return r.data||[];}); },
   getNotifications: function(owner)       { return sb.from("notifications").select("*").eq("owner",owner).eq("seen",false).order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
   getProfile:      function(id)          { return sb.from("profiles").select("*").eq("id",id).single().then(function(r){return r.data||null;}); },
   upsertProfile:   function(profile)     {
