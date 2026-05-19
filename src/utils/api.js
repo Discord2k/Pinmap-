@@ -19,7 +19,7 @@ export const api = {
   getSavedPins:   function(uname)       { return sb.from("pins").select("*").contains("saved_by",[uname]).then(function(r){return r.data||[];}); },
   deleteExpired:  function()            { return sb.from("pins").delete().lt("expires_at",new Date().toISOString()).not("expires_at","is",null); },
   remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
-  search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).eq("privacy","public").then(function(r){return r.data||[];}); },
+  search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).in("privacy",["public","insider"]).then(function(r){return r.data||[];}); },
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
   upvoteComment:  function(id,upvotes) { return sb.from("comments").update({upvotes:upvotes}).eq("id",id); },
   addComment:     function(c)          { return sb.from("comments").insert(c).select().then(function(r){return r.data;}); },

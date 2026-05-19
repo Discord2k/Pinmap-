@@ -14,7 +14,7 @@ export const WHATSNEW = [
 export const ALL_FEATURES = [
   {emoji:"📍", title:"Drop pins", body:"Tap anywhere on the map to place a pin. Add a name, description, hashtags, colour, photo and optional expiry date."},
   {emoji:"🎨", title:"Pin colours & icons", body:"Choose from 9 colours for your pin. Icons are automatically assigned based on hashtags — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot and more."},
-  {emoji:"🔒", title:"Pin privacy", body:"Pins can be public (visible to all), private (only you), or shareable (via direct link)."},
+  {emoji:"🕵️", title:"Insider pins", body:"Pins can be public (visible to all), private (only you), or insider (hidden unless someone searches for its exact hashtag)."},
   {emoji:"⏰", title:"Expiring pins", body:"Set a date and time when adding a pin. It counts down and auto-deletes when expired — perfect for events and pop-up spots."},
   {emoji:"🔖", title:"Pin saves", body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Find saved pins in your Profile tab."},
   {emoji:"💬", title:"Comments & replies", body:"Tap any pin to leave a comment. Reply to comments with ↩ Reply. Threaded conversations keep discussions organised."},

@@ -711,7 +711,11 @@ function App() {
     if(zoom<=12){
       var clPins=pins.filter(function(p){
         if(mapLayerRef.current==="mine") return p.owner===uname;
-        if(mapLayerRef.current==="public") return p.privacy==="public"||p.owner===uname;
+        if(mapLayerRef.current==="public") {
+          var pubOrMine = p.privacy==="public"||p.owner===uname;
+          var insiderMatch = p.privacy==="insider" && activeFilter && p.tags && p.tags.indexOf(activeFilter)>=0;
+          return pubOrMine || insiderMatch;
+        }
         if(mapLayerRef.current==="none") return false;
         return true;
       });
@@ -764,7 +768,11 @@ function App() {
       // Expiring filter
       if(showExpiringOnly) return p.expires_at && new Date(p.expires_at)>now && new Date(p.expires_at)<soon && p.privacy==="public";
       if(mapLayer==="mine")   return p.owner===uname;
-      if(mapLayer==="public") return p.privacy==="public"||p.owner===uname;
+      if(mapLayer==="public") {
+        var pubOrMine = p.privacy==="public"||p.owner===uname;
+        var insiderMatch = p.privacy==="insider" && activeFilter && p.tags && p.tags.indexOf(activeFilter)>=0;
+        return pubOrMine || insiderMatch;
+      }
       if(mapLayer==="none")   return false;
       return true;
     });
@@ -1162,7 +1170,7 @@ function App() {
         setMapLayer("public");
         flash("Switched to show all public pins");
       } else if(!results.length) {
-        flash("No public pins for #"+tag);
+        flash("No pins found for #"+tag);
       }
     }).catch(function(){flash("Search failed");});
   }
@@ -2033,7 +2041,7 @@ function App() {
           })
         ),
         e("div",{style:{display:"flex",gap:6,marginBottom:12}},
-          ["public","private","shareable"].map(function(p){
+          ["public","private","insider"].map(function(p){
             return e("button",{key:p,
               style:{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+(form.privacy===p?T.forest:T.border),
                 background:form.privacy===p?T.forestPale:"transparent",color:form.privacy===p?T.forest:T.ink2,

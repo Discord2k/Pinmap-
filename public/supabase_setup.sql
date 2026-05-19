@@ -61,10 +61,11 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- PINS
 DROP POLICY IF EXISTS "Public pins are viewable by everyone" ON pins;
+DROP POLICY IF EXISTS "Public and insider pins are viewable by everyone" ON pins;
 DROP POLICY IF EXISTS "Users can insert their own pins" ON pins;
 DROP POLICY IF EXISTS "Users can update their own pins" ON pins;
 DROP POLICY IF EXISTS "Users can delete their own pins" ON pins;
-CREATE POLICY "Public pins are viewable by everyone" ON pins FOR SELECT USING (privacy = 'public' OR owner = current_user);
+CREATE POLICY "Public and insider pins are viewable by everyone" ON pins FOR SELECT USING (privacy IN ('public', 'insider') OR owner = current_user);
 CREATE POLICY "Users can insert their own pins" ON pins FOR INSERT WITH CHECK (owner = current_user);
 CREATE POLICY "Users can update their own pins" ON pins FOR UPDATE USING (owner = current_user);
 CREATE POLICY "Users can delete their own pins" ON pins FOR DELETE USING (owner = current_user);
