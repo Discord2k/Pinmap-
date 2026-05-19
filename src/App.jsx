@@ -158,6 +158,7 @@ function App() {
             if(baseLayer==="trails") tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
             if(baseLayer==="seamap") tiles.push("https://tiles.openseamap.org/seamark/"+z+"/"+x+"/"+y+".png");
           } else if(baseLayer==="topo") tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
+          else if(baseLayer==="cycleosm") tiles.push("https://a.tile-cyclosm.openstreetmap.fr/cyclosm/"+z+"/"+x+"/"+y+".png");
         }
       }
     }
@@ -1329,6 +1330,7 @@ function App() {
     {id:"topo",      label:"Topo",      icon:"▲",  url:"https://a.tile.opentopomap.org/{z}/{x}/{y}.png",                                               attr:"(c) OpenTopoMap contributors"},
     {id:"satellite", label:"Satellite", icon:"🛰",  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",  attr:"(c) Esri"},
     {id:"trails",    label:"Trails",    icon:"🥾",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors", overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
+    {id:"cycleosm",  label:"Cycle",     icon:"🚲",  url:"https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",                              attr:"(c) OpenStreetMap contributors | Style: CyclOSM"},
     {id:"seamap",    label:"Sea",       icon:"⚓",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenSeaMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
   ];
 
