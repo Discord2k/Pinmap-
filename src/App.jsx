@@ -564,7 +564,14 @@ function App() {
   function dismissWhatsNew() {
     localStorage.setItem(WHATSNEW_KEY,"1");
     setShowWhatsNew(false);
+    flash("💡 Tip: Visit 'Features' in the Profile menu anytime for an overview of what is available!");
   }
+
+  useEffect(function(){
+    if (showWhatsNew) {
+      flash("🆕 PINMAP Updated! Visit 'Features' in your Profile for the full overview.");
+    }
+  }, [showWhatsNew]);
 
   function nextOnboard() {
     if(onboardStep>=ONBOARD_STEPS.length-1){ localStorage.setItem(ONBOARD_KEY,"1"); setOnboardStep(-1); }

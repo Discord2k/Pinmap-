@@ -1,8 +1,10 @@
 export const COLORS = ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 export const ONBOARD_KEY = "pm-onboarded-v5";
-export const WHATSNEW_KEY = "pm-whatsnew-v11";
+export const WHATSNEW_KEY = "pm-whatsnew-v12";
 
 export const WHATSNEW = [
+  {emoji:"⚜️", title:"Badges & Check-ins", body:"Earn achievements as you explore! Check in to other users' pins when you are physically close (within 30m) to unlock milestone badges. View all your locked and unlocked badges in your Profile tab."},
+  {emoji:"🚲", title:"CycleOSM Layer", body:"A new high-contrast cycling map layer has been added. Switch to it via the Layers menu to view bike trails, routes, and topographic contours, optimized for outdoor exploring."},
   {emoji:"🎨", title:"New look — Atlas edition", body:"PINMAP has a completely new design. Warm paper tones, clean typography, and a fullscreen panel layout inspired by a field atlas. Everything is easier to read and navigate."},
   {emoji:"🗺", title:"Redesigned map screen", body:"The map now has a floating search bar at the top, a layers button, and a locate button. Touch anywhere on the map to place a pin — a hint tells you where to tap."},
   {emoji:"📋", title:"Mine is now your Field Log", body:"Your pins are presented as numbered log entries with coordinates, italic descriptions, and stamped tag chips. Scroll through your personal atlas of places."},
@@ -14,6 +16,7 @@ export const WHATSNEW = [
 export const ALL_FEATURES = [
   {emoji:"📍", title:"Drop pins", body:"Tap anywhere on the map to place a pin. Add a name, description, hashtags, colour, photo and optional expiry date."},
   {emoji:"🎨", title:"Pin colours & icons", body:"Choose from 9 colours for your pin. Icons are automatically assigned based on hashtags — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot and more."},
+  {emoji:"⚜️", title:"Badges & Check-ins", body:"Earn badges for placing pins (1, 10, 50, 100 milestone achievements) and checking in to other users' pins within 30m (1, 5, 15, 35 milestone achievements)."},
   {emoji:"🕵️", title:"Insider pins", body:"Pins can be public (visible to all), private (only you), or insider (hidden unless someone searches for its exact hashtag)."},
   {emoji:"⏰", title:"Expiring pins", body:"Set a date and time when adding a pin. It counts down and auto-deletes when expired — perfect for events and pop-up spots."},
   {emoji:"🔖", title:"Pin saves", body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Find saved pins in your Profile tab."},
@@ -22,7 +25,7 @@ export const ALL_FEATURES = [
   {emoji:"🔍", title:"Dual search", body:"Tap # Tags to search pins by hashtag or 📍 Places to search any address worldwide. Results update the map automatically."},
   {emoji:"🔥", title:"Trending hashtags", body:"The Search tab shows the most active hashtags from the last 7 days. Follow tags to track your favourite topics."},
   {emoji:"⏰", title:"Expiring soon", body:"The Search tab shows public pins expiring in the next 7 days. Tap Show on map to filter the map to only those pins."},
-  {emoji:"🗺", title:"Map layers", body:"Switch between Standard, Topographic, Satellite, Hiking Trails and Nautical chart views using the Layers button."},
+  {emoji:"🗺", title:"Map layers", body:"Switch between Standard, Topographic, Satellite, Hiking Trails, Nautical chart, and CycleOSM views using the Layers button."},
   {emoji:"🔵", title:"Pin clustering", body:"When zoomed out, nearby pins group into a circle. Tap the cluster to zoom in and separate them."},
   {emoji:"📡", title:"Nearby pins", body:"The Nearby tab shows public pins within a set radius of your current location."},
   {emoji:"👤", title:"User profiles", body:"Tap any username to see their public profile — bio, socials, location and all their public pins on the map."},
@@ -44,12 +47,13 @@ export const ONBOARD_STEPS = [
   {title:"Pin Saves",body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Saved pins appear in the Saved Pins section of your Profile tab — tap to jump straight to them.",pos:"center"},
   {title:"Expiring Pins",body:"When adding a pin you can set an optional expiry date. The pin shows a countdown badge and is automatically deleted when it expires — perfect for events.",pos:"center"},
   {title:"Pin Icons and Clustering",body:"Pins show an emoji based on their hashtag — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot. When zoomed out, nearby pins cluster — tap to zoom in.",pos:"center"},
-  {title:"Map Layers",body:"Use the Layers button on the right to switch between Standard, Topographic, Satellite, Hiking Trails, and Nautical chart views.",pos:"center"},
+  {title:"Map Layers",body:"Use the Layers button on the right to switch between Standard, Topographic, Satellite, Hiking Trails, Nautical chart, and CycleOSM views.",pos:"center"},
   {title:"Pin Visibility",body:"The middle right button controls what shows on the map — your pins only, all public pins, or a clean map. Searching a hashtag auto-switches to show all public pins.",pos:"center"},
   {title:"GPS and Nearby",body:"Tap the GPS button to jump to your location. Use the Nearby tab to discover public pins within a radius of where you are.",pos:"bottom"},
   {title:"Follow Users and Hashtags",body:"Tap any username to view their public profile and follow them — you'll get a push notification when they post a new pin. Follow hashtags in the Search tab.",pos:"center"},
   {title:"Comments, Replies and Upvotes",body:"Tap any pin to leave a comment. Reply with ↩ Reply. Upvote comments with 👍. The Mine tab shows comment counts and highlights pins with new activity.",pos:"center"},
   {title:"Push Notifications",body:"Enable push notifications in your Profile tab to get alerts when someone comments on your pin or a user you follow posts something new.",pos:"center"},
+  {title:"Check-ins & Badges",body:"Earn custom badges by active exploration! Place pins to unlock milestone badges, and check in to other users' pins when you are within 30m of their physical location. Track your achievements under the Profile tab.",pos:"center"},
   {title:"You are all set!",body:"Sign in with Google to save everything across your devices. Your pins, saves, follows and notifications are all stored securely. Happy exploring!",pos:"center"}
 ];
 
