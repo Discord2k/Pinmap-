@@ -36,6 +36,9 @@ export const api = {
   getProfile:      function(id)          { return sb.from("profiles").select("*").eq("id",id).single().then(function(r){return r.data||null;}); },
   upsertProfile:   function(profile)     {
     return sb.from("profiles").upsert(profile, { onConflict: 'id' }).select().then(function(r) {
+      if (!r.error && (!r.data || r.data.length === 0)) {
+        return { error: { message: "Permission denied or row not found. Please check your SQL Row Level Security (RLS) policies for the profiles table." }, data: null };
+      }
       return r;
     });
   },
