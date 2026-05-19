@@ -131,10 +131,9 @@ CREATE POLICY "Users can update their own notifications" ON notifications FOR UP
 CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (owner = current_user);
 
 
--- 2.5 CHECKINS Table Definition and RLS Policies
 CREATE TABLE IF NOT EXISTS public.checkins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  pin_id UUID REFERENCES public.pins(id) ON DELETE CASCADE,
+  pin_id TEXT REFERENCES public.pins(id) ON DELETE CASCADE,
   visitor TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   lat DOUBLE PRECISION,
