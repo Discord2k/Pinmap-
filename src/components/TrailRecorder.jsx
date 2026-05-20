@@ -140,10 +140,11 @@ export function TrailRecorder(props) {
           backgroundColor: "rgba(26,32,28,0.5)",
           backdropFilter: "blur(4px)",
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "center",
           zIndex: 2500,
-          padding: 16,
+          padding: "32px 16px 80px",
+          overflowY: "auto",
           boxSizing: "border-box"
         }}>
           <div style={{
@@ -152,8 +153,6 @@ export function TrailRecorder(props) {
             borderRadius: 18,
             width: "100%",
             maxWidth: 400,
-            maxHeight: "calc(100vh - 120px)",
-            overflowY: "auto",
             padding: 20,
             boxShadow: T.shadowLg,
             animation: "slideUp 0.25s ease-out",
