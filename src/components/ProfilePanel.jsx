@@ -43,6 +43,7 @@ export function ProfilePanel(props) {
 
   var [questTab, setQuestTab] = React.useState("active"); // "active" or "discover"
   var [questsCollapsed, setQuestsCollapsed] = React.useState(true); // Collapsed by default to save space
+  var [collectionsCollapsed, setCollectionsCollapsed] = React.useState(true); // Collapsed by default to save space when there is > 1 item
   var [helpPopup, setHelpPopup] = React.useState(null); // Explains new features
   var [trackedQuestIds, setTrackedQuestIds] = React.useState(function() {
     try {
@@ -257,7 +258,7 @@ export function ProfilePanel(props) {
       {!editingProfile && (
         <div style={{padding:"22px 22px 20px",borderBottom:"1px solid "+T.borderSoft,background:"linear-gradient(180deg, rgba(42,93,60,0.06) 0%, rgba(246,241,228,0) 100%)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:6,marginBottom:0})}>
+            <div style={{display:"flex",alignItems:"center",gap:6,fontSize:13,letterSpacing:"0.06em",color:T.ink,fontFamily:T.font,fontWeight:700,textTransform:"uppercase"}}>
               <span>Trails & Routes</span>
               <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.06em",background:T.forest,color:T.paper,padding:"2.5px 6.5px",borderRadius:6,marginLeft:4,textTransform:"uppercase",lineHeight:1,fontFamily:T.font}}>GPS Active</span>
               <span 
@@ -462,10 +463,22 @@ export function ProfilePanel(props) {
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom: 12}}>
             <div 
               className="pm-section-header"
-              style={Object.assign({}, S.secHead, {display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none"})}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 13,
+                letterSpacing: "0.06em",
+                color: T.ink,
+                fontFamily: T.font,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                cursor: "pointer",
+                userSelect: "none"
+              }}
               onClick={function(){ setQuestsCollapsed(function(prev){ return !prev; }); }}
             >
-              <span style={{fontSize: 10, color: T.ink3, transition: "transform 0.2s", transform: questsCollapsed ? "rotate(0deg)" : "rotate(90deg)"}}>▶</span>
+              <span style={{fontSize: 10, color: T.ink3, display: "inline-block", transition: "transform 0.2s", transform: questsCollapsed ? "rotate(0deg)" : "rotate(90deg)"}}>▶</span>
               <span>Explorer Quests</span>
               <span 
                 className="pm-info-btn"
@@ -675,9 +688,39 @@ export function ProfilePanel(props) {
       {!editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:6})}>
+            <div 
+              className="pm-section-header"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 13,
+                letterSpacing: "0.06em",
+                color: T.ink,
+                fontFamily: T.font,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                cursor: mapPacks.length > 1 ? "pointer" : "default",
+                userSelect: "none"
+              }}
+              onClick={function(){
+                if (mapPacks.length > 1) {
+                  setCollectionsCollapsed(function(prev) { return !prev; });
+                }
+              }}
+            >
+              {mapPacks.length > 1 && (
+                <span style={{
+                  fontSize: 10,
+                  color: T.ink3,
+                  display: "inline-block",
+                  transition: "transform 0.2s",
+                  transform: collectionsCollapsed ? "rotate(0deg)" : "rotate(90deg)"
+                }}>▶</span>
+              )}
               <span>Collections</span>
               <span 
+                className="pm-info-btn"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -688,6 +731,7 @@ export function ProfilePanel(props) {
                   background: "rgba(26,32,28,0.06)",
                   fontSize: 11,
                   color: T.ink3,
+                  marginLeft: 4,
                   cursor: "pointer"
                 }} 
                 onClick={function(e){ 
@@ -704,7 +748,18 @@ export function ProfilePanel(props) {
             </div>
             {user && (
               <button 
-                style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
+                style={Object.assign({}, S.miniBtn, {
+                  background: T.forestPale,
+                  color: T.forest,
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  opacity: (mapPacks.length > 1 && collectionsCollapsed) ? 0 : 1,
+                  transform: (mapPacks.length > 1 && collectionsCollapsed) ? "scale(0.9)" : "scale(1)",
+                  pointerEvents: (mapPacks.length > 1 && collectionsCollapsed) ? "none" : "auto",
+                  transition: "opacity 0.2s, transform 0.2s"
+                })}
                 onClick={function(){ setShowCreatePackModal(true); }}
               >
                 <span>➕ Create Collection</span>
@@ -712,71 +767,75 @@ export function ProfilePanel(props) {
             )}
           </div>
 
-          {mapPacks.length === 0 ? (
-            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No collections created yet.</div>
-          ) : (
-            mapPacks.map(function(pack){
-              var isCurrentActive = activeMapPack && activeMapPack.id === pack.id;
-              return (
-                <div 
-                  key={pack.id}
-                  className="pm-card-hover"
-                  style={Object.assign({}, S.card, {
-                    padding: "12px 14px",
-                    marginBottom: 10,
-                    cursor: "default",
-                    border: isCurrentActive ? "2px solid " + T.forest : "1px solid " + T.borderSoft,
-                    background: isCurrentActive ? T.paper : T.paper2
-                  })}
-                >
-                  <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                        <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{pack.name}</span>
-                        {!pack.is_public && (
-                          <span style={{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}>
-                            Private
-                          </span>
+          <div className={"pm-collapsible " + ((mapPacks.length > 1 && collectionsCollapsed) ? "collapsed" : "")}>
+            <div>
+              {mapPacks.length === 0 ? (
+                <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No collections created yet.</div>
+              ) : (
+                mapPacks.map(function(pack){
+                  var isCurrentActive = activeMapPack && activeMapPack.id === pack.id;
+                  return (
+                    <div 
+                      key={pack.id}
+                      className="pm-card-hover"
+                      style={Object.assign({}, S.card, {
+                        padding: "12px 14px",
+                        marginBottom: 10,
+                        cursor: "default",
+                        border: isCurrentActive ? "2px solid " + T.forest : "1px solid " + T.borderSoft,
+                        background: isCurrentActive ? T.paper : T.paper2
+                      })}
+                    >
+                      <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                            <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{pack.name}</span>
+                            {!pack.is_public && (
+                              <span style={{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}>
+                                Private
+                              </span>
+                            )}
+                            <span style={{color:T.ink3,fontSize:11}}>by @{pack.owner}</span>
+                          </div>
+                          {pack.description && (
+                            <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{pack.description}</div>
+                          )}
+                          
+                          <div style={{display:"flex",gap:8,marginTop:10}}>
+                            <button 
+                              style={Object.assign({}, S.miniBtn, {
+                                background: isCurrentActive ? T.forest : "transparent",
+                                color: isCurrentActive ? T.paper : T.forest,
+                                border: "1px solid " + T.forest,
+                                padding: "4px 10px"
+                              })}
+                              onClick={function(){
+                                props.onSelectMapPack(isCurrentActive ? null : pack);
+                              }}
+                            >
+                              {isCurrentActive ? "🗺️ Active Collection" : "🗺️ View on Map"}
+                            </button>
+                          </div>
+                        </div>
+                        {user && pack.owner === uname && (
+                          <button 
+                            style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
+                            onClick={function(){
+                              if(confirm("Delete this collection?")){
+                                props.onDeleteMapPack(pack.id);
+                              }
+                            }}
+                          >
+                            🗑️
+                          </button>
                         )}
-                        <span style={{color:T.ink3,fontSize:11}}>by @{pack.owner}</span>
-                      </div>
-                      {pack.description && (
-                        <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{pack.description}</div>
-                      )}
-                      
-                      <div style={{display:"flex",gap:8,marginTop:10}}>
-                        <button 
-                          style={Object.assign({}, S.miniBtn, {
-                            background: isCurrentActive ? T.forest : "transparent",
-                            color: isCurrentActive ? T.paper : T.forest,
-                            border: "1px solid " + T.forest,
-                            padding: "4px 10px"
-                          })}
-                          onClick={function(){
-                            props.onSelectMapPack(isCurrentActive ? null : pack);
-                          }}
-                        >
-                          {isCurrentActive ? "🗺️ Active Collection" : "🗺️ View on Map"}
-                        </button>
                       </div>
                     </div>
-                    {user && pack.owner === uname && (
-                      <button 
-                        style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
-                        onClick={function(){
-                          if(confirm("Delete this collection?")){
-                            props.onDeleteMapPack(pack.id);
-                          }
-                        }}
-                      >
-                        🗑️
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       )}
 
