@@ -1125,6 +1125,7 @@ function App() {
 
     if(zoom<=12){
       var clPins=displayedPins.filter(function(p){
+        if(activeMapPack) return true;
         if(mapLayerRef.current==="mine") return p.owner===uname;
         if(mapLayerRef.current==="public") {
           var pubOrMine = p.privacy==="public"||p.owner===uname;
@@ -1157,7 +1158,7 @@ function App() {
           var innerHtml=hasEmoji?'<foreignObject x="3" y="3" width="20" height="20"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:12px;text-align:center;line-height:20px">'+pinEmoji+'</div></foreignObject>':'<circle cx="13" cy="13" r="4" fill="white"/>';
           var icon=window.L.divIcon({className:"pm-pin",html:'<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.18))"><path d="M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z" fill="'+color+'" stroke="#f6f1e4" stroke-width="1.5"/>'+innerHtml+'</svg>',iconSize:[28,36],iconAnchor:[14,36]});
           var m=window.L.marker([pin.lat,pin.lng],{icon:icon});
-          m.on("click",function(){if(pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none"))setMapLayer("public");setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
+          m.on("click",function(){if(!activeMapPack&&pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none"))setMapLayer("public");setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
           m.addTo(window._pinLayer); markers.current[pin.id]=m;
         } else {
           var sz=grp.length>99?52:grp.length>9?46:40;
@@ -1182,6 +1183,7 @@ function App() {
       if(p.expires_at && new Date(p.expires_at) < now && p.owner!==uname) return false;
       // Expiring filter
       if(showExpiringOnly) return p.expires_at && new Date(p.expires_at)>now && new Date(p.expires_at)<soon && p.privacy==="public";
+      if(activeMapPack) return true;
       if(mapLayer==="mine")   return p.owner===uname;
       if(mapLayer==="public") {
         var pubOrMine = p.privacy==="public"||p.owner===uname;
@@ -1206,7 +1208,7 @@ function App() {
         iconAnchor:[15,38]
       });
       var m=window.L.marker([pin.lat,pin.lng],{icon:icon}).addTo(window._pinLayer);
-      m.on("click",function(){if(pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none")){setMapLayer("public");flash("Switched to show all public pins");}setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
+      m.on("click",function(){if(!activeMapPack&&pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none")){setMapLayer("public");flash("Switched to show all public pins");}setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
       markers.current[pin.id]=m;
     });
     // Apply pulse to focused pin after markers re-render
