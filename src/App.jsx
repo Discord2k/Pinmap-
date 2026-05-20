@@ -3518,51 +3518,110 @@ function App() {
       )
     ),
 
-    viewUser&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}},
-      e("div",{style:{background:"#f6f1e4",borderRadius:"20px 20px 0 0",boxShadow:"0 -4px 32px rgba(0,0,0,0.12)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",width:"100%",maxWidth:480,maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 -8px 40px rgba(0,0,0,0.2)"}},
-        e("div",{style:{flexShrink:0}},
+    viewUser&&e("div",{
+      style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center"},
+      onClick:function(ev){if(ev.target===ev.currentTarget){setViewUser(null);setUserPins([]);setViewProfile(null);}}
+    },
+      e("div",{style:{
+        background:"#f6f1e4",borderRadius:"20px 20px 0 0",
+        width:"100%",maxWidth:500,
+        maxHeight:"82vh",
+        display:"flex",flexDirection:"column",
+        boxShadow:"0 -8px 40px rgba(0,0,0,0.22)",
+        animation:"slideUp 0.28s cubic-bezier(0.34,1.1,0.64,1) both",
+        paddingBottom:"env(safe-area-inset-bottom,0px)"
+      }},
+
+        /* ── Header: gradient banner + avatar row ── */
+        e("div",{style:{flexShrink:0,borderRadius:"20px 20px 0 0",overflow:"hidden"}},
+
+          /* Banner */
           e("div",{style:{
-            background:"linear-gradient(135deg,#1b4332,#2e7d32)",
-            height:80,borderRadius:"8px 8px 0 0",position:"relative"
-          }}),
-          e("div",{style:{padding:"0 16px 12px",marginTop:-28}},
-            e("div",{style:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:8}},
-              e("div",{style:{width:56,height:56,borderRadius:"50%",border:"3px solid #faf6ed",overflow:"hidden",background:"#e6dfca",flexShrink:0}},
+            background:"linear-gradient(135deg,#1b4332 0%,#2e7d32 100%)",
+            height:90,position:"relative",borderRadius:"20px 20px 0 0"
+          }},
+            /* Close button top-right inside banner */
+            e("button",{
+              style:{position:"absolute",top:12,right:12,
+                width:32,height:32,borderRadius:"50%",
+                background:"rgba(0,0,0,0.25)",border:"none",
+                color:"#f6f1e4",fontSize:18,lineHeight:"32px",textAlign:"center",
+                cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"},
+              onClick:function(){setViewUser(null);setUserPins([]);setViewProfile(null);}
+            },
+              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none"},
+                e("path",{d:"M18 6L6 18M6 6l12 12",stroke:"#f6f1e4",strokeWidth:2.5,strokeLinecap:"round"})
+              )
+            )
+          ),
+
+          /* Avatar + Follow row — sits below banner with avatar overlapping */
+          e("div",{style:{padding:"0 18px 14px",marginTop:-32,background:"#f6f1e4"}},
+            e("div",{style:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:10}},
+              /* Avatar */
+              e("div",{style:{
+                width:64,height:64,borderRadius:"50%",
+                border:"3px solid #f6f1e4",overflow:"hidden",
+                background:"#e6dfca",flexShrink:0,
+                boxShadow:"0 2px 8px rgba(0,0,0,0.15)"
+              }},
                 e("img",{
-                  src:(viewProfile&&viewProfile.avatar_url)||(viewProfile&&viewProfile.google_avatar)||"https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=56",
+                  src:(viewProfile&&viewProfile.avatar_url)||(viewProfile&&viewProfile.google_avatar)||
+                      "https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=64",
                   style:{width:"100%",height:"100%",objectFit:"cover"},
-                  onError:function(ev){ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=56";}
+                  onError:function(ev){
+                    ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=64";
+                  }
                 })
               ),
-              e("div",{style:{display:"flex",gap:6}},
-                viewUser!==uname && e("button",{
-                  style:{fontSize:12,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",fontWeight:700,
-                    background:userFollows.some(function(f){return f.following===viewUser;})?"#2a5d3c":"none",
-                    color:userFollows.some(function(f){return f.following===viewUser;})?"#fff":"#2a5d3c",
-                    border:"1px solid #2e7d32"},
-                  onClick:function(){toggleUserFollow(viewUser);}
-                }, userFollows.some(function(f){return f.following===viewUser;})?"Following":"Follow"),
-                e("button",{style:{background:"none",border:"none",fontSize:20,color:"#6f786f",cursor:"pointer"},
-                  onClick:function(){setViewUser(null);setUserPins([]);setViewProfile(null);}
-                },"x")
-              )
+              /* Follow button */
+              viewUser!==uname&&e("button",{
+                style:{
+                  fontSize:13,padding:"7px 18px",borderRadius:20,
+                  cursor:"pointer",fontWeight:700,
+                  fontFamily:"Inter, system-ui, sans-serif",
+                  transition:"all 0.15s",
+                  background:userFollows.some(function(f){return f.following===viewUser;})?"#2a5d3c":"transparent",
+                  color:userFollows.some(function(f){return f.following===viewUser;})?"#fff":"#2a5d3c",
+                  border:"1.5px solid #2e7d32"
+                },
+                onClick:function(){toggleUserFollow(viewUser);}
+              }, userFollows.some(function(f){return f.following===viewUser;})?"✓ Following":"+ Follow")
             ),
-            e("div",{style:{fontWeight:700,fontSize:16,color:"#1a201c"}},"@"+viewUser),
-            viewProfile&&viewProfile.location&&e("div",{style:{fontSize:12,color:"#6f786f",marginTop:2}},"📍 "+viewProfile.location),
-            viewProfile&&viewProfile.bio&&e("div",{style:{fontSize:12,color:"#5a4a38",marginTop:6,lineHeight:1.5}},viewProfile.bio),
-            e("div",{style:{display:"flex",gap:10,marginTop:6,flexWrap:"wrap"}},
-              viewProfile&&viewProfile.website&&e("a",{href:viewProfile.website.startsWith("http")?viewProfile.website:"https://"+viewProfile.website,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#2a5d3c",textDecoration:"none"}},"🌐 "+viewProfile.website.replace(/https?:\/\//,"")),
-              viewProfile&&viewProfile.twitter&&e("a",{href:"https://twitter.com/"+viewProfile.twitter,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#1da1f2",textDecoration:"none"}},"𝕏 @"+viewProfile.twitter),
-              viewProfile&&viewProfile.instagram&&e("a",{href:"https://instagram.com/"+viewProfile.instagram,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#e1306c",textDecoration:"none"}},"📸 @"+viewProfile.instagram),
-              viewProfile&&viewProfile.youtube&&e("a",{href:"https://youtube.com/@"+viewProfile.youtube,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#ff0000",textDecoration:"none"}},"▶ "+viewProfile.youtube)
+
+            /* Name & meta */
+            e("div",{style:{fontWeight:700,fontSize:18,color:"#1a201c",letterSpacing:"-0.01em"}},viewUser),
+            e("div",{style:{fontSize:12,color:"#6f786f",marginTop:1,fontFamily:"monospace"}},
+              "@"+viewUser.toLowerCase().replace(/ /g,".")
             ),
-            e("div",{style:{fontSize:11,color:"#6f786f",marginTop:6}},userPinsLoading?"Loading...":(userPins.length+" public pins"))
+            viewProfile&&viewProfile.location&&e("div",{style:{fontSize:12,color:"#6f786f",marginTop:4,display:"flex",alignItems:"center",gap:4}},
+              e("span",null,"📍"),viewProfile.location
+            ),
+            viewProfile&&viewProfile.bio&&e("div",{style:{fontSize:13,color:"#3a3228",marginTop:8,lineHeight:1.55}},viewProfile.bio),
+
+            /* Social links */
+            (viewProfile&&(viewProfile.website||viewProfile.twitter||viewProfile.instagram||viewProfile.youtube))&&
+            e("div",{style:{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}},
+              viewProfile.website&&e("a",{href:viewProfile.website.startsWith("http")?viewProfile.website:"https://"+viewProfile.website,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#2a5d3c",textDecoration:"none",background:"#e8f5e9",padding:"2px 8px",borderRadius:10}},"🌐 "+viewProfile.website.replace(/https?:\/\//,"")),
+              viewProfile.twitter&&e("a",{href:"https://twitter.com/"+viewProfile.twitter,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#1da1f2",textDecoration:"none",background:"#e8f4fd",padding:"2px 8px",borderRadius:10}},"𝕏 @"+viewProfile.twitter),
+              viewProfile.instagram&&e("a",{href:"https://instagram.com/"+viewProfile.instagram,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#e1306c",textDecoration:"none",background:"#fce4ec",padding:"2px 8px",borderRadius:10}},"📸 @"+viewProfile.instagram),
+              viewProfile.youtube&&e("a",{href:"https://youtube.com/@"+viewProfile.youtube,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,color:"#ff0000",textDecoration:"none",background:"#fff0f0",padding:"2px 8px",borderRadius:10}},"▶ "+viewProfile.youtube)
+            ),
+
+            /* Pin count */
+            e("div",{style:{fontSize:11,color:"#9a8f74",marginTop:8,fontFamily:"monospace",letterSpacing:"0.05em"}},
+              userPinsLoading?"Loading…":(userPins.length+" public pin"+(userPins.length!==1?"s":""))
+            )
           ),
-          e("div",{style:{height:1,background:"#e6dfca"}})
+
+          /* Divider */
+          e("div",{style:{height:1,background:"#e6dfca",margin:"0 18px"}})
         ),
-        e("div",{style:{overflowY:"auto",flex:1,padding:"12px 14px"}},
-          userPinsLoading&&e("div",{style:{textAlign:"center",padding:24,color:"#6f786f",fontSize:14}},"Loading pins..."),
-          !userPinsLoading&&userPins.length===0&&e("div",{style:{textAlign:"center",padding:24,color:"#6f786f",fontSize:14}},"No public pins yet."),
+
+        /* ── Pin list ── */
+        e("div",{style:{overflowY:"auto",flex:1,padding:"10px 14px 16px"}},
+          userPinsLoading&&e("div",{style:{textAlign:"center",padding:28,color:"#9a8f74",fontSize:14}},"Loading pins…"),
+          !userPinsLoading&&userPins.length===0&&e("div",{style:{textAlign:"center",padding:28,color:"#9a8f74",fontSize:14}},"No public pins yet."),
           !userPinsLoading&&userPins.map(function(p){
             return e(PinCard,{key:p.id,pin:p,uname:uname,
               onFocus:function(){setViewUser(null);focusPin(p);},
