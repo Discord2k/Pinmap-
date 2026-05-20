@@ -1,8 +1,10 @@
 export const COLORS = ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
-export const ONBOARD_KEY = "pm-onboarded-v5";
-export const WHATSNEW_KEY = "pm-whatsnew-v12";
+export const ONBOARD_KEY = "pm-onboarded-v6";
+export const WHATSNEW_KEY = "pm-whatsnew-v13";
 
 export const WHATSNEW = [
+  {emoji:"📷", title:"Field Journals (Logbooks)", body:"Turn pin log entries into a travel scrapbook! Attach photos to comments (taken live on camera or chosen from gallery). Logs are styled as vintage cards with fullscreen lightbox zooms. Full offline caching supported."},
+  {emoji:"🧭", title:"Off-Grid Compass Mode", body:"Need offline navigation guidance? Tap the 🧭 Compass button on any pin to open a full-screen rotating compass dial. It computes real-time bearings and distance using device orientation sensors completely offline."},
   {emoji:"⚜️", title:"Badges & Check-ins", body:"Earn achievements as you explore! Check in to other users' pins when you are physically close (within 30m) to unlock milestone badges. View all your locked and unlocked badges in your Profile tab."},
   {emoji:"🚲", title:"CycleOSM Layer", body:"A new high-contrast cycling map layer has been added. Switch to it via the Layers menu to view bike trails, routes, and topographic contours, optimized for outdoor exploring."},
   {emoji:"🎨", title:"New look — Atlas edition", body:"PINMAP has a completely new design. Warm paper tones, clean typography, and a fullscreen panel layout inspired by a field atlas. Everything is easier to read and navigate."},
@@ -21,6 +23,8 @@ export const ALL_FEATURES = [
   {emoji:"⏰", title:"Expiring pins", body:"Set a date and time when adding a pin. It counts down and auto-deletes when expired — perfect for events and pop-up spots."},
   {emoji:"🔖", title:"Pin saves", body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Find saved pins in your Profile tab."},
   {emoji:"💬", title:"Comments & replies", body:"Tap any pin to leave a comment. Reply to comments with ↩ Reply. Threaded conversations keep discussions organised."},
+  {emoji:"📷", title:"Field Journals (Logbooks)", body:"Attach photos to comments, compressed client-side. Logs render as travel scrapbook entries with polaroid cards and fullscreen lightboxes."},
+  {emoji:"🧭", title:"Off-Grid Compass Mode", body:"Navigate using your phone's magnetometer and GPS completely offline. A retro dial indicates your heading and points directly to the pin."},
   {emoji:"👍", title:"Upvotes", body:"Upvote pins and comments with 👍. Tap again to remove your upvote."},
   {emoji:"🔍", title:"Dual search", body:"Tap # Tags to search pins by hashtag or 📍 Places to search any address worldwide. Results update the map automatically."},
   {emoji:"🔥", title:"Trending hashtags", body:"The Search tab shows the most active hashtags from the last 7 days. Follow tags to track your favourite topics."},
@@ -52,6 +56,8 @@ export const ONBOARD_STEPS = [
   {title:"GPS and Nearby",body:"Tap the GPS button to jump to your location. Use the Nearby tab to discover public pins within a radius of where you are.",pos:"bottom"},
   {title:"Follow Users and Hashtags",body:"Tap any username to view their public profile and follow them — you'll get a push notification when they post a new pin. Follow hashtags in the Search tab.",pos:"center"},
   {title:"Comments, Replies and Upvotes",body:"Tap any pin to leave a comment. Reply with ↩ Reply. Upvote comments with 👍. The Mine tab shows comment counts and highlights pins with new activity.",pos:"center"},
+  {title:"Field Journals (Logbooks)",body:"Attach photos to comment log entries! Comment logs are rendered as travel scrapbook cards with polaroid frame borders. Tap any photo to zoom in. Logs queue offline and sync automatically.",pos:"center"},
+  {title:"Off-Grid Compass Mode",body:"Tap 🧭 Compass on any pin detail view to open a sensor-based circular navigation dial. Keep your device flat to view live bearing and distance to the target pin, working 100% offline.",pos:"center"},
   {title:"Push Notifications",body:"Enable push notifications in your Profile tab to get alerts when someone comments on your pin or a user you follow posts something new.",pos:"center"},
   {title:"Check-ins & Badges",body:"Earn custom badges by active exploration! Place pins to unlock milestone badges, and check in to other users' pins when you are within 30m of their physical location. Track your achievements under the Profile tab.",pos:"center"},
   {title:"You are all set!",body:"Sign in with Google to save everything across your devices. Your pins, saves, follows and notifications are all stored securely. Happy exploring!",pos:"center"}
