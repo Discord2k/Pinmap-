@@ -878,6 +878,12 @@ function App() {
         var lng = pos.coords.longitude;
         var now = Date.now();
 
+        setUserLL({lat: lat, lng: lng});
+        updateUserLocationMarker(lat, lng);
+        if (mapObj.current) {
+          mapObj.current.panTo([lat, lng]);
+        }
+
         if (lastPoint) {
           var timeElapsed = (now - lastTime) / 1000;
           var distance = distKm(lastPoint[0], lastPoint[1], lat, lng);
@@ -940,6 +946,12 @@ function App() {
         var lat = pos.coords.latitude;
         var lng = pos.coords.longitude;
         var now = Date.now();
+
+        setUserLL({lat: lat, lng: lng});
+        updateUserLocationMarker(lat, lng);
+        if (mapObj.current) {
+          mapObj.current.panTo([lat, lng]);
+        }
 
         if (lastPoint) {
           var timeElapsed = (now - lastTime) / 1000;
