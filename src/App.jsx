@@ -30,6 +30,7 @@ function App() {
   var s35=useState("");      var addrSearch=s35[0];    var setAddrSearch=s35[1];
   var s36=useState([]);      var addrResults=s36[0];   var setAddrResults=s36[1];
   var s37=useState(false);   var addrLoading=s37[0];   var setAddrLoading=s37[1];
+  var s38=useState("");      var questSearch=s38[0];   var setQuestSearch=s38[1];
   var s10=useState(null);    var searchResults=s10[0]; var setSearchResults=s10[1];
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
   var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c"}); var form=s12[0]; var setForm=s12[1];
@@ -644,6 +645,15 @@ function App() {
         setMapZoom(map.getZoom());
       });
       mapObj.current=map;
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          var lat = pos.coords.latitude;
+          var lng = pos.coords.longitude;
+          map.setView([lat, lng], 13);
+        }, function(err) {
+          console.warn("Auto-center geolocation failed:", err);
+        });
+      }
     }
     if(splashDone) tryInit();
   },[splashDone]);
@@ -2468,12 +2478,12 @@ function App() {
           e("input",{
             style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
               borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:10},
-            placeholder:searchMode==="tags"?"#hashtag or tag name":"Place, address or city…",
-            value:searchMode==="tags"?searchTag:addrSearch,
-            onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else setAddrSearch(ev.target.value);},
-            onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
+            placeholder:searchMode==="tags"?"#hashtag or tag name":searchMode==="quests"?"Search quests by name, description or tag…":"Place, address or city…",
+            value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:addrSearch,
+            onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else setAddrSearch(ev.target.value);},
+            onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
           }),
-          e("button",{
+          searchMode!=="quests" && e("button",{
             style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:12},
             onClick:function(){if(searchMode==="tags")doSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash("Place search failed");});}}
           },"Search"),
@@ -2481,7 +2491,9 @@ function App() {
             e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="tags"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("tags");setAddrResults([]);setAddrSearch("");}
             },"# Tags"),
             e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="places"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("places");}
-            },"📍 Places")
+            },"📍 Places"),
+            e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="quests"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("quests");}
+            },"🏆 Quests")
           )
         ),
 
@@ -2500,6 +2512,118 @@ function App() {
                   );
                 }),
                 addrResults.length===0&&!addrLoading&&addrSearch&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},"No places found")
+              )
+            : searchMode==="quests"
+            ? e("div",null,
+                (function(){
+                  var trackedList = [];
+                  try {
+                    var saved = localStorage.getItem("pinmap_tracked_quests");
+                    trackedList = saved ? JSON.parse(saved) : [];
+                  } catch(e){}
+
+                  var query = questSearch.toLowerCase().trim();
+                  var filtered = challenges.filter(function(ch) {
+                    if (!query) return true;
+                    var titleMatch = ch.title && ch.title.toLowerCase().indexOf(query) >= 0;
+                    var descMatch = ch.description && ch.description.toLowerCase().indexOf(query) >= 0;
+                    var tagMatch = ch.tags && ch.tags.some(function(t) { return t.toLowerCase().indexOf(query) >= 0; });
+                    return titleMatch || descMatch || tagMatch;
+                  });
+
+                  if (filtered.length === 0) {
+                    return e("div",{style:{padding:"30px 0",textAlign:"center",color:T.ink3,fontSize:14,fontStyle:"italic"}},"No community quests found matching this search.");
+                  }
+
+                  return e("div",{style:{padding:"10px 0"}},
+                    filtered.map(function(ch){
+                      var chTags = ch.tags || [];
+                      var checkedPinIds = checkins.map(function(c) { return c.pin_id; });
+                      var matchingPins = pins.filter(function(p) {
+                        if (checkedPinIds.indexOf(p.id) < 0) return false;
+                        if (!p.tags) return false;
+                        return p.tags.some(function(t) { return chTags.indexOf(t) >= 0; });
+                      });
+                      var count = Math.min(matchingPins.length, ch.required_count || 3);
+                      var isDone = count >= (ch.required_count || 3);
+                      var isTracked = ch.owner === "system" || ch.owner === uname || trackedList.indexOf(ch.id) >= 0;
+
+                      return e("div",{
+                        key:ch.id,
+                        style:{
+                          background:T.paper2,
+                          border:isDone ? "2px solid #d4af37" : "1px solid "+T.borderSoft,
+                          borderRadius:14,
+                          padding:"14px 16px",
+                          marginBottom:12,
+                          boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
+                          display:"flex",
+                          gap:14,
+                          alignItems:"flex-start"
+                        }
+                      },
+                        e("div",{style:{fontSize:28,lineHeight:1.1,marginTop:2}},ch.icon || "🏆"),
+                        e("div",{style:{flex:1,minWidth:0}},
+                          e("div",{style:{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}},
+                            e("span",{style:{fontWeight:700,fontSize:14.5,color:T.ink}},ch.title),
+                            ch.owner && ch.owner !== "system" && e("span",{style:{fontSize:11,color:T.ink3}},"by @"+ch.owner)
+                          ),
+                          e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4,lineHeight:1.4}},ch.description),
+                          
+                          // Tags
+                          e("div",{style:{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}},
+                            chTags.map(function(t, idx){
+                              return e("span",{key:idx,style:{fontSize:9.5,background:"rgba(26,32,28,0.05)",color:T.ink2,padding:"2px 6px",borderRadius:4,fontFamily:T.mono}},"#"+t);
+                            })
+                          ),
+
+                          // Progress bar
+                          e("div",{style:{marginTop:10,display:"flex",alignItems:"center",gap:10}},
+                            e("div",{style:{flex:1}},
+                              e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:10,color:T.ink3,fontFamily:T.mono,marginBottom:3}},
+                                e("span",null,"Progress"),
+                                e("span",null,count+" / "+(ch.required_count || 3))
+                              ),
+                              e("div",{style:{width:"100%",height:5,background:T.borderSoft,borderRadius:3,overflow:"hidden"}},
+                                e("div",{style:{width:(count/(ch.required_count || 3)*100)+"%",height:"100%",background:isDone ? "#d4af37" : T.forest,borderRadius:3}})
+                              )
+                            ),
+                            ch.owner !== "system" && ch.owner !== uname && e("button",{
+                              style:{
+                                background:isTracked ? "transparent" : T.forest,
+                                color:isTracked ? T.ink3 : T.paper,
+                                border:isTracked ? "1px solid "+T.borderSoft : "none",
+                                padding:"5px 10px",
+                                borderRadius:8,
+                                fontSize:11,
+                                fontWeight:700,
+                                cursor:"pointer"
+                              },
+                              onClick:function(){
+                                var list = [];
+                                try {
+                                  var saved = localStorage.getItem("pinmap_tracked_quests");
+                                  list = saved ? JSON.parse(saved) : [];
+                                } catch(e){}
+
+                                if (list.indexOf(ch.id) >= 0) {
+                                  list = list.filter(function(x) { return x !== ch.id; });
+                                  flash("Stopped tracking quest.");
+                                } else {
+                                  list = list.concat([ch.id]);
+                                  flash("Started tracking quest! View in Profile.");
+                                }
+                                localStorage.setItem("pinmap_tracked_quests", JSON.stringify(list));
+                                // Force state update
+                                setChallenges(function(prev){ return prev.slice(); });
+                              }
+                            },isTracked ? "Tracked" : "Track")
+                          )
+                        )
+                      );
+                    })
+                  );
+                })()
               )
             : e("div",null,
                 activeFilter&&e("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft}},
