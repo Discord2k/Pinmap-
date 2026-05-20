@@ -99,6 +99,13 @@ function App() {
 
   React.useEffect(function(){ localStorage.setItem("pm-drafts", JSON.stringify(drafts)); }, [drafts]);
 
+  var [mapPacks, setMapPacks] = useState([]);
+  var [challenges, setChallenges] = useState([]);
+  var [activeMapPack, setActiveMapPack] = useState(null);
+  var [activeMapPackPinIds, setActiveMapPackPinIds] = useState([]);
+  var [challengesLoading, setChallengesLoading] = useState(false);
+  var [selPinMapPackIds, setSelPinMapPackIds] = useState([]);
+
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
@@ -641,7 +648,26 @@ function App() {
     // Load trending tags
     setTrendingLoading(true);
     api.getTrending().then(function(data){setTrending(data);setTrendingLoading(false);});
+
+    // Fetch challenges
+    setChallengesLoading(true);
+    api.getChallenges()
+      .then(function(data){ setChallenges(data); })
+      .catch(function(err){ console.error("Could not load challenges:", err); })
+      .finally(function(){ setChallengesLoading(false); });
   },[splashDone]);
+
+  useEffect(function(){
+    if(!selPin) {
+      setSelPinMapPackIds([]);
+      return;
+    }
+    sb.from("mappack_pins").select("mappack_id").eq("pin_id", selPin.id).then(function(r){
+      setSelPinMapPackIds((r.data||[]).map(function(d){ return d.mappack_id; }));
+    }).catch(function(err){
+      console.error("Error loading pin guides:", err);
+    });
+  }, [selPin]);
 
   useEffect(function(){
     if(!user||!uname||uname==="guest") return;
@@ -650,6 +676,7 @@ function App() {
     api.getFollowers(uname).then(function(data){setFollowers(data||[]);});
     api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);});
     api.getCheckins(uname).then(function(data){setCheckins(data||[]);});
+    api.getMapPacks(uname).then(function(data){setMapPacks(data||[]);});
     api.getProfile(uname).then(function(data){
       if(data) setMyProfile(data);
     });
@@ -728,6 +755,14 @@ function App() {
 
   useEffect(function(){
     if(!mapObj.current||!window.L) return;
+    
+    var displayedPins = pins;
+    if(activeMapPack) {
+      displayedPins = pins.filter(function(p){
+        return activeMapPackPinIds.indexOf(p.id) >= 0;
+      });
+    }
+
     // Clear ALL existing markers atomically
     if(window._pinLayer){ window._pinLayer.clearLayers(); }
     else { window._pinLayer = window.L.layerGroup().addTo(mapObj.current); }
@@ -737,7 +772,7 @@ function App() {
     var zoom=map.getZoom();
 
     if(zoom<=12){
-      var clPins=pins.filter(function(p){
+      var clPins=displayedPins.filter(function(p){
         if(mapLayerRef.current==="mine") return p.owner===uname;
         if(mapLayerRef.current==="public") {
           var pubOrMine = p.privacy==="public"||p.owner===uname;
@@ -790,7 +825,7 @@ function App() {
 
     var now = new Date();
     var soon = new Date(now.getTime()+7*24*60*60*1000);
-    var layerPins = pins.filter(function(p){
+    var layerPins = displayedPins.filter(function(p){
       // Hide expired pins from map
       if(p.expires_at && new Date(p.expires_at) < now && p.owner!==uname) return false;
       // Expiring filter
@@ -838,7 +873,7 @@ function App() {
         }
       }, 200);
     }
-  },[pins,activeFilter,mapLayer,uname,mapZoom,showExpiringOnly]);
+  },[pins,activeFilter,mapLayer,uname,mapZoom,showExpiringOnly,activeMapPack,activeMapPackPinIds]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
@@ -990,6 +1025,69 @@ function App() {
       });
     }).catch(function(e){
       flash("❌ Deletion failed: " + e.message);
+    });
+  }
+
+  function handleCreateMapPack(pack) {
+    api.createMapPack(pack).then(function(newPack) {
+      if(newPack && newPack.length > 0) {
+        setMapPacks(function(prev) { return [newPack[0]].concat(prev); });
+        flash("🧭 Guide '" + pack.name + "' created!");
+      }
+    }).catch(function(err) {
+      flash("Failed to create guide: " + err.message);
+    });
+  }
+
+  function handleDeleteMapPack(id) {
+    api.deleteMapPack(id).then(function() {
+      setMapPacks(function(prev) { return prev.filter(function(p) { return p.id !== id; }); });
+      if(activeMapPack && activeMapPack.id === id) {
+        setActiveMapPack(null);
+        setActiveMapPackPinIds([]);
+      }
+      flash("Guide deleted.");
+    }).catch(function(err) {
+      flash("Failed to delete guide: " + err.message);
+    });
+  }
+
+  function handleCreateChallenge(challenge) {
+    api.createChallenge(challenge).then(function(newChal) {
+      if(newChal && newChal.length > 0) {
+        setChallenges(function(prev) { return prev.concat([newChal[0]]); });
+        flash("🏆 Quest '" + challenge.title + "' designed and published!");
+      }
+    }).catch(function(err) {
+      flash("Failed to create quest: " + err.message);
+    });
+  }
+
+  function handleDeleteChallenge(id) {
+    api.deleteChallenge(id).then(function() {
+      setChallenges(function(prev) { return prev.filter(function(c) { return c.id !== id; }); });
+      flash("Quest deleted.");
+    }).catch(function(err) {
+      flash("Failed to delete quest: " + err.message);
+    });
+  }
+
+  function handleSelectMapPack(pack) {
+    if (!pack) {
+      setActiveMapPack(null);
+      setActiveMapPackPinIds([]);
+      flash("Guide mode deactivated.");
+      return;
+    }
+    setActiveMapPack(pack);
+    setOpen(false); // Close Profile side drawer
+    setTab("map");  // Show map
+    api.getMapPackPins(pack.id).then(function(pinIds) {
+      setActiveMapPackPinIds(pinIds || []);
+      flash("Showing '" + pack.name + "' on map!");
+    }).catch(function(err) {
+      console.error(err);
+      flash("Failed to load guide pins.");
     });
   }
 
@@ -1191,7 +1289,38 @@ function App() {
           }
           
           api.checkin(pin.id, uname, lat, lng).then(function(newCheckin){
-            setCheckins(function(prev){return prev.concat([newCheckin]);});
+            // Check challenge completions
+            var updatedCheckins = checkins.concat([newCheckin]);
+            var checkedPinIds = updatedCheckins.map(function(c) { return c.pin_id; });
+            
+            challenges.forEach(function(ch) {
+              var chTags = ch.tags || [];
+              
+              var prevCheckedPinIds = checkins.map(function(c) { return c.pin_id; });
+              var prevMatchingPins = pins.filter(function(p) {
+                if (prevCheckedPinIds.indexOf(p.id) < 0) return false;
+                if (!p.tags) return false;
+                return p.tags.some(function(t) { return chTags.indexOf(t) >= 0; });
+              });
+              var prevCount = prevMatchingPins.length;
+              var wasDone = prevCount >= (ch.required_count || 3);
+
+              var newMatchingPins = pins.filter(function(p) {
+                if (checkedPinIds.indexOf(p.id) < 0) return false;
+                if (!p.tags) return false;
+                return p.tags.some(function(t) { return chTags.indexOf(t) >= 0; });
+              });
+              var newCount = newMatchingPins.length;
+              var isDone = newCount >= (ch.required_count || 3);
+
+              if (!wasDone && isDone) {
+                setTimeout(function() {
+                  flash("🎉 Quest Completed: " + (ch.icon || "🏆") + " " + ch.title + "!");
+                }, 2000);
+              }
+            });
+
+            setCheckins(updatedCheckins);
             setSelPinCheckinsCount(function(c){return c+1;});
             flash("✅ Checked in successfully!");
           }).catch(function(err){
@@ -1435,6 +1564,50 @@ function App() {
   return e("div",{style:{position:"relative",height:"100vh",width:"100%",overflow:"hidden"}},
 
     e("div",{ref:mapDiv,style:{position:"absolute",top:0,left:0,right:0,bottom:"calc(60px + env(safe-area-inset-bottom,0px))",width:"100%",height:"100%",zIndex:0}}),
+
+    activeMapPack && e("div", {
+      style: {
+        position: "absolute",
+        top: "max(16px, env(safe-area-inset-top, 0px))",
+        left: 16,
+        right: 16,
+        maxWidth: 480,
+        margin: "0 auto",
+        background: "rgba(246, 241, 228, 0.95)",
+        border: "2px solid #2a5d3c",
+        borderRadius: 14,
+        padding: "12px 14px",
+        zIndex: 1000,
+        boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12
+      }
+    },
+      e("div", {style: {flex: 1}},
+        e("div", {style: {display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}},
+          e("span", {style: {fontSize: 10, background: "#2a5d3c", color: "#f6f1e4", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Guide"),
+          e("span", {style: {fontWeight: 700, fontSize: 14, color: "#1a201c"}}, activeMapPack.name)
+        ),
+        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3}}, activeMapPack.description || "Viewing spots from this guide on map."),
+        e("div", {style: {fontSize: 10, color: "#6f786f", marginTop: 2}}, "Curated by @" + activeMapPack.owner)
+      ),
+      e("button", {
+        style: {
+          background: "rgba(42, 93, 60, 0.1)",
+          border: "none",
+          color: "#2a5d3c",
+          fontWeight: 700,
+          fontSize: 12,
+          padding: "8px 12px",
+          borderRadius: 8,
+          cursor: "pointer",
+          whiteSpace: "nowrap"
+        },
+        onClick: function() { handleSelectMapPack(null); }
+      }, "✕ Exit")
+    ),
 
     showInstall && e("div",{style:{
       position:"fixed",
@@ -2201,14 +2374,23 @@ function App() {
         })()
       ),
 
-
-
-        tab==="profile" && e("div",null,
-          e(ProfilePanel,{
+      tab==="profile" && e("div",null,
+        e(ProfilePanel,{
           user:user,uname:uname,myPins:myPins,checkinsCount:checkins.length,
           userFollows:userFollows,followers:followers,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
+          mapPacks:mapPacks,
+          challenges:challenges,
+          challengesLoading:challengesLoading,
+          allPins:pins,
+          checkins:checkins,
+          activeMapPack:activeMapPack,
+          onCreateMapPack:handleCreateMapPack,
+          onDeleteMapPack:handleDeleteMapPack,
+          onCreateChallenge:handleCreateChallenge,
+          onDeleteChallenge:handleDeleteChallenge,
+          onSelectMapPack:handleSelectMapPack,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
           onDeleteAccount:handleDeleteAccount,
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
@@ -2272,6 +2454,59 @@ function App() {
           return e("span",{key:t,style:{fontSize:12,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
         })
       ),
+
+      uname && uname !== "guest" && mapPacks.filter(function(g){ return g.owner === uname; }).length > 0 && e("div", {
+        style: {
+          marginTop: 6,
+          marginBottom: 10,
+          background: "rgba(42, 93, 60, 0.04)",
+          border: "1px solid " + T.borderSoft,
+          borderRadius: 10,
+          padding: "8px 10px"
+        }
+      },
+        e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, "Add to Guides"),
+        e("div", {style: {display: "flex", gap: 6, flexWrap: "wrap"}},
+          mapPacks.filter(function(g){ return g.owner === uname; }).map(function(g) {
+            var isInPack = selPinMapPackIds.indexOf(g.id) >= 0;
+            return e("div", {
+              key: g.id,
+              style: {
+                fontSize: 11.5,
+                padding: "4px 10px",
+                borderRadius: 14,
+                cursor: "pointer",
+                background: isInPack ? T.forestPale : "transparent",
+                color: isInPack ? T.forest : T.ink3,
+                border: "1px solid " + (isInPack ? T.forest : T.border),
+                display: "flex",
+                alignItems: "center",
+                gap: 4
+              },
+              onClick: function() {
+                if (isInPack) {
+                  api.removePinFromMapPack(g.id, selPin.id).then(function() {
+                    setSelPinMapPackIds(function(prev) { return prev.filter(function(id) { return id !== g.id; }); });
+                    if (activeMapPack && activeMapPack.id === g.id) {
+                      setActiveMapPackPinIds(function(prev) { return prev.filter(function(id) { return id !== selPin.id; }); });
+                    }
+                    flash("Removed from " + g.name);
+                  });
+                } else {
+                  api.addPinToMapPack(g.id, selPin.id).then(function() {
+                    setSelPinMapPackIds(function(prev) { return prev.concat([g.id]); });
+                    if (activeMapPack && activeMapPack.id === g.id) {
+                      setActiveMapPackPinIds(function(prev) { return prev.concat([selPin.id]); });
+                    }
+                    flash("Added to " + g.name);
+                  });
+                }
+              }
+            }, (isInPack ? "✓ " : "＋ ") + g.name);
+          })
+        )
+      ),
+
       e("div",{style:{fontSize:11,color:"#9a8f74",fontFamily:"monospace",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}},
         e("span",null,selPin.lat.toFixed(5)+", "+selPin.lng.toFixed(5)),
         e("span",{style:{color:"#6f786f",fontFamily:"sans-serif",fontWeight:500}}, "📍 " + (selPinCheckinsCount || 0) + " check-in" + (selPinCheckinsCount === 1 ? "" : "s"))

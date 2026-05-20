@@ -77,6 +77,33 @@ export const api = {
   },
   deleteAccount: function() {
     return sb.rpc("delete_own_account");
+  },
+  getMapPacks: function(uname) {
+    return sb.from("mappacks").select("*").or("is_public.eq.true,owner.eq." + uname).order("created_at", {ascending: false}).then(function(r){return r.data||[];});
+  },
+  createMapPack: function(pack) {
+    return sb.from("mappacks").insert(pack).select().then(function(r){return r.data;});
+  },
+  deleteMapPack: function(id) {
+    return sb.from("mappacks").delete().eq("id", id);
+  },
+  getMapPackPins: function(packId) {
+    return sb.from("mappack_pins").select("pin_id").eq("mappack_id", packId).then(function(r){return (r.data||[]).map(function(d){return d.pin_id;});});
+  },
+  addPinToMapPack: function(packId, pinId) {
+    return sb.from("mappack_pins").insert({mappack_id: packId, pin_id: pinId});
+  },
+  removePinFromMapPack: function(packId, pinId) {
+    return sb.from("mappack_pins").delete().eq("mappack_id", packId).eq("pin_id", pinId);
+  },
+  getChallenges: function() {
+    return sb.from("challenges").select("*").order("created_at", {ascending: true}).then(function(r){return r.data||[];});
+  },
+  createChallenge: function(challenge) {
+    return sb.from("challenges").insert(challenge).select().then(function(r){return r.data;});
+  },
+  deleteChallenge: function(id) {
+    return sb.from("challenges").delete().eq("id", id);
   }
 };
 

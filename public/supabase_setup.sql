@@ -224,3 +224,114 @@ CREATE POLICY "Allow authenticated users to upload journal photos"
     bucket_id = 'journal-photos' AND auth.role() = 'authenticated'
   );
 
+
+-- =========================================================================
+-- 6. Phase 2 Expansion: Curated Map Packs & Challenges
+-- =========================================================================
+
+-- Map Packs table
+CREATE TABLE IF NOT EXISTS public.mappacks (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  owner TEXT NOT NULL, -- references profiles.id (username)
+  is_public BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Mapping table linking Map Packs to Pins
+CREATE TABLE IF NOT EXISTS public.mappack_pins (
+  mappack_id TEXT REFERENCES public.mappacks(id) ON DELETE CASCADE,
+  pin_id TEXT REFERENCES public.pins(id) ON DELETE CASCADE,
+  PRIMARY KEY (mappack_id, pin_id)
+);
+
+-- Challenges table (Supports both System-defined and User-created quests)
+CREATE TABLE IF NOT EXISTS public.challenges (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  icon TEXT, -- Emoji character
+  tags TEXT[], -- Target hashtags (e.g. ['cafe', 'coffee'])
+  required_count INTEGER DEFAULT 3,
+  owner TEXT NOT NULL, -- Username of creator, or 'system'
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Grants for Supabase Data API/PostgREST
+GRANT SELECT ON public.mappacks TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.mappacks TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.mappacks TO service_role;
+
+GRANT SELECT ON public.mappack_pins TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.mappack_pins TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.mappack_pins TO service_role;
+
+GRANT SELECT ON public.challenges TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.challenges TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.challenges TO service_role;
+
+-- Enable Row Level Security
+ALTER TABLE public.mappacks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mappack_pins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
+
+-- Select policies
+DROP POLICY IF EXISTS "Anyone can view public mappacks" ON public.mappacks;
+CREATE POLICY "Anyone can view public mappacks" ON public.mappacks
+  FOR SELECT USING (is_public = true OR owner = current_user);
+
+DROP POLICY IF EXISTS "Anyone can view mappack pins" ON public.mappack_pins;
+CREATE POLICY "Anyone can view mappack pins" ON public.mappack_pins
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Anyone can view challenges" ON public.challenges;
+CREATE POLICY "Anyone can view challenges" ON public.challenges
+  FOR SELECT USING (true);
+
+-- Edit/Delete policies for Map Packs
+DROP POLICY IF EXISTS "Users can create their own mappacks" ON public.mappacks;
+CREATE POLICY "Users can create their own mappacks" ON public.mappacks
+  FOR INSERT WITH CHECK (owner = current_user);
+
+DROP POLICY IF EXISTS "Users can edit their own mappacks" ON public.mappacks;
+CREATE POLICY "Users can edit their own mappacks" ON public.mappacks
+  FOR UPDATE USING (owner = current_user);
+
+DROP POLICY IF EXISTS "Users can delete their own mappacks" ON public.mappacks;
+CREATE POLICY "Users can delete their own mappacks" ON public.mappacks
+  FOR DELETE USING (owner = current_user);
+
+DROP POLICY IF EXISTS "Mappack owners can modify mappack pins" ON public.mappack_pins;
+CREATE POLICY "Mappack owners can modify mappack pins" ON public.mappack_pins
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.mappacks 
+      WHERE mappacks.id = mappack_pins.mappack_id AND mappacks.owner = current_user
+    )
+  );
+
+-- Edit/Delete policies for Challenges
+DROP POLICY IF EXISTS "Authenticated users can create challenges" ON public.challenges;
+CREATE POLICY "Authenticated users can create challenges" ON public.challenges
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND owner = current_user);
+
+DROP POLICY IF EXISTS "Owners can delete their challenges" ON public.challenges;
+CREATE POLICY "Owners can delete their challenges" ON public.challenges
+  FOR DELETE USING (owner = current_user);
+
+-- Populate initial default system challenges
+INSERT INTO public.challenges (id, title, description, icon, tags, required_count, owner)
+VALUES 
+  ('summit_seeker', 'Summit Seeker', 'Check in to 3 pins tagged with #hiking or #summit', '🥾', ARRAY['hiking', 'summit'], 3, 'system'),
+  ('water_explorer', 'Water Explorer', 'Check in to 3 pins tagged with #waterfall, #lake, or #beach', '🌊', ARRAY['waterfall', 'lake', 'beach'], 3, 'system'),
+  ('caffeine_connoisseur', 'Caffeine Connoisseur', 'Check in to 3 pins tagged with #cafe or #coffee', '☕', ARRAY['cafe', 'coffee'], 3, 'system'),
+  ('foodie_explorer', 'Local Foodie', 'Check in to 3 pins tagged with #food, #restaurant, or #pub', '🍔', ARRAY['food', 'restaurant', 'pub'], 3, 'system'),
+  ('historic_wanderer', 'Historic Wanderer', 'Check in to 3 pins tagged with #history, #museum, or #monument', '🏛️', ARRAY['history', 'museum', 'monument'], 3, 'system')
+ON CONFLICT (id) DO NOTHING;
+
+-- Optimize queries
+CREATE INDEX IF NOT EXISTS idx_mappacks_owner ON public.mappacks(owner);
+CREATE INDEX IF NOT EXISTS idx_mappack_pins_pack ON public.mappack_pins(mappack_id);
+CREATE INDEX IF NOT EXISTS idx_challenges_owner ON public.challenges(owner);
+

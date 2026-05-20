@@ -10,6 +10,24 @@ export function ProfilePanel(props) {
   var followers = props.followers || [];
   var [showAllFollowing, setShowAllFollowing] = React.useState(false);
   var [showAllFollowers, setShowAllFollowers] = React.useState(false);
+
+  var mapPacks = props.mapPacks || [];
+  var challenges = props.challenges || [];
+  var allPins = props.allPins || [];
+  var checkins = props.checkins || [];
+  var activeMapPack = props.activeMapPack || null;
+
+  var [showCreatePackModal, setShowCreatePackModal] = React.useState(false);
+  var [packName, setPackName] = React.useState("");
+  var [packDesc, setPackDesc] = React.useState("");
+  var [packPublic, setPackPublic] = React.useState(true);
+
+  var [showCreateChallengeModal, setShowCreateChallengeModal] = React.useState(false);
+  var [chalTitle, setChalTitle] = React.useState("");
+  var [chalDesc, setChalDesc] = React.useState("");
+  var [chalIcon, setChalIcon] = React.useState("🏆");
+  var [chalTag, setChalTag] = React.useState("");
+  var [chalCount, setChalCount] = React.useState(3);
   
   var toggleUserFollow = props.toggleUserFollow || function(){};
   var loadUserProfile = props.loadUserProfile || function(){};
@@ -203,6 +221,186 @@ export function ProfilePanel(props) {
         </div>
       )}
 
+      {/* ── Explorer Challenges ────────────────────────────────────────────────── */}
+      {!editingProfile && (
+        <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={S.secHead}>Explorer Quests</div>
+            {user && (
+              <button 
+                style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
+                onClick={function(){ setShowCreateChallengeModal(true); }}
+              >
+                <span>➕ Design Quest</span>
+              </button>
+            )}
+          </div>
+
+          {challenges.length === 0 ? (
+            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No challenges available.</div>
+          ) : (
+            challenges.map(function(ch){
+              var chTags = ch.tags || [];
+              var checkedPinIds = checkins.map(function(c) { return c.pin_id; });
+              var matchingPins = allPins.filter(function(p) {
+                if (checkedPinIds.indexOf(p.id) < 0) return false;
+                if (!p.tags) return false;
+                return p.tags.some(function(t) { return chTags.indexOf(t) >= 0; });
+              });
+              var count = Math.min(matchingPins.length, ch.required_count || 3);
+              var isDone = count >= (ch.required_count || 3);
+              
+              return (
+                <div 
+                  key={ch.id} 
+                  style={Object.assign({}, S.card, {
+                    padding: "12px 14px", 
+                    marginBottom: 10, 
+                    cursor: "default",
+                    border: isDone ? "2px solid #d4af37" : "1px solid " + T.borderSoft,
+                    background: isDone ? "linear-gradient(135deg, #fffaf0 0%, #fdf8ee 100%)" : T.paper2
+                  })}
+                >
+                  <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                    <div style={{fontSize:24,marginTop:2}}>{ch.icon || "🏆"}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                        <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{ch.title}</span>
+                        {isDone && (
+                          <span style={{background:"#d4af37",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>
+                            Completed
+                          </span>
+                        )}
+                        {ch.owner && ch.owner !== "system" && (
+                          <span style={{color:T.ink3,fontSize:11}}>by @{ch.owner}</span>
+                        )}
+                      </div>
+                      <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{ch.description}</div>
+                      
+                      {/* Tags list */}
+                      <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
+                        {chTags.map(function(t, idx){
+                          return (
+                            <span key={idx} style={{fontSize:10,background:"rgba(26,32,28,0.05)",color:T.ink2,padding:"2px 6px",borderRadius:4,fontFamily:T.mono}}>
+                              #{t}
+                            </span>
+                          );
+                        })}
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div style={{marginTop:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:10.5,color:T.ink3,fontFamily:T.mono,marginBottom:3}}>
+                          <span>Progress</span>
+                          <span style={{marginLeft:"auto"}}>{count} / {ch.required_count}</span>
+                        </div>
+                        <div style={{width:"100%",height:6,background:T.borderSoft,borderRadius:3,overflow:"hidden"}}>
+                          <div style={{width:(count/(ch.required_count || 3)*100)+"%",height:"100%",background:isDone ? "#d4af37" : T.forest,borderRadius:3}} />
+                        </div>
+                      </div>
+                    </div>
+                    {user && ch.owner === uname && (
+                      <button 
+                        style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
+                        onClick={function(){
+                          if(confirm("Delete this challenge?")){
+                            props.onDeleteChallenge(ch.id);
+                          }
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* ── Guides & Map Packs ────────────────────────────────────────────────── */}
+      {!editingProfile && (
+        <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={S.secHead}>Guides & Map Packs</div>
+            {user && (
+              <button 
+                style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
+                onClick={function(){ setShowCreatePackModal(true); }}
+              >
+                <span>➕ Create Guide</span>
+              </button>
+            )}
+          </div>
+
+          {mapPacks.length === 0 ? (
+            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No curated guides yet.</div>
+          ) : (
+            mapPacks.map(function(pack){
+              var isCurrentActive = activeMapPack && activeMapPack.id === pack.id;
+              return (
+                <div 
+                  key={pack.id}
+                  style={Object.assign({}, S.card, {
+                    padding: "12px 14px",
+                    marginBottom: 10,
+                    cursor: "default",
+                    border: isCurrentActive ? "2px solid " + T.forest : "1px solid " + T.borderSoft,
+                    background: isCurrentActive ? T.paper : T.paper2
+                  })}
+                >
+                  <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                        <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{pack.name}</span>
+                        {!pack.is_public && (
+                          <span style={{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}>
+                            Private
+                          </span>
+                        )}
+                        <span style={{color:T.ink3,fontSize:11}}>by @{pack.owner}</span>
+                      </div>
+                      {pack.description && (
+                        <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{pack.description}</div>
+                      )}
+                      
+                      <div style={{display:"flex",gap:8,marginTop:10}}>
+                        <button 
+                          style={Object.assign({}, S.miniBtn, {
+                            background: isCurrentActive ? T.forest : "transparent",
+                            color: isCurrentActive ? T.paper : T.forest,
+                            border: "1px solid " + T.forest,
+                            padding: "4px 10px"
+                          })}
+                          onClick={function(){
+                            props.onSelectMapPack(isCurrentActive ? null : pack);
+                          }}
+                        >
+                          {isCurrentActive ? "🗺️ Active Guide" : "🗺️ View on Map"}
+                        </button>
+                      </div>
+                    </div>
+                    {user && pack.owner === uname && (
+                      <button 
+                        style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
+                        onClick={function(){
+                          if(confirm("Delete this guide?")){
+                            props.onDeleteMapPack(pack.id);
+                          }
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
       {/* ── Following ───────────────────────────────────────────────────────────── */}
       {!editingProfile && userFollows.length>0 && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
@@ -371,6 +569,182 @@ export function ProfilePanel(props) {
         {"PINMAP · V " + APP_VERSION + " · Built May 2026"}<br/>
         © 2026 Seth Gray · All rights reserved
       </div>
+      {/* ── Create Pack Modal ────────────────────────────────────────────────── */}
+      {showCreatePackModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(26,32,28,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:16}}>
+          <div style={{background:T.paper,border:"2px solid "+T.forest,borderRadius:16,padding:20,width:"100%",maxWidth:400,boxShadow:T.shadowLg}}>
+            <div style={{fontSize:16,fontWeight:700,color:T.ink,marginBottom:14,fontFamily:T.mono,letterSpacing:"0.02em"}}>Create New Guide</div>
+            
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Guide Name</label>
+              <input 
+                type="text" 
+                style={S.input} 
+                placeholder="e.g. Best Hikes, Coffee Crawl" 
+                value={packName}
+                onChange={function(e){ setPackName(e.target.value); }}
+              />
+            </div>
+            
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Description</label>
+              <textarea 
+                style={S.textarea} 
+                placeholder="Describe your curated list of spots..." 
+                rows={3}
+                value={packDesc}
+                onChange={function(e){ setPackDesc(e.target.value); }}
+              />
+            </div>
+
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <input 
+                type="checkbox" 
+                id="isPublicPack"
+                checked={packPublic}
+                onChange={function(e){ setPackPublic(e.target.checked); }}
+                style={{width:16,height:16,accentColor:T.forest}}
+              />
+              <label htmlFor="isPublicPack" style={{fontSize:13.5,color:T.ink,cursor:"pointer"}}>Make guide public for anyone to view</label>
+            </div>
+
+            <div style={{display:"flex",gap:8}}>
+              <button 
+                style={Object.assign({}, S.btn, {flex:1})}
+                onClick={function(){
+                  if(!packName.trim()){ flash("Guide name is required!"); return; }
+                  props.onCreateMapPack({
+                    id: Math.random().toString(36).slice(2, 10),
+                    name: packName.trim(),
+                    description: packDesc.trim(),
+                    is_public: packPublic,
+                    owner: uname
+                  });
+                  setPackName("");
+                  setPackDesc("");
+                  setPackPublic(true);
+                  setShowCreatePackModal(false);
+                }}
+              >
+                Create
+              </button>
+              <button 
+                style={Object.assign({}, S.btnOutline, {flex:1})}
+                onClick={function(){ setShowCreatePackModal(false); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create Challenge Modal ────────────────────────────────────────────── */}
+      {showCreateChallengeModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(26,32,28,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:16}}>
+          <div style={{background:T.paper,border:"2px solid "+T.forest,borderRadius:16,padding:20,width:"100%",maxWidth:400,boxShadow:T.shadowLg,maxHeight:"90vh",overflowY:"auto"}}>
+            <div style={{fontSize:16,fontWeight:700,color:T.ink,marginBottom:14,fontFamily:T.mono,letterSpacing:"0.02em"}}>Design Explorer Quest</div>
+            
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Quest Name</label>
+              <input 
+                type="text" 
+                style={S.input} 
+                placeholder="e.g. Waterfall Chaser, Cafe Tour" 
+                value={chalTitle}
+                onChange={function(e){ setChalTitle(e.target.value); }}
+              />
+            </div>
+            
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Description</label>
+              <input 
+                type="text" 
+                style={S.input} 
+                placeholder="e.g. Check in to 3 pins tagged with #waterfall" 
+                value={chalDesc}
+                onChange={function(e){ setChalDesc(e.target.value); }}
+              />
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+              <div>
+                <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Icon (Emoji)</label>
+                <input 
+                  type="text" 
+                  style={S.input} 
+                  maxLength={2}
+                  placeholder="🧗, 🗺️, 🏕️, 🥪" 
+                  value={chalIcon}
+                  onChange={function(e){ setChalIcon(e.target.value); }}
+                />
+              </div>
+              <div>
+                <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Required Count</label>
+                <select 
+                  style={Object.assign({}, S.input, {padding:"10px 14px", height:43})}
+                  value={chalCount}
+                  onChange={function(e){ setChalCount(parseInt(e.target.value)); }}
+                >
+                  <option value={1}>1 Check-in</option>
+                  <option value={2}>2 Check-ins</option>
+                  <option value={3}>3 Check-ins</option>
+                  <option value={5}>5 Check-ins</option>
+                  <option value={10}>10 Check-ins</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Required Hashtags (comma-separated)</label>
+              <input 
+                type="text" 
+                style={S.input} 
+                placeholder="e.g. waterfall, lake, river" 
+                value={chalTag}
+                onChange={function(e){ setChalTag(e.target.value); }}
+              />
+            </div>
+
+            <div style={{display:"flex",gap:8}}>
+              <button 
+                style={Object.assign({}, S.btn, {flex:1})}
+                onClick={function(){
+                  if(!chalTitle.trim()){ flash("Quest name is required!"); return; }
+                  var parsedTags = chalTag.split(",")
+                    .map(function(t){ return t.trim().toLowerCase().replace("#", ""); })
+                    .filter(function(t){ return t.length > 0; });
+                  if(parsedTags.length === 0){ flash("At least one required hashtag is required!"); return; }
+                  
+                  props.onCreateChallenge({
+                    id: Math.random().toString(36).slice(2, 10),
+                    title: chalTitle.trim(),
+                    description: chalDesc.trim() || ("Check in to " + chalCount + " pins with target tags"),
+                    icon: chalIcon.trim() || "🏆",
+                    tags: parsedTags,
+                    required_count: chalCount,
+                    owner: uname
+                  });
+                  setChalTitle("");
+                  setChalDesc("");
+                  setChalIcon("🏆");
+                  setChalTag("");
+                  setChalCount(3);
+                  setShowCreateChallengeModal(false);
+                }}
+              >
+                Design Quest
+              </button>
+              <button 
+                style={Object.assign({}, S.btnOutline, {flex:1})}
+                onClick={function(){ setShowCreateChallengeModal(false); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
