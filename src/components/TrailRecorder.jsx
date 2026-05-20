@@ -59,10 +59,10 @@ export function TrailRecorder(props) {
   return (
     <div style={{
       position: "absolute",
-      bottom: 24,
+      bottom: "calc(76px + env(safe-area-inset-bottom, 0px))",
       left: "50%",
       transform: "translateX(-50%)",
-      zIndex: 1000,
+      zIndex: 1002,
       width: "90%",
       maxWidth: 380,
       background: "rgba(246,241,228,0.96)",
