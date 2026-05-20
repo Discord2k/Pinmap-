@@ -549,13 +549,7 @@ function App() {
     return function(){ clearTimeout(timer); };
   },[splashDone]);
 
-  useEffect(function(){
-    // Wire SW update flag to React state
-    window._setUpdateReady = setUpdateReady;
-    // Check if update was already detected before React mounted
-    if(window._swUpdateReady) setUpdateReady(true);
-    return function(){ window._setUpdateReady = null; };
-  },[]);
+
 
   function checkNewComments(pinsData, nameOverride) {
     var name = nameOverride || uname;
@@ -881,7 +875,11 @@ function App() {
         setUserLL({lat: lat, lng: lng});
         updateUserLocationMarker(lat, lng);
         if (mapObj.current) {
-          mapObj.current.panTo([lat, lng]);
+          if (!lastPoint) {
+            mapObj.current.setView([lat, lng], 18);
+          } else {
+            mapObj.current.panTo([lat, lng]);
+          }
         }
 
         if (lastPoint) {
@@ -950,7 +948,11 @@ function App() {
         setUserLL({lat: lat, lng: lng});
         updateUserLocationMarker(lat, lng);
         if (mapObj.current) {
-          mapObj.current.panTo([lat, lng]);
+          if (!lastPoint) {
+            mapObj.current.setView([lat, lng], 18);
+          } else {
+            mapObj.current.panTo([lat, lng]);
+          }
         }
 
         if (lastPoint) {
@@ -3611,22 +3613,41 @@ function App() {
     ),
 
     updateReady && e("div",{style:{
-      position:"fixed",bottom:"calc(80px + env(safe-area-inset-bottom,0px))",
-      left:16,right:16,zIndex:9997,
-      background:T.ink,color:T.paper,
-      borderRadius:12,padding:"12px 16px",
+      position:"fixed",
+      bottom:"calc(80px + env(safe-area-inset-bottom,0px))",
+      left:16,right:16,
+      maxWidth: 480,
+      margin: "0 auto",
+      background: "rgba(246, 241, 228, 0.96)",
+      backdropFilter: "blur(12px)",
+      border: "2px solid #2a5d3c",
+      borderRadius: 14,
+      padding: "12px 16px",
       display:"flex",alignItems:"center",justifyContent:"space-between",
-      boxShadow:T.shadowLg,animation:"slideUp 0.3s cubic-bezier(0.34,1.1,0.64,1) both"
+      zIndex:9999,
+      boxShadow:"0 8px 30px rgba(0,0,0,0.15)",
+      animation:"slideUp 0.3s cubic-bezier(0.34,1.1,0.64,1) both",
+      gap: 12
     }},
       e("div",null,
-        e("div",{style:{fontWeight:600,fontSize:14,marginBottom:2}},"Update available"),
-        e("div",{style:{fontSize:12,color:"rgba(246,241,228,0.7)"}},
+        e("div",{style:{fontWeight:700,fontSize:14,color:T.forest,marginBottom:2}},"Update Available"),
+        e("div",{style:{fontSize:12,color:T.ink2}},
           "A new version of PINMAP is ready"
         )
       ),
       e("button",{
-        style:{background:T.forest,color:T.paper,border:"none",borderRadius:8,
-          padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer",flexShrink:0},
+        style:{
+          background:T.forest,
+          color:T.paper,
+          border:"none",
+          borderRadius:8,
+          padding:"8px 16px",
+          fontSize:13,
+          fontWeight:700,
+          cursor:"pointer",
+          flexShrink:0,
+          boxShadow:T.shadow
+        },
         onClick:function(){window.location.reload();}
       },"Reload")
     ),

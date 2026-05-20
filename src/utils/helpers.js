@@ -1,7 +1,7 @@
 export const COLORS = ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 export const ONBOARD_KEY = "pm-onboarded-v8";
 export const WHATSNEW_KEY = "pm-whatsnew-v15";
-export const APP_VERSION = "2.4.0";
+export const APP_VERSION = "2.4.1";
 
 export const WHATSNEW = [
   {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files directly! View active paths drawn beautifully on the map with distance & duration tracking, and export your routes anytime."},
