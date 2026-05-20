@@ -40,6 +40,31 @@ export function ProfilePanel(props) {
   var [chalIcon, setChalIcon] = React.useState("🏆");
   var [chalTag, setChalTag] = React.useState("");
   var [chalCount, setChalCount] = React.useState(3);
+
+  var [questTab, setQuestTab] = React.useState("active"); // "active" or "discover"
+  var [trackedQuestIds, setTrackedQuestIds] = React.useState(function() {
+    try {
+      var saved = localStorage.getItem("pinmap_tracked_quests");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  var toggleTrackQuest = function(id) {
+    setTrackedQuestIds(function(prev) {
+      var next;
+      if (prev.indexOf(id) >= 0) {
+        next = prev.filter(function(x) { return x !== id; });
+        flash("Stopped tracking quest.");
+      } else {
+        next = prev.concat([id]);
+        flash("Started tracking quest! Check your Active tab.");
+      }
+      localStorage.setItem("pinmap_tracked_quests", JSON.stringify(next));
+      return next;
+    });
+  };
   
   var toggleUserFollow = props.toggleUserFollow || function(){};
   var loadUserProfile = props.loadUserProfile || function(){};
@@ -248,10 +273,57 @@ export function ProfilePanel(props) {
             )}
           </div>
 
-          {challenges.length === 0 ? (
-            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No challenges available.</div>
-          ) : (
-            challenges.map(function(ch){
+          {/* Quest Tabs */}
+          <div style={{display: "flex", gap: 8, marginBottom: 12}}>
+            <button
+              style={{
+                flex: 1,
+                padding: "6px 12px",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                border: "none",
+                background: questTab === "active" ? T.forest : T.borderSoft,
+                color: questTab === "active" ? T.paper : T.ink2,
+                cursor: "pointer"
+              }}
+              onClick={function(){ setQuestTab("active"); }}
+            >
+              My Quests ({challenges.filter(function(ch) { return ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0; }).length})
+            </button>
+            <button
+              style={{
+                flex: 1,
+                padding: "6px 12px",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                border: "none",
+                background: questTab === "discover" ? T.forest : T.borderSoft,
+                color: questTab === "discover" ? T.paper : T.ink2,
+                cursor: "pointer"
+              }}
+              onClick={function(){ setQuestTab("discover"); }}
+            >
+              Discover ({challenges.filter(function(ch) { return ch.owner !== "system" && ch.owner !== uname && trackedQuestIds.indexOf(ch.id) < 0; }).length})
+            </button>
+          </div>
+
+          {(function() {
+            var filtered = challenges.filter(function(ch) {
+              var isMineOrSystem = ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0;
+              return questTab === "active" ? isMineOrSystem : !isMineOrSystem;
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>
+                  {questTab === "active" ? "No active quests. Go to 'Discover' to add some!" : "No new community quests found."}
+                </div>
+              );
+            }
+
+            return filtered.map(function(ch){
               var chTags = ch.tags || [];
               var checkedPinIds = checkins.map(function(c) { return c.pin_id; });
               var matchingPins = allPins.filter(function(p) {
@@ -261,6 +333,7 @@ export function ProfilePanel(props) {
               });
               var count = Math.min(matchingPins.length, ch.required_count || 3);
               var isDone = count >= (ch.required_count || 3);
+              var isTracked = trackedQuestIds.indexOf(ch.id) >= 0;
               
               return (
                 <div 
@@ -300,15 +373,35 @@ export function ProfilePanel(props) {
                         })}
                       </div>
 
-                      {/* Progress Bar */}
-                      <div style={{marginTop:8}}>
-                        <div style={{display:"flex",justifyContent:"space-between",fontSize:10.5,color:T.ink3,fontFamily:T.mono,marginBottom:3}}>
-                          <span>Progress</span>
-                          <span style={{marginLeft:"auto"}}>{count} / {ch.required_count}</span>
+                      {/* Progress Bar & Track/Untrack button */}
+                      <div style={{marginTop:8, display:"flex", alignItems:"center", gap:10}}>
+                        <div style={{flex: 1}}>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:10.5,color:T.ink3,fontFamily:T.mono,marginBottom:3}}>
+                            <span>Progress</span>
+                            <span style={{marginLeft:"auto"}}>{count} / {ch.required_count}</span>
+                          </div>
+                          <div style={{width:"100%",height:6,background:T.borderSoft,borderRadius:3,overflow:"hidden"}}>
+                            <div style={{width:(count/(ch.required_count || 3)*100)+"%",height:"100%",background:isDone ? "#d4af37" : T.forest,borderRadius:3}} />
+                          </div>
                         </div>
-                        <div style={{width:"100%",height:6,background:T.borderSoft,borderRadius:3,overflow:"hidden"}}>
-                          <div style={{width:(count/(ch.required_count || 3)*100)+"%",height:"100%",background:isDone ? "#d4af37" : T.forest,borderRadius:3}} />
-                        </div>
+
+                        {ch.owner !== "system" && ch.owner !== uname && (
+                          <button
+                            style={{
+                              background: isTracked ? "transparent" : T.forest,
+                              color: isTracked ? T.ink3 : T.paper,
+                              border: isTracked ? "1px solid " + T.borderSoft : "none",
+                              padding: "4px 8px",
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              cursor: "pointer"
+                            }}
+                            onClick={function(){ toggleTrackQuest(ch.id); }}
+                          >
+                            {isTracked ? "Untrack" : "Track"}
+                          </button>
+                        )}
                       </div>
                     </div>
                     {user && ch.owner === uname && (
@@ -326,28 +419,28 @@ export function ProfilePanel(props) {
                   </div>
                 </div>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       )}
 
-      {/* ── Guides & Map Packs ────────────────────────────────────────────────── */}
+      {/* ── Collections ────────────────────────────────────────────────── */}
       {!editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={S.secHead}>Guides & Map Packs</div>
+            <div style={S.secHead}>Collections</div>
             {user && (
               <button 
                 style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
                 onClick={function(){ setShowCreatePackModal(true); }}
               >
-                <span>➕ Create Guide</span>
+                <span>➕ Create Collection</span>
               </button>
             )}
           </div>
 
           {mapPacks.length === 0 ? (
-            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No curated guides yet.</div>
+            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No collections created yet.</div>
           ) : (
             mapPacks.map(function(pack){
               var isCurrentActive = activeMapPack && activeMapPack.id === pack.id;
@@ -389,7 +482,7 @@ export function ProfilePanel(props) {
                             props.onSelectMapPack(isCurrentActive ? null : pack);
                           }}
                         >
-                          {isCurrentActive ? "🗺️ Active Guide" : "🗺️ View on Map"}
+                          {isCurrentActive ? "🗺️ Active Collection" : "🗺️ View on Map"}
                         </button>
                       </div>
                     </div>
@@ -397,7 +490,7 @@ export function ProfilePanel(props) {
                       <button 
                         style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
                         onClick={function(){
-                          if(confirm("Delete this guide?")){
+                          if(confirm("Delete this collection?")){
                             props.onDeleteMapPack(pack.id);
                           }
                         }}
@@ -750,10 +843,10 @@ export function ProfilePanel(props) {
       {showCreatePackModal && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(26,32,28,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:16}}>
           <div style={{background:T.paper,border:"2px solid "+T.forest,borderRadius:16,padding:20,width:"100%",maxWidth:400,boxShadow:T.shadowLg}}>
-            <div style={{fontSize:16,fontWeight:700,color:T.ink,marginBottom:14,fontFamily:T.mono,letterSpacing:"0.02em"}}>Create New Guide</div>
+            <div style={{fontSize:16,fontWeight:700,color:T.ink,marginBottom:14,fontFamily:T.mono,letterSpacing:"0.02em"}}>Create New Collection</div>
             
             <div style={{marginBottom:12}}>
-              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Guide Name</label>
+              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>Collection Name</label>
               <input 
                 type="text" 
                 style={S.input} 
@@ -782,14 +875,14 @@ export function ProfilePanel(props) {
                 onChange={function(e){ setPackPublic(e.target.checked); }}
                 style={{width:16,height:16,accentColor:T.forest}}
               />
-              <label htmlFor="isPublicPack" style={{fontSize:13.5,color:T.ink,cursor:"pointer"}}>Make guide public for anyone to view</label>
+              <label htmlFor="isPublicPack" style={{fontSize:13.5,color:T.ink,cursor:"pointer"}}>Make collection public for anyone to view</label>
             </div>
 
             <div style={{display:"flex",gap:8}}>
               <button 
                 style={Object.assign({}, S.btn, {flex:1})}
                 onClick={function(){
-                  if(!packName.trim()){ flash("Guide name is required!"); return; }
+                  if(!packName.trim()){ flash("Collection name is required!"); return; }
                   props.onCreateMapPack({
                     id: Math.random().toString(36).slice(2, 10),
                     name: packName.trim(),

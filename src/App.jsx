@@ -1939,11 +1939,11 @@ function App() {
     },
       e("div", {style: {flex: 1}},
         e("div", {style: {display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}},
-          e("span", {style: {fontSize: 10, background: "#2a5d3c", color: "#f6f1e4", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Guide"),
+          e("span", {style: {fontSize: 10, background: "#2a5d3c", color: "#f6f1e4", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Collection"),
           e("span", {style: {fontWeight: 700, fontSize: 14, color: "#1a201c"}}, activeMapPack.name)
         ),
-        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3}}, activeMapPack.description || "Viewing spots from this guide on map."),
-        e("div", {style: {fontSize: 10, color: "#6f786f", marginTop: 2}}, "Curated by @" + activeMapPack.owner)
+        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3}}, activeMapPack.description || "Filtering map by this collection."),
+        e("div", {style: {fontSize: 10, color: "#6f786f", marginTop: 2}}, "Created by @" + activeMapPack.owner)
       ),
       e("button", {
         style: {
@@ -2813,7 +2813,7 @@ function App() {
         })
       ),
 
-      uname && uname !== "guest" && mapPacks.filter(function(g){ return g.owner === uname; }).length > 0 && e("div", {
+      uname && uname !== "guest" && e("div", {
         style: {
           marginTop: 6,
           marginBottom: 10,
@@ -2823,45 +2823,68 @@ function App() {
           padding: "8px 10px"
         }
       },
-        e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, "Add to Guides"),
+        e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, "Add to Collections"),
         e("div", {style: {display: "flex", gap: 6, flexWrap: "wrap"}},
-          mapPacks.filter(function(g){ return g.owner === uname; }).map(function(g) {
-            var isInPack = selPinMapPackIds.indexOf(g.id) >= 0;
-            return e("div", {
-              key: g.id,
-              style: {
-                fontSize: 11.5,
-                padding: "4px 10px",
-                borderRadius: 14,
-                cursor: "pointer",
-                background: isInPack ? T.forestPale : "transparent",
-                color: isInPack ? T.forest : T.ink3,
-                border: "1px solid " + (isInPack ? T.forest : T.border),
-                display: "flex",
-                alignItems: "center",
-                gap: 4
-              },
-              onClick: function() {
-                if (isInPack) {
-                  api.removePinFromMapPack(g.id, selPin.id).then(function() {
-                    setSelPinMapPackIds(function(prev) { return prev.filter(function(id) { return id !== g.id; }); });
-                    if (activeMapPack && activeMapPack.id === g.id) {
-                      setActiveMapPackPinIds(function(prev) { return prev.filter(function(id) { return id !== selPin.id; }); });
+          (function() {
+            var myPacks = mapPacks.filter(function(g){ return g.owner === uname; });
+            if (myPacks.length === 0) {
+              return e("div", {style: {fontSize: 12, color: T.ink3}},
+                "No collections yet. ",
+                e("span", {
+                  style: {color: T.forest, textDecoration: "underline", cursor: "pointer", fontWeight: 700},
+                  onClick: function() {
+                    var name = prompt("Enter a name for your new collection:");
+                    if (name && name.trim()) {
+                      handleCreateMapPack({
+                        id: Math.random().toString(36).slice(2, 10),
+                        name: name.trim(),
+                        description: "",
+                        is_public: true,
+                        owner: uname
+                      });
                     }
-                    flash("Removed from " + g.name);
-                  });
-                } else {
-                  api.addPinToMapPack(g.id, selPin.id).then(function() {
-                    setSelPinMapPackIds(function(prev) { return prev.concat([g.id]); });
-                    if (activeMapPack && activeMapPack.id === g.id) {
-                      setActiveMapPackPinIds(function(prev) { return prev.concat([selPin.id]); });
-                    }
-                    flash("Added to " + g.name);
-                  });
+                  }
+                }, "Create one")
+              );
+            }
+            return myPacks.map(function(g) {
+              var isInPack = selPinMapPackIds.indexOf(g.id) >= 0;
+              return e("div", {
+                key: g.id,
+                style: {
+                  fontSize: 11.5,
+                  padding: "4px 10px",
+                  borderRadius: 14,
+                  cursor: "pointer",
+                  background: isInPack ? T.forestPale : "transparent",
+                  color: isInPack ? T.forest : T.ink3,
+                  border: "1px solid " + (isInPack ? T.forest : T.border),
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4
+                },
+                onClick: function() {
+                  if (isInPack) {
+                    api.removePinFromMapPack(g.id, selPin.id).then(function() {
+                      setSelPinMapPackIds(function(prev) { return prev.filter(function(id) { return id !== g.id; }); });
+                      if (activeMapPack && activeMapPack.id === g.id) {
+                        setActiveMapPackPinIds(function(prev) { return prev.filter(function(id) { return id !== selPin.id; }); });
+                      }
+                      flash("Removed from " + g.name);
+                    });
+                  } else {
+                    api.addPinToMapPack(g.id, selPin.id).then(function() {
+                      setSelPinMapPackIds(function(prev) { return prev.concat([g.id]); });
+                      if (activeMapPack && activeMapPack.id === g.id) {
+                        setActiveMapPackPinIds(function(prev) { return prev.concat([selPin.id]); });
+                      }
+                      flash("Added to " + g.name);
+                    });
+                  }
                 }
-              }
-            }, (isInPack ? "✓ " : "＋ ") + g.name);
-          })
+              }, (isInPack ? "✓ " : "＋ ") + g.name);
+            });
+          })()
         )
       ),
 
