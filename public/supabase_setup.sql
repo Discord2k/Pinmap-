@@ -206,3 +206,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+
+-- 5. Phase 1 Expansion: Field Journals (with photo uploads)
+ALTER TABLE public.comments ADD COLUMN IF NOT EXISTS photo_url TEXT;
+
+-- Create storage bucket for journal photos (run via Supabase dashboard or SQL if enabled)
+-- Requires public read access and authenticated upload access.
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('journal-photos', 'journal-photos', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Allow public read access to journal photos" 
+  ON storage.objects FOR SELECT USING (bucket_id = 'journal-photos');
+
+CREATE POLICY "Allow authenticated users to upload journal photos" 
+  ON storage.objects FOR INSERT WITH CHECK (
+    bucket_id = 'journal-photos' AND auth.role() = 'authenticated'
+  );
+

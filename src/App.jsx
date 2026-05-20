@@ -9,6 +9,7 @@ import { PinCard } from './components/PinCard';
 import { ProfilePanel } from './components/ProfilePanel';
 import { MineTab } from './components/MineTab';
 import { WhatsNew } from './components/WhatsNew';
+import { CompassModal } from './components/CompassModal';
 
 var e = React.createElement;
 
@@ -58,6 +59,7 @@ function App() {
   var s41=useState(13); var mapZoom=s41[0]; var setMapZoom=s41[1];
   var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
   var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
+  var sShowCompass=useState(false); var showCompass=sShowCompass[0]; var setShowCompass=sShowCompass[1];
   var s80=useState([]); var followers=s80[0]; var setFollowers=s80[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var s45=useState(false); var pushEnabled=s45[0]; var setPushEnabled=s45[1];
@@ -2301,12 +2303,17 @@ function App() {
             if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) url="http://maps.apple.com/?ll="+selPin.lat+","+selPin.lng;
             window.open(url,"_blank");
           }
-        },"Open in Maps")
+        },"Open in Maps"),
+        e("button",{
+          style:{background:"none",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},
+          onClick:function(){setShowCompass(true);}
+        },"🧭 Compass")
       ),
-      e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name})
+      e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash})
     ),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew}),
+    showCompass&&e(CompassModal,{pin:selPin,onClose:function(){setShowCompass(false);},flash:flash}),
 
     showImport&&e("div",{style:{position:"fixed",top:0,left:0,right:0,bottom:"calc(60px + env(safe-area-inset-bottom,0px))",background:T.paper,zIndex:2000,display:"flex",flexDirection:"column",overflow:"hidden"}},
       // Header

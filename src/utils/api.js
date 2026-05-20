@@ -25,7 +25,17 @@ export const api = {
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).in("privacy",["public","insider"]).then(function(r){return r.data||[];}); },
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
   upvoteComment:  function(id,upvotes) { return sb.from("comments").update({upvotes:upvotes}).eq("id",id); },
-  addComment:     function(c)          { return sb.from("comments").insert(c).select().then(function(r){return r.data;}); },
+  addComment:     async function(c)    {
+    if (c.photo_url && c.photo_url.startsWith("data:")) {
+      try {
+        var uploadedUrl = await uploadJournalPhoto(c.photo_url, c.pin_id);
+        c.photo_url = uploadedUrl;
+      } catch (e) {
+        console.error("Failed to upload offline journal photo", e);
+      }
+    }
+    return sb.from("comments").insert(c).select().then(function(r){return r.data;});
+  },
   deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id); },
   signInGoogle:   function()            { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
   signOut:        function()            { return sb.auth.signOut(); },
@@ -135,5 +145,19 @@ export async function uploadPhoto(dataUrl, pinId) {
   var res = await sb.storage.from('pin-images').upload(filename, blob, {contentType:'image/jpeg',upsert:true});
   if(res.error) throw res.error;
   var urlRes = sb.storage.from('pin-images').getPublicUrl(filename);
+  return urlRes.data.publicUrl;
+}
+
+export async function uploadJournalPhoto(dataUrl, pinId) {
+  var parts = dataUrl.split(',');
+  var mime = parts[0].match(/:(.*?);/)[1];
+  var binary = atob(parts[1]);
+  var array = new Uint8Array(binary.length);
+  for(var i=0;i<binary.length;i++) array[i]=binary.charCodeAt(i);
+  var blob = new Blob([array], {type:mime});
+  var filename = 'journals/' + pinId + '_' + Date.now() + '.jpg';
+  var res = await sb.storage.from('journal-photos').upload(filename, blob, {contentType:'image/jpeg',upsert:true});
+  if(res.error) throw res.error;
+  var urlRes = sb.storage.from('journal-photos').getPublicUrl(filename);
   return urlRes.data.publicUrl;
 }
