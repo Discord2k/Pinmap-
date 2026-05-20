@@ -170,3 +170,39 @@ SELECT cron.schedule(
   $$
 );
 
+
+-- 4. Account Deletion Function (Google Play Store compliance)
+CREATE OR REPLACE FUNCTION public.delete_own_account()
+RETURNS void AS $$
+DECLARE
+  v_username TEXT;
+  v_user_id UUID;
+BEGIN
+  -- Resolve Auth User ID
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  -- Resolve username matching the profile ID logic
+  v_username := coalesce(
+    NULLIF(auth.jwt() -> 'user_metadata' ->> 'full_name', ''),
+    split_part(auth.jwt() ->> 'email', '@', 1)
+  );
+
+  -- Delete user content across all tables
+  DELETE FROM public.profiles WHERE id = v_username;
+  DELETE FROM public.pins WHERE owner = v_username;
+  DELETE FROM public.comments WHERE owner = v_username;
+  DELETE FROM public.checkins WHERE visitor = v_username;
+  DELETE FROM public.follows WHERE owner = v_username;
+  DELETE FROM public.user_follows WHERE owner = v_username;
+  DELETE FROM public.presence WHERE owner = v_username;
+  DELETE FROM public.push_subscriptions WHERE owner = v_username;
+  DELETE FROM public.notifications WHERE owner = v_username;
+
+  -- Delete Auth User from auth.users (requires SECURITY DEFINER bypass)
+  DELETE FROM auth.users WHERE id = v_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+

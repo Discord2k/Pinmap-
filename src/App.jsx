@@ -972,6 +972,25 @@ function App() {
     }).catch(function(e){flash("Save failed: "+e.message);});
   }
 
+  function handleDeleteAccount(){
+    var confirmFirst = window.confirm("⚠️ WARNING: Deleting your account will permanently erase your profile, pins, comments, checkins, and settings. This action is absolute and cannot be undone.\n\nAre you sure you want to proceed?");
+    if (!confirmFirst) return;
+
+    var confirmSecond = window.confirm("Final confirmation: Click OK if you are 100% sure you want to permanently delete your PINMAP account.");
+    if (!confirmSecond) return;
+
+    flash("Deleting account...");
+    api.deleteAccount().then(function(){
+      api.signOut().then(function(){
+        setUser(null);
+        setSplashDone(false);
+        flash("👋 Account and all associated data have been permanently deleted.");
+      });
+    }).catch(function(e){
+      flash("❌ Deletion failed: " + e.message);
+    });
+  }
+
   function toggleSavePin(pin){
     requireAuth(function(){
       var isSaved = pin.saved_by && pin.saved_by.indexOf(uname)>=0;
@@ -2189,6 +2208,7 @@ function App() {
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           onSignOut:function(){api.signOut().then(function(){setUser(null);setSplashDone(false);});},
+          onDeleteAccount:handleDeleteAccount,
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");},
           onStartOfflineMode:function(){setOpen(false);setOfflineMode(true);},

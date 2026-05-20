@@ -64,6 +64,9 @@ export const api = {
       result.sort(function(a,b){return b.count-a.count;});
       return result.slice(0,10);
     });
+  },
+  deleteAccount: function() {
+    return sb.rpc("delete_own_account");
   }
 };
 

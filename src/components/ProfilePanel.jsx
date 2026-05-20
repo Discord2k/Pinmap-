@@ -336,6 +336,23 @@ export function ProfilePanel(props) {
             <div style={{flex:1,fontSize:15,color:T.ink}}>About</div>
             <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>v 1.0.0 <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
           </div>
+
+          <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={function(){window.open("https://pin-map.com/privacy","_blank");}}>
+            <div style={{flex:1,fontSize:15,color:T.ink}}>Privacy Policy</div>
+            <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
+          </div>
+
+          <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={function(){window.open("https://pin-map.com/terms","_blank");}}>
+            <div style={{flex:1,fontSize:15,color:T.ink}}>Terms of Service</div>
+            <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
+          </div>
+
+          {user && (
+            <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={props.onDeleteAccount}>
+              <div style={{flex:1,fontSize:15,color:"#c05050",fontWeight:600}}>Delete Account</div>
+              <div style={{color:"#c05050",fontSize:16}}>{">"}</div>
+            </div>
+          )}
         </div>
       )}
 
