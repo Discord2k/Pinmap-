@@ -104,6 +104,9 @@ function App() {
   var [mapPacks, setMapPacks] = useState([]);
   var [challenges, setChallenges] = useState([]);
   var [activeMapPack, setActiveMapPack] = useState(null);
+  var [activeQuestId, setActiveQuestId] = useState(function() {
+    return localStorage.getItem("pinmap_active_quest_id") || "";
+  });
   var [activeMapPackPinIds, setActiveMapPackPinIds] = useState([]);
   var [challengesLoading, setChallengesLoading] = useState(false);
   var [selPinMapPackIds, setSelPinMapPackIds] = useState([]);
@@ -1677,9 +1680,14 @@ function App() {
               var newCount = newMatchingPins.length;
               var isDone = newCount >= (ch.required_count || 3);
 
-              if (!wasDone && isDone) {
+              if (!wasDone && newCount > prevCount) {
+                var nextCountVal = Math.min(newCount, ch.required_count || 3);
                 setTimeout(function() {
-                  flash("🎉 Quest Completed: " + (ch.icon || "🏆") + " " + ch.title + "!");
+                  if (isDone) {
+                    flash("🎉 Quest Completed: " + (ch.icon || "🏆") + " " + ch.title + " (" + nextCountVal + "/" + (ch.required_count || 3) + ")!");
+                  } else {
+                    flash("🎯 Quest Progress: " + (ch.icon || "🏆") + " " + ch.title + " (" + nextCountVal + "/" + (ch.required_count || 3) + ")!");
+                  }
                 }, 2000);
               }
             });
@@ -1921,6 +1929,24 @@ function App() {
   DEFAULT_TAGS.forEach(function(t){ if(suggestTags.length<8 && !recentTagsSeen[t]){ suggestTags.push(t); } });
   var TABS=[["search","Search"],["mine","Mine"],["add","Add"],["nearby","Nearby"],["profile","Profile"]].concat(uname==="Seth Gray"?[["admin","Admin"]]:[]);
 
+  // Get active quest details
+  var activeQuest = null;
+  var activeQuestProgress = { count: 0, required: 3 };
+  if (activeQuestId) {
+    activeQuest = challenges.find(function(ch) { return ch.id === activeQuestId; });
+    if (activeQuest) {
+      var chTags = activeQuest.tags || [];
+      var checkedPinIds = checkins.map(function(c) { return c.pin_id; });
+      var matchingPins = pins.filter(function(p) {
+        if (checkedPinIds.indexOf(p.id) < 0) return false;
+        if (!p.tags) return false;
+        return p.tags.some(function(t) { return chTags.indexOf(t) >= 0; });
+      });
+      activeQuestProgress.count = Math.min(matchingPins.length, activeQuest.required_count || 3);
+      activeQuestProgress.required = activeQuest.required_count || 3;
+    }
+  }
+
   if(!sessionChecked||!splashDone){
     return e(Splash,{loading:!sessionChecked,onGoogle:api.signInGoogle,onGuest:function(){setSplashDone(true);}});
   }
@@ -1971,6 +1997,59 @@ function App() {
         },
         onClick: function() { handleSelectMapPack(null); }
       }, "✕ Exit")
+    ),
+
+    activeQuest && e("div", {
+      style: {
+        position: "absolute",
+        top: activeMapPack ? "calc(110px + max(16px, env(safe-area-inset-top, 0px)))" : "max(16px, env(safe-area-inset-top, 0px))",
+        left: 16,
+        right: 16,
+        maxWidth: 480,
+        margin: "0 auto",
+        background: "rgba(255, 255, 255, 0.95)",
+        border: "2px solid #d4af37",
+        borderRadius: 14,
+        padding: "12px 14px",
+        zIndex: 1000,
+        boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12
+      }
+    },
+      e("div", {style: {flex: 1, minWidth: 0}},
+        e("div", {style: {display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}},
+          e("span", {style: {fontSize: 10, background: "#d4af37", color: "#fff", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Quest 🎯"),
+          e("span", {style: {fontWeight: 700, fontSize: 13.5, color: "#1a201c"}}, (activeQuest.icon || "🏆") + " " + activeQuest.title)
+        ),
+        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}, activeQuest.description),
+        e("div", {style: {marginTop: 6, display: "flex", alignItems: "center", gap: 8}},
+          e("div", {style: {flex: 1, height: 5, background: T.borderSoft, borderRadius: 2.5, overflow: "hidden"}},
+            e("div", {style: {width: (activeQuestProgress.count / activeQuestProgress.required * 100) + "%", height: "100%", background: "#d4af37"}})
+          ),
+          e("span", {style: {fontSize: 10, color: T.ink2, fontFamily: T.mono, flexShrink:0}}, activeQuestProgress.count + " / " + activeQuestProgress.required)
+        )
+      ),
+      e("button", {
+        style: {
+          background: "rgba(212, 175, 55, 0.1)",
+          border: "none",
+          color: "#d4af37",
+          fontWeight: 700,
+          fontSize: 11,
+          padding: "6px 10px",
+          borderRadius: 8,
+          cursor: "pointer",
+          whiteSpace: "nowrap"
+        },
+        onClick: function() {
+          setActiveQuestId("");
+          localStorage.setItem("pinmap_active_quest_id", "");
+          flash("Quest paused. You can resume it anytime.");
+        }
+      }, "✕ Pause")
     ),
 
     showInstall && e("div",{style:{
@@ -2609,10 +2688,10 @@ function App() {
                               )
                             ),
                             e("div",{style:{display:"flex",alignItems:"center",gap:8}},
-                              e("button",{
+                              ch.owner !== "system" && ch.owner !== uname && e("button",{
                                 style:{
-                                  background:isTracked ? "transparent" : T.forest,
-                                  color:isTracked ? T.ink3 : T.paper,
+                                  background:isTracked ? "transparent" : T.borderSoft,
+                                  color:isTracked ? T.ink3 : T.ink2,
                                   border:isTracked ? "1px solid "+T.borderSoft : "none",
                                   padding:"5px 10px",
                                   borderRadius:8,
@@ -2630,6 +2709,10 @@ function App() {
                                   if (list.indexOf(ch.id) >= 0) {
                                     list = list.filter(function(x) { return x !== ch.id; });
                                     flash("Stopped tracking quest.");
+                                    if (activeQuestId === ch.id) {
+                                      setActiveQuestId("");
+                                      localStorage.setItem("pinmap_active_quest_id", "");
+                                    }
                                   } else {
                                     list = list.concat([ch.id]);
                                     flash("Started tracking quest! View in Profile.");
@@ -2648,6 +2731,57 @@ function App() {
                                   setChallenges(function(prev){ return prev.slice(); });
                                 }
                               },isTracked ? "Tracked" : "Track"),
+                              e("button",{
+                                style:{
+                                  background:activeQuestId === ch.id ? "#d4af37" : T.forest,
+                                  color:"#fff",
+                                  border:"none",
+                                  padding:"5px 10px",
+                                  borderRadius:8,
+                                  fontSize:11,
+                                  fontWeight:700,
+                                  cursor:"pointer",
+                                  display:"inline-flex",
+                                  alignItems:"center",
+                                  gap:3
+                                },
+                                onClick:function(){
+                                  if (activeQuestId === ch.id) {
+                                    setActiveQuestId("");
+                                    localStorage.setItem("pinmap_active_quest_id", "");
+                                    flash("Quest paused.");
+                                  } else {
+                                    // Track if not tracked and community quest
+                                    if (!isTracked && ch.owner !== "system" && ch.owner !== uname) {
+                                      var list = [];
+                                      try {
+                                        var saved = localStorage.getItem("pinmap_tracked_quests");
+                                        list = saved ? JSON.parse(saved) : [];
+                                      } catch(e){}
+                                      if (list.indexOf(ch.id) < 0) {
+                                        list = list.concat([ch.id]);
+                                        localStorage.setItem("pinmap_tracked_quests", JSON.stringify(list));
+                                      }
+                                    }
+                                    // Remove from deleted/hidden if it was there
+                                    try {
+                                      var del = localStorage.getItem("pinmap_deleted_quests");
+                                      var delList = del ? JSON.parse(del) : [];
+                                      if (delList.indexOf(ch.id) >= 0) {
+                                        delList = delList.filter(function(x) { return x !== ch.id; });
+                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(delList));
+                                      }
+                                    } catch(e){}
+
+                                    setActiveQuestId(ch.id);
+                                    localStorage.setItem("pinmap_active_quest_id", ch.id);
+                                    flash("🎯 Quest started! Follow your progress on the map.");
+                                    setOpen(false); // Close sidebar drawer
+                                  }
+                                  // Force state update
+                                  setChallenges(function(prev){ return prev.slice(); });
+                                }
+                              },activeQuestId === ch.id ? "🎯 Active" : "Start"),
                               e("button",{
                                 style:{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4,fontSize:14},
                                 onClick:function(){
@@ -3005,6 +3139,8 @@ function App() {
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           mapPacks:mapPacks,
           challenges:challenges,
+          activeQuestId:activeQuestId,
+          setActiveQuestId:setActiveQuestId,
           challengesLoading:challengesLoading,
           allPins:pins,
           checkins:checkins,

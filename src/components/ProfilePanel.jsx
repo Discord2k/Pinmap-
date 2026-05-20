@@ -16,6 +16,8 @@ export function ProfilePanel(props) {
   var allPins = props.allPins || [];
   var checkins = props.checkins || [];
   var activeMapPack = props.activeMapPack || null;
+  var activeQuestId = props.activeQuestId || "";
+  var setActiveQuestId = props.setActiveQuestId;
   var trails = props.trails || [];
   var activeTrail = props.activeTrail || null;
   
@@ -666,23 +668,63 @@ export function ProfilePanel(props) {
                                     </div>
                                   </div>
 
-                                  {ch.owner !== "system" && ch.owner !== uname && (
+                                  {/* Action Buttons */}
+                                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                                    {ch.owner !== "system" && ch.owner !== uname && (
+                                      <button
+                                        style={{
+                                          background: isTracked ? "transparent" : T.borderSoft,
+                                          color: isTracked ? T.ink3 : T.ink2,
+                                          border: isTracked ? "1px solid " + T.borderSoft : "none",
+                                          padding: "4px 8px",
+                                          borderRadius: 6,
+                                          fontSize: 11,
+                                          fontWeight: 700,
+                                          cursor: "pointer"
+                                        }}
+                                        onClick={function(e){ 
+                                          e.stopPropagation(); 
+                                          toggleTrackQuest(ch.id); 
+                                        }}
+                                      >
+                                        {isTracked ? "Untrack" : "Track"}
+                                      </button>
+                                    )}
+                                    
                                     <button
                                       style={{
-                                        background: isTracked ? "transparent" : T.forest,
-                                        color: isTracked ? T.ink3 : T.paper,
-                                        border: isTracked ? "1px solid " + T.borderSoft : "none",
+                                        background: activeQuestId === ch.id ? "#d4af37" : T.forest,
+                                        color: "#fff",
+                                        border: "none",
                                         padding: "4px 8px",
                                         borderRadius: 6,
                                         fontSize: 11,
                                         fontWeight: 700,
-                                        cursor: "pointer"
+                                        cursor: "pointer",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 3
                                       }}
-                                      onClick={function(){ toggleTrackQuest(ch.id); }}
+                                      onClick={function(e){
+                                        e.stopPropagation();
+                                        if (activeQuestId === ch.id) {
+                                          setActiveQuestId("");
+                                          localStorage.setItem("pinmap_active_quest_id", "");
+                                          flash("Quest paused.");
+                                        } else {
+                                          if (!isTracked && ch.owner !== "system" && ch.owner !== uname) {
+                                            toggleTrackQuest(ch.id);
+                                          }
+                                          setActiveQuestId(ch.id);
+                                          localStorage.setItem("pinmap_active_quest_id", ch.id);
+                                          flash("🎯 Quest started! Follow your progress on the map.");
+                                          if (props.setOpen) props.setOpen(false);
+                                        }
+                                      }}
                                     >
-                                      {isTracked ? "Untrack" : "Track"}
+                                      {activeQuestId === ch.id ? "🎯 Active" : "Start"}
                                     </button>
-                                  )}
+                                  </div>
                                 </div>
                               </div>
                               {user && (ch.owner === uname || ch.owner === "system" || isTracked) && (
