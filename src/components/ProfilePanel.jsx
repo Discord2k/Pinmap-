@@ -1,6 +1,6 @@
 import React from 'react';
 import { userAvatar, APP_VERSION } from '../utils/helpers';
-import { api, subscribeToPush } from '../utils/api';
+import { api, subscribeToPush, sb } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { UserBadges } from './UserBadges';
 
@@ -101,8 +101,11 @@ export function ProfilePanel(props) {
   
   var own = myPins.filter(function(p){return !p.saved_from;});
   var upvotes = own.reduce(function(a,p){return a+(p.upvotes?p.upvotes.length:0);},0);
-  
-  var avatar = userAvatar(user);
+
+  // Priority: custom uploaded photo → Google OAuth photo → null (shows initials)
+  var googleAvatar = userAvatar(user);
+  var avatar = (myProfile && myProfile.avatar_url) ? myProfile.avatar_url : googleAvatar;
+
   var myStats = [
     {v:own.length, l:"Pins"},
     {v:own.filter(function(p){return p.privacy==="public";}).length, l:"Public"},
@@ -140,9 +143,10 @@ export function ProfilePanel(props) {
       <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
         <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:16}}>
           {/* Avatar */}
-          <div style={{width:64,height:64,borderRadius:32,background:avatar?"transparent":T.forest,
+          <div style={{width:72,height:72,borderRadius:36,background:avatar?"transparent":T.forest,
             color:T.paper,display:"flex",alignItems:"center",justifyContent:"center",
-            fontSize:28,fontWeight:700,flexShrink:0,overflow:"hidden",border:"2px solid "+T.borderSoft}}>
+            fontSize:30,fontWeight:700,flexShrink:0,overflow:"hidden",
+            border:"3px solid "+T.borderSoft,boxShadow:"0 2px 8px rgba(0,0,0,0.10)"}}>
             {avatar 
               ? <img src={avatar} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(ev)=>{ev.target.style.display="none";}} />
               : (uname&&uname!=="guest"?uname[0].toUpperCase():"?")
@@ -179,40 +183,65 @@ export function ProfilePanel(props) {
       {editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           {/* Avatar picker */}
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-            <div style={{width:52,height:52,borderRadius:26,overflow:"hidden",background:T.forestPale,flexShrink:0,border:"2px solid "+T.borderSoft}}>
+          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
+            {/* Preview */}
+            <div style={{width:64,height:64,borderRadius:32,overflow:"hidden",background:T.forestPale,
+              flexShrink:0,border:"3px solid "+T.borderSoft,position:"relative",
+              boxShadow:"0 2px 8px rgba(0,0,0,0.10)"}}>
               <img 
-                src={profileForm.avatar_url||avatar||"https://ui-avatars.com/api/?name="+encodeURIComponent(uname)+"&background=2a5d3c&color=fff&size=52"}
-                style={{width:"100%",height:"100%",objectFit:"cover"}} 
+                src={profileForm.avatar_url||avatar||"https://ui-avatars.com/api/?name="+encodeURIComponent(uname)+"&background=2a5d3c&color=fff&size=64"}
+                style={{width:"100%",height:"100%",objectFit:"cover"}}
+                onError={(ev)=>{ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(uname)+"&background=2a5d3c&color=fff&size=64";}}
               />
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,marginBottom:6}}>Photo</div>
-              <input type="file" accept="image/*" style={{fontSize:11,color:T.ink3,width:"100%"}} onChange={(ev) => {
-                var file=ev.target.files[0]; if(!file) return;
-                var reader=new FileReader();
-                reader.onload=function(e2){
-                  var img=new Image();
-                  img.onload=function(){
-                    var MAX=256,w=img.width,h=img.height;
-                    if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
-                    var canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
-                    canvas.getContext("2d").drawImage(img,0,0,w,h);
-                    canvas.toBlob(function(blob){
-                      var path="avatars/"+uname.replace(/ /g,"-").toLowerCase()+".jpg";
-                      fetch("https://uuxggoydnjvsssbenkkt.supabase.co/storage/v1/object/pin-images/"+path,{
-                        method:"POST",headers:{"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eGdnb3lkbmp2c3NzYmVua2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODg4OTgsImV4cCI6MjA5MjY2NDg5OH0.VniG6qm6Z9spdezyw-85k4liEuyC9i3B_T2Pxo-9nK0","Content-Type":"image/jpeg","x-upsert":"true"},body:blob
-                      }).then(function(){
-                        var url="https://uuxggoydnjvsssbenkkt.supabase.co/storage/v1/object/public/pin-images/"+path+"?t="+Date.now();
-                        setProfileForm(function(f){return Object.assign({},f,{avatar_url:url});});
-                        flash("Photo uploaded!");
-                      }).catch(function(){flash("Upload failed");});
-                    },"image/jpeg",0.85);
+              <div style={{fontSize:11,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,marginBottom:6}}>Profile Photo</div>
+              <label style={{
+                display:"inline-flex",alignItems:"center",gap:6,
+                padding:"8px 16px",borderRadius:10,
+                background:T.forest,color:T.paper,
+                fontSize:13,fontWeight:600,cursor:"pointer"
+              }}>
+                📷 Choose photo
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={(ev) => {
+                  var file=ev.target.files[0]; if(!file) return;
+                  flash("Uploading…");
+                  var reader=new FileReader();
+                  reader.onload=function(e2){
+                    var img=new Image();
+                    img.onload=function(){
+                      var MAX=512,w=img.width,h=img.height;
+                      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+                      var canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+                      canvas.getContext("2d").drawImage(img,0,0,w,h);
+                      canvas.toBlob(function(blob){
+                        var path="avatars/"+uname.replace(/ /g,"-").toLowerCase()+".jpg";
+                        // Use Supabase Storage SDK (handles auth automatically)
+                        sb.storage.from("pin-images").upload(path, blob, {
+                          contentType:"image/jpeg", upsert:true
+                        }).then(function(res){
+                          if(res.error){flash("Upload failed: "+res.error.message);return;}
+                          var urlRes = sb.storage.from("pin-images").getPublicUrl(path);
+                          var url = urlRes.data.publicUrl+"?t="+Date.now();
+                          setProfileForm(function(f){return Object.assign({},f,{avatar_url:url});});
+                          flash("✅ Photo uploaded!");
+                        }).catch(function(e){flash("Upload failed: "+e.message);});
+                      },"image/jpeg",0.88);
+                    };
+                    img.src=e2.target.result;
                   };
-                  img.src=e2.target.result;
-                };
-                reader.readAsDataURL(file);
-              }} />
+                  reader.readAsDataURL(file);
+                }} />
+              </label>
+              {googleAvatar && !profileForm.avatar_url && (
+                <div style={{fontSize:11,color:T.ink3,marginTop:6}}>Using your Google photo</div>
+              )}
+              {profileForm.avatar_url && (
+                <button style={{marginTop:6,fontSize:11,color:"#c05050",background:"none",border:"none",cursor:"pointer",padding:0}}
+                  onClick={()=>setProfileForm(function(f){return Object.assign({},f,{avatar_url:""})})}>
+                  ✕ Remove custom photo
+                </button>
+              )}
             </div>
           </div>
           
@@ -233,10 +262,13 @@ export function ProfilePanel(props) {
           
           <div style={{display:"flex",gap:8}}>
             <button style={Object.assign({},S.btn,{flex:1})} onClick={() => {
-              var profile=Object.assign({id:uname,updated_at:new Date().toISOString()},profileForm);
-              console.log("🚀 SENDING PROFILE PAYLOAD:", profile);
+              // Always persist the google avatar as fallback so other users' cards show something
+              var profile = Object.assign(
+                {id:uname, updated_at:new Date().toISOString()},
+                googleAvatar ? {google_avatar: googleAvatar} : {},
+                profileForm
+              );
               api.upsertProfile(profile).then(function(r){
-                console.log("📥 SUPABASE RESPONSE:", r);
                 if(r&&r.error) flash("Save failed: "+r.error.message);
                 else { 
                   var savedData = (r.data && r.data.length > 0) ? r.data[0] : profile;
