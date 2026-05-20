@@ -2522,8 +2522,18 @@ function App() {
                     trackedList = saved ? JSON.parse(saved) : [];
                   } catch(e){}
 
+                  var deletedList = [];
+                  try {
+                    var savedDeleted = localStorage.getItem("pinmap_deleted_quests");
+                    deletedList = savedDeleted ? JSON.parse(savedDeleted) : [];
+                  } catch(e){}
+
                   var query = questSearch.toLowerCase().trim();
-                  var filtered = challenges.filter(function(ch) {
+                  var visible = challenges.filter(function(ch) {
+                    return deletedList.indexOf(ch.id) < 0;
+                  });
+
+                  var filtered = visible.filter(function(ch) {
                     if (!query) return true;
                     var titleMatch = ch.title && ch.title.toLowerCase().indexOf(query) >= 0;
                     var descMatch = ch.description && ch.description.toLowerCase().indexOf(query) >= 0;
@@ -2531,12 +2541,22 @@ function App() {
                     return titleMatch || descMatch || tagMatch;
                   });
 
-                  if (filtered.length === 0) {
+                  // Sort: community challenges first (ch.owner !== "system"), then system challenges last
+                  var sorted = filtered.slice().sort(function(a, b) {
+                    var aIsSystem = a.owner === "system" ? 1 : 0;
+                    var bIsSystem = b.owner === "system" ? 1 : 0;
+                    if (aIsSystem !== bIsSystem) {
+                      return aIsSystem - bIsSystem; // system goes last
+                    }
+                    return new Date(b.created_at || 0) - new Date(a.created_at || 0); // newest first
+                  });
+
+                  if (sorted.length === 0) {
                     return e("div",{style:{padding:"30px 0",textAlign:"center",color:T.ink3,fontSize:14,fontStyle:"italic"}},"No community quests found matching this search.");
                   }
 
                   return e("div",{style:{padding:"10px 0"}},
-                    filtered.map(function(ch){
+                    sorted.map(function(ch){
                       var chTags = ch.tags || [];
                       var checkedPinIds = checkins.map(function(c) { return c.pin_id; });
                       var matchingPins = pins.filter(function(p) {
@@ -2546,7 +2566,7 @@ function App() {
                       });
                       var count = Math.min(matchingPins.length, ch.required_count || 3);
                       var isDone = count >= (ch.required_count || 3);
-                      var isTracked = ch.owner === "system" || ch.owner === uname || trackedList.indexOf(ch.id) >= 0;
+                      var isTracked = trackedList.indexOf(ch.id) >= 0;
 
                       return e("div",{
                         key:ch.id,
@@ -2588,36 +2608,75 @@ function App() {
                                 e("div",{style:{width:(count/(ch.required_count || 3)*100)+"%",height:"100%",background:isDone ? "#d4af37" : T.forest,borderRadius:3}})
                               )
                             ),
-                            ch.owner !== "system" && ch.owner !== uname && e("button",{
-                              style:{
-                                background:isTracked ? "transparent" : T.forest,
-                                color:isTracked ? T.ink3 : T.paper,
-                                border:isTracked ? "1px solid "+T.borderSoft : "none",
-                                padding:"5px 10px",
-                                borderRadius:8,
-                                fontSize:11,
-                                fontWeight:700,
-                                cursor:"pointer"
-                              },
-                              onClick:function(){
-                                var list = [];
-                                try {
-                                  var saved = localStorage.getItem("pinmap_tracked_quests");
-                                  list = saved ? JSON.parse(saved) : [];
-                                } catch(e){}
+                            e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                              e("button",{
+                                style:{
+                                  background:isTracked ? "transparent" : T.forest,
+                                  color:isTracked ? T.ink3 : T.paper,
+                                  border:isTracked ? "1px solid "+T.borderSoft : "none",
+                                  padding:"5px 10px",
+                                  borderRadius:8,
+                                  fontSize:11,
+                                  fontWeight:700,
+                                  cursor:"pointer"
+                                },
+                                onClick:function(){
+                                  var list = [];
+                                  try {
+                                    var saved = localStorage.getItem("pinmap_tracked_quests");
+                                    list = saved ? JSON.parse(saved) : [];
+                                  } catch(e){}
 
-                                if (list.indexOf(ch.id) >= 0) {
-                                  list = list.filter(function(x) { return x !== ch.id; });
-                                  flash("Stopped tracking quest.");
-                                } else {
-                                  list = list.concat([ch.id]);
-                                  flash("Started tracking quest! View in Profile.");
+                                  if (list.indexOf(ch.id) >= 0) {
+                                    list = list.filter(function(x) { return x !== ch.id; });
+                                    flash("Stopped tracking quest.");
+                                  } else {
+                                    list = list.concat([ch.id]);
+                                    flash("Started tracking quest! View in Profile.");
+                                    // Remove from deleted/hidden if it was there
+                                    try {
+                                      var del = localStorage.getItem("pinmap_deleted_quests");
+                                      var delList = del ? JSON.parse(del) : [];
+                                      if (delList.indexOf(ch.id) >= 0) {
+                                        delList = delList.filter(function(x) { return x !== ch.id; });
+                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(delList));
+                                      }
+                                    } catch(e){}
+                                  }
+                                  localStorage.setItem("pinmap_tracked_quests", JSON.stringify(list));
+                                  // Force state update
+                                  setChallenges(function(prev){ return prev.slice(); });
                                 }
-                                localStorage.setItem("pinmap_tracked_quests", JSON.stringify(list));
-                                // Force state update
-                                setChallenges(function(prev){ return prev.slice(); });
-                              }
-                            },isTracked ? "Tracked" : "Track")
+                              },isTracked ? "Tracked" : "Track"),
+                              e("button",{
+                                style:{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4,fontSize:14},
+                                onClick:function(){
+                                  if(ch.owner === uname) {
+                                    if(confirm("Delete this challenge permanently for everyone?")){
+                                      api.deleteChallenge(ch.id).then(function(){
+                                        flash("Quest deleted permanently.");
+                                        setChallenges(function(prev){ return prev.filter(function(x){ return x.id !== ch.id; }); });
+                                      }).catch(function(err){
+                                        flash("Delete failed: "+err.message);
+                                      });
+                                    }
+                                  } else {
+                                    if(confirm("Remove this quest from your list?")){
+                                      var nextDeleted = [];
+                                      try {
+                                        var saved = localStorage.getItem("pinmap_deleted_quests");
+                                        nextDeleted = saved ? JSON.parse(saved) : [];
+                                      } catch(e){}
+                                      nextDeleted = nextDeleted.concat([ch.id]);
+                                      localStorage.setItem("pinmap_deleted_quests", JSON.stringify(nextDeleted));
+                                      flash("Quest removed from your list.");
+                                      // Force state update
+                                      setChallenges(function(prev){ return prev.slice(); });
+                                    }
+                                  }
+                                }
+                              },"🗑️")
+                            )
                           )
                         )
                       );

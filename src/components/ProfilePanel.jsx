@@ -54,6 +54,15 @@ export function ProfilePanel(props) {
     }
   });
 
+  var [deletedQuestIds, setDeletedQuestIds] = React.useState(function() {
+    try {
+      var saved = localStorage.getItem("pinmap_deleted_quests");
+      return saved ? JSON.parse(saved) : [];
+    } catch(e) {
+      return [];
+    }
+  });
+
   var toggleTrackQuest = function(id) {
     setTrackedQuestIds(function(prev) {
       var next;
@@ -531,154 +540,180 @@ export function ProfilePanel(props) {
           <div className={"pm-collapsible " + (questsCollapsed ? "collapsed" : "")}>
             <div>
               {/* Quest Tabs */}
-          <div style={{display: "flex", gap: 8, marginBottom: 12}}>
-            <button
-              style={{
-                flex: 1,
-                padding: "6px 12px",
-                borderRadius: 8,
-                fontSize: 12.5,
-                fontWeight: 700,
-                border: "none",
-                background: questTab === "active" ? T.forest : T.borderSoft,
-                color: questTab === "active" ? T.paper : T.ink2,
-                cursor: "pointer"
-              }}
-              onClick={function(){ setQuestTab("active"); }}
-            >
-              My Quests ({challenges.filter(function(ch) { return ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0; }).length})
-            </button>
-            <button
-              style={{
-                flex: 1,
-                padding: "6px 12px",
-                borderRadius: 8,
-                fontSize: 12.5,
-                fontWeight: 700,
-                border: "none",
-                background: questTab === "discover" ? T.forest : T.borderSoft,
-                color: questTab === "discover" ? T.paper : T.ink2,
-                cursor: "pointer"
-              }}
-              onClick={function(){ setQuestTab("discover"); }}
-            >
-              Discover ({challenges.filter(function(ch) { return ch.owner !== "system" && ch.owner !== uname && trackedQuestIds.indexOf(ch.id) < 0; }).length})
-            </button>
-          </div>
+              {(function() {
+                var visibleChallenges = challenges.filter(function(ch) {
+                  return deletedQuestIds.indexOf(ch.id) < 0;
+                });
+                var sortedChallenges = visibleChallenges.slice().sort(function(a, b) {
+                  var aIsSystem = a.owner === "system" ? 1 : 0;
+                  var bIsSystem = b.owner === "system" ? 1 : 0;
+                  if (aIsSystem !== bIsSystem) {
+                    return aIsSystem - bIsSystem; // system challenges go to the bottom (1 - 0 = 1, so b goes first)
+                  }
+                  return new Date(b.created_at || 0) - new Date(a.created_at || 0); // newest first
+                });
 
-          {(function() {
-            var filtered = challenges.filter(function(ch) {
-              var isMineOrSystem = ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0;
-              return questTab === "active" ? isMineOrSystem : !isMineOrSystem;
-            });
+                var activeCount = sortedChallenges.filter(function(ch) { return ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0; }).length;
+                var discoverCount = sortedChallenges.filter(function(ch) { return ch.owner !== "system" && ch.owner !== uname && trackedQuestIds.indexOf(ch.id) < 0; }).length;
 
-            if (filtered.length === 0) {
-              return (
-                <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>
-                  {questTab === "active" ? "No active quests. Go to 'Discover' to add some!" : "No new community quests found."}
-                </div>
-              );
-            }
+                var filtered = sortedChallenges.filter(function(ch) {
+                  var isMineOrSystem = ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0;
+                  return questTab === "active" ? isMineOrSystem : !isMineOrSystem;
+                });
 
-            return filtered.map(function(ch){
-              var chTags = ch.tags || [];
-              var checkedPinIds = checkins.map(function(c) { return c.pin_id; });
-              var matchingPins = allPins.filter(function(p) {
-                if (checkedPinIds.indexOf(p.id) < 0) return false;
-                if (!p.tags) return false;
-                return p.tags.some(function(t) { return chTags.indexOf(t) >= 0; });
-              });
-              var count = Math.min(matchingPins.length, ch.required_count || 3);
-              var isDone = count >= (ch.required_count || 3);
-              var isTracked = trackedQuestIds.indexOf(ch.id) >= 0;
-              
-              return (
-                <div 
-                  key={ch.id} 
-                  className="pm-card-hover"
-                  style={Object.assign({}, S.card, {
-                    padding: "12px 14px", 
-                    marginBottom: 10, 
-                    cursor: "default",
-                    border: isDone ? "2px solid #d4af37" : "1px solid " + T.borderSoft,
-                    background: isDone ? "linear-gradient(135deg, #fffaf0 0%, #fdf8ee 100%)" : T.paper2
-                  })}
-                >
-                  <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-                    <div style={{fontSize:24,marginTop:2}}>{ch.icon || "🏆"}</div>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                        <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{ch.title}</span>
-                        {isDone && (
-                          <span style={{background:"#d4af37",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>
-                            Completed
-                          </span>
-                        )}
-                        {ch.owner && ch.owner !== "system" && (
-                          <span style={{color:T.ink3,fontSize:11}}>by @{ch.owner}</span>
-                        )}
-                      </div>
-                      <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{ch.description}</div>
-                      
-                      {/* Tags list */}
-                      <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
-                        {chTags.map(function(t, idx){
-                          return (
-                            <span key={idx} style={{fontSize:10,background:"rgba(26,32,28,0.05)",color:T.ink2,padding:"2px 6px",borderRadius:4,fontFamily:T.mono}}>
-                              #{t}
-                            </span>
-                          );
-                        })}
-                      </div>
-
-                      {/* Progress Bar & Track/Untrack button */}
-                      <div style={{marginTop:8, display:"flex", alignItems:"center", gap:10}}>
-                        <div style={{flex: 1}}>
-                          <div style={{display:"flex",justifyContent:"space-between",fontSize:10.5,color:T.ink3,fontFamily:T.mono,marginBottom:3}}>
-                            <span>Progress</span>
-                            <span style={{marginLeft:"auto"}}>{count} / {ch.required_count}</span>
-                          </div>
-                          <div style={{width:"100%",height:6,background:T.borderSoft,borderRadius:3,overflow:"hidden"}}>
-                            <div style={{width:(count/(ch.required_count || 3)*100)+"%",height:"100%",background:isDone ? "#d4af37" : T.forest,borderRadius:3}} />
-                          </div>
-                        </div>
-
-                        {ch.owner !== "system" && ch.owner !== uname && (
-                          <button
-                            style={{
-                              background: isTracked ? "transparent" : T.forest,
-                              color: isTracked ? T.ink3 : T.paper,
-                              border: isTracked ? "1px solid " + T.borderSoft : "none",
-                              padding: "4px 8px",
-                              borderRadius: 6,
-                              fontSize: 11,
-                              fontWeight: 700,
-                              cursor: "pointer"
-                            }}
-                            onClick={function(){ toggleTrackQuest(ch.id); }}
-                          >
-                            {isTracked ? "Untrack" : "Track"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {user && ch.owner === uname && (
-                      <button 
-                        style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
-                        onClick={function(){
-                          if(confirm("Delete this challenge?")){
-                            props.onDeleteChallenge(ch.id);
-                          }
+                return (
+                  <>
+                    <div style={{display: "flex", gap: 8, marginBottom: 12}}>
+                      <button
+                        style={{
+                          flex: 1,
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          border: "none",
+                          background: questTab === "active" ? T.forest : T.borderSoft,
+                          color: questTab === "active" ? T.paper : T.ink2,
+                          cursor: "pointer"
                         }}
+                        onClick={function(){ setQuestTab("active"); }}
                       >
-                        🗑️
+                        My Quests ({activeCount})
                       </button>
+                      <button
+                        style={{
+                          flex: 1,
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          border: "none",
+                          background: questTab === "discover" ? T.forest : T.borderSoft,
+                          color: questTab === "discover" ? T.paper : T.ink2,
+                          cursor: "pointer"
+                        }}
+                        onClick={function(){ setQuestTab("discover"); }}
+                      >
+                        Discover ({discoverCount})
+                      </button>
+                    </div>
+
+                    {filtered.length === 0 ? (
+                      <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>
+                        {questTab === "active" ? "No active quests. Go to 'Discover' to add some!" : "No new community quests found."}
+                      </div>
+                    ) : (
+                      filtered.map(function(ch){
+                        var chTags = ch.tags || [];
+                        var checkedPinIds = checkins.map(function(c) { return c.pin_id; });
+                        var matchingPins = allPins.filter(function(p) {
+                          if (checkedPinIds.indexOf(p.id) < 0) return false;
+                          if (!p.tags) return false;
+                          return p.tags.some(function(t) { return chTags.indexOf(t) >= 0; });
+                        });
+                        var count = Math.min(matchingPins.length, ch.required_count || 3);
+                        var isDone = count >= (ch.required_count || 3);
+                        var isTracked = trackedQuestIds.indexOf(ch.id) >= 0;
+
+                        return (
+                          <div 
+                            key={ch.id} 
+                            className="pm-card-hover"
+                            style={Object.assign({}, S.card, {
+                              padding: "12px 14px", 
+                              marginBottom: 10, 
+                              cursor: "default",
+                              border: isDone ? "2px solid #d4af37" : "1px solid " + T.borderSoft,
+                              background: isDone ? "linear-gradient(135deg, #fffaf0 0%, #fdf8ee 100%)" : T.paper2
+                            })}
+                          >
+                            <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                              <div style={{fontSize:24,marginTop:2}}>{ch.icon || "🏆"}</div>
+                              <div style={{flex:1}}>
+                                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                  <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{ch.title}</span>
+                                  {isDone && (
+                                    <span style={{background:"#d4af37",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>
+                                      Completed
+                                    </span>
+                                  )}
+                                  {ch.owner && ch.owner !== "system" && (
+                                    <span style={{color:T.ink3,fontSize:11}}>by @{ch.owner}</span>
+                                  )}
+                                </div>
+                                <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{ch.description}</div>
+                                
+                                {/* Tags list */}
+                                <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
+                                  {chTags.map(function(t, idx){
+                                    return (
+                                      <span key={idx} style={{fontSize:10,background:"rgba(26,32,28,0.05)",color:T.ink2,padding:"2px 6px",borderRadius:4,fontFamily:T.mono}}>
+                                        #{t}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Progress Bar & Track/Untrack button */}
+                                <div style={{marginTop:8, display:"flex", alignItems:"center", gap:10}}>
+                                  <div style={{flex: 1}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10.5,color:T.ink3,fontFamily:T.mono,marginBottom:3}}>
+                                      <span>Progress</span>
+                                      <span style={{marginLeft:"auto"}}>{count} / {ch.required_count}</span>
+                                    </div>
+                                    <div style={{width:"100%",height:6,background:T.borderSoft,borderRadius:3,overflow:"hidden"}}>
+                                      <div style={{width:(count/(ch.required_count || 3)*100)+"%",height:"100%",background:isDone ? "#d4af37" : T.forest,borderRadius:3}} />
+                                    </div>
+                                  </div>
+
+                                  {ch.owner !== "system" && ch.owner !== uname && (
+                                    <button
+                                      style={{
+                                        background: isTracked ? "transparent" : T.forest,
+                                        color: isTracked ? T.ink3 : T.paper,
+                                        border: isTracked ? "1px solid " + T.borderSoft : "none",
+                                        padding: "4px 8px",
+                                        borderRadius: 6,
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        cursor: "pointer"
+                                      }}
+                                      onClick={function(){ toggleTrackQuest(ch.id); }}
+                                    >
+                                      {isTracked ? "Untrack" : "Track"}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              {user && (ch.owner === uname || ch.owner === "system" || isTracked) && (
+                                <button 
+                                  style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
+                                  onClick={function(){
+                                    if(ch.owner === uname) {
+                                      if(confirm("Delete this challenge permanently for everyone?")){
+                                        props.onDeleteChallenge(ch.id);
+                                      }
+                                    } else {
+                                      if(confirm("Remove this quest from your list? You can restore it later if needed.")){
+                                        var nextDeleted = deletedQuestIds.concat([ch.id]);
+                                        setDeletedQuestIds(nextDeleted);
+                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(nextDeleted));
+                                        flash("Quest removed from your list.");
+                                      }
+                                    }
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
                     )}
-                  </div>
-                </div>
-              );
-            });
-          })()}
+                  </>
+                );
+              })()}
           </div>
         </div>
       </div>
