@@ -1,5 +1,5 @@
 import React from 'react';
-import { userAvatar } from '../utils/helpers';
+import { userAvatar, APP_VERSION } from '../utils/helpers';
 import { api, subscribeToPush } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { UserBadges } from './UserBadges';
@@ -334,7 +334,7 @@ export function ProfilePanel(props) {
           
           <div style={{display:"flex",alignItems:"center",padding:"14px 0"}}>
             <div style={{flex:1,fontSize:15,color:T.ink}}>About</div>
-            <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>v 1.0.0 <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
+            <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>v {APP_VERSION} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
           </div>
 
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={function(){window.open("https://pin-map.com/privacy","_blank");}}>
@@ -368,7 +368,7 @@ export function ProfilePanel(props) {
 
       {/* ── Footer ──────────────────────────────────────────────────────────────── */}
       <div style={{padding:"32px 22px",textAlign:"center",color:T.ink4,fontSize:10,lineHeight:1.7,fontFamily:T.mono,letterSpacing:"0.1em",textTransform:"uppercase"}}>
-        PINMAP · V 1.0.0 · Built May 2026<br/>
+        {"PINMAP · V " + APP_VERSION + " · Built May 2026"}<br/>
         © 2026 Seth Gray · All rights reserved
       </div>
     </div>
