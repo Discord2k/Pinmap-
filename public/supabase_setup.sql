@@ -335,3 +335,48 @@ CREATE INDEX IF NOT EXISTS idx_mappacks_owner ON public.mappacks(owner);
 CREATE INDEX IF NOT EXISTS idx_mappack_pins_pack ON public.mappack_pins(mappack_id);
 CREATE INDEX IF NOT EXISTS idx_challenges_owner ON public.challenges(owner);
 
+-- =========================================================================
+-- TRAILS & GPX ROUTES SYSTEM
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.trails (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  color TEXT DEFAULT '#2a5d3c',
+  coordinates JSONB NOT NULL, -- Array of [lat, lng] coordinates
+  distance_km NUMERIC DEFAULT 0,
+  duration_seconds INTEGER DEFAULT 0,
+  owner TEXT NOT NULL,
+  pin_id TEXT REFERENCES public.pins(id) ON DELETE SET NULL,
+  is_public BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.trails ENABLE ROW LEVEL SECURITY;
+
+-- Select policies
+DROP POLICY IF EXISTS "Anyone can view public trails" ON public.trails;
+CREATE POLICY "Anyone can view public trails" ON public.trails
+  FOR SELECT USING (is_public = true OR owner = current_user);
+
+-- Insert policies
+DROP POLICY IF EXISTS "Users can insert their own trails" ON public.trails;
+CREATE POLICY "Users can insert their own trails" ON public.trails
+  FOR INSERT WITH CHECK (owner = current_user);
+
+-- Update policies
+DROP POLICY IF EXISTS "Users can edit their own trails" ON public.trails;
+CREATE POLICY "Users can edit their own trails" ON public.trails
+  FOR UPDATE USING (owner = current_user);
+
+-- Delete policies
+DROP POLICY IF EXISTS "Users can delete their own trails" ON public.trails;
+CREATE POLICY "Users can delete their own trails" ON public.trails
+  FOR DELETE USING (owner = current_user);
+
+-- Optimize queries
+CREATE INDEX IF NOT EXISTS idx_trails_owner ON public.trails(owner);
+CREATE INDEX IF NOT EXISTS idx_trails_pin_id ON public.trails(pin_id);
+

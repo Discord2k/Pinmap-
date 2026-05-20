@@ -10,6 +10,7 @@ import { ProfilePanel } from './components/ProfilePanel';
 import { MineTab } from './components/MineTab';
 import { WhatsNew } from './components/WhatsNew';
 import { CompassModal } from './components/CompassModal';
+import { TrailRecorder } from './components/TrailRecorder';
 
 var e = React.createElement;
 
@@ -105,6 +106,19 @@ function App() {
   var [activeMapPackPinIds, setActiveMapPackPinIds] = useState([]);
   var [challengesLoading, setChallengesLoading] = useState(false);
   var [selPinMapPackIds, setSelPinMapPackIds] = useState([]);
+
+  var [trails, setTrails] = useState([]);
+  var [activeTrail, setActiveTrail] = useState(null);
+  var [recordingTrail, setRecordingTrail] = useState(false);
+  var [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  var [recordedPoints, setRecordedPoints] = useState([]);
+  var [recordedDistanceKm, setRecordedDistanceKm] = useState(0);
+  var [recordedDurationSec, setRecordedDurationSec] = useState(0);
+
+  var recordingWatchId = useRef(null);
+  var recordingTimerId = useRef(null);
+  var activeTrailPolyline = useRef(null);
+  var recordingTrailPolyline = useRef(null);
 
   var uname = userName(user);
 
@@ -655,6 +669,10 @@ function App() {
       .then(function(data){ setChallenges(data); })
       .catch(function(err){ console.error("Could not load challenges:", err); })
       .finally(function(){ setChallengesLoading(false); });
+
+    api.getTrails(uname || 'guest')
+      .then(function(data){ setTrails(data || []); })
+      .catch(function(err){ console.error("Could not load trails:", err); });
   },[splashDone]);
 
   useEffect(function(){
@@ -677,6 +695,7 @@ function App() {
     api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);});
     api.getCheckins(uname).then(function(data){setCheckins(data||[]);});
     api.getMapPacks(uname).then(function(data){setMapPacks(data||[]);});
+    api.getTrails(uname).then(function(data){setTrails(data||[]);});
     api.getProfile(uname).then(function(data){
       if(data) setMyProfile(data);
     });
@@ -752,6 +771,339 @@ function App() {
       }
     }
   },[user, pins, tab]);
+
+  // --- GPX TRAILS REAL-TIME DRAWING & PERSISTENCE ---
+  useEffect(function() {
+    var map = mapObj.current;
+    if (!map) return;
+
+    if (activeTrailPolyline.current) {
+      activeTrailPolyline.current.remove();
+      activeTrailPolyline.current = null;
+    }
+
+    if (activeTrail && activeTrail.coordinates && activeTrail.coordinates.length > 0) {
+      var latlngs = activeTrail.coordinates.map(function(pt) { return [pt[0], pt[1]]; });
+      var poly = window.L.polyline(latlngs, {
+        color: activeTrail.color || "#2a5d3c",
+        weight: 5,
+        opacity: 0.8,
+        lineJoin: 'round'
+      }).addTo(map);
+
+      activeTrailPolyline.current = poly;
+
+      try {
+        var bounds = poly.getBounds();
+        if (bounds && bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      } catch (e) {
+        console.error("Error fitting bounds:", e);
+      }
+    }
+  }, [activeTrail, mapObj.current]);
+
+  useEffect(function() {
+    var map = mapObj.current;
+    if (!map) return;
+
+    if (recordingTrailPolyline.current) {
+      recordingTrailPolyline.current.remove();
+      recordingTrailPolyline.current = null;
+    }
+
+    if (recordingTrail && recordedPoints && recordedPoints.length > 0) {
+      var latlngs = recordedPoints.map(function(pt) { return [pt[0], pt[1]]; });
+      var poly = window.L.polyline(latlngs, {
+        color: "#e65100",
+        weight: 6,
+        opacity: 0.9,
+        dashArray: "5, 10",
+        lineJoin: 'round'
+      }).addTo(map);
+
+      recordingTrailPolyline.current = poly;
+    }
+  }, [recordingTrail, recordedPoints, mapObj.current]);
+
+  useEffect(function() {
+    return function() {
+      if (recordingTimerId.current) clearInterval(recordingTimerId.current);
+      if (recordingWatchId.current) navigator.geolocation.clearWatch(recordingWatchId.current);
+    };
+  }, []);
+
+  function handleStartTrailRecording() {
+    if (!navigator.geolocation) {
+      flash("❌ Geolocation is not supported by your browser");
+      return;
+    }
+    
+    setRecordedPoints([]);
+    setRecordedDistanceKm(0);
+    setRecordedDurationSec(0);
+    setRecordingTrail(true);
+    setIsRecordingPaused(false);
+    
+    flash("⏺️ Trail recording started");
+
+    if (recordingTimerId.current) clearInterval(recordingTimerId.current);
+    recordingTimerId.current = setInterval(function() {
+      setRecordedDurationSec(function(prev) { return prev + 1; });
+    }, 1000);
+
+    var lastPoint = null;
+    var lastTime = Date.now();
+    
+    if (recordingWatchId.current) navigator.geolocation.clearWatch(recordingWatchId.current);
+    recordingWatchId.current = navigator.geolocation.watchPosition(
+      function(pos) {
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+        var now = Date.now();
+
+        if (lastPoint) {
+          var timeElapsed = (now - lastTime) / 1000;
+          var distance = distKm(lastPoint[0], lastPoint[1], lat, lng);
+          
+          if (timeElapsed >= 5 && distance >= 0.005) {
+            setRecordedPoints(function(prev) {
+              return prev.concat([[lat, lng]]);
+            });
+            setRecordedDistanceKm(function(prev) { return prev + distance; });
+            lastPoint = [lat, lng];
+            lastTime = now;
+          }
+        } else {
+          setRecordedPoints([[lat, lng]]);
+          lastPoint = [lat, lng];
+          lastTime = now;
+        }
+      },
+      function(err) {
+        console.error("Geolocation recording error:", err);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  function handlePauseTrailRecording() {
+    setIsRecordingPaused(true);
+    
+    if (recordingTimerId.current) {
+      clearInterval(recordingTimerId.current);
+      recordingTimerId.current = null;
+    }
+    
+    if (recordingWatchId.current) {
+      navigator.geolocation.clearWatch(recordingWatchId.current);
+      recordingWatchId.current = null;
+    }
+    
+    flash("⏸️ Recording paused");
+  }
+
+  function handleResumeTrailRecording() {
+    setIsRecordingPaused(false);
+    flash("▶️ Recording resumed");
+
+    recordingTimerId.current = setInterval(function() {
+      setRecordedDurationSec(function(prev) { return prev + 1; });
+    }, 1000);
+
+    var points = recordedPoints;
+    var lastPoint = points.length > 0 ? points[points.length - 1] : null;
+    var lastTime = Date.now();
+
+    recordingWatchId.current = navigator.geolocation.watchPosition(
+      function(pos) {
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+        var now = Date.now();
+
+        if (lastPoint) {
+          var timeElapsed = (now - lastTime) / 1000;
+          var distance = distKm(lastPoint[0], lastPoint[1], lat, lng);
+          
+          if (timeElapsed >= 5 && distance >= 0.005) {
+            setRecordedPoints(function(prev) { return prev.concat([[lat, lng]]); });
+            setRecordedDistanceKm(function(prev) { return prev + distance; });
+            lastPoint = [lat, lng];
+            lastTime = now;
+          }
+        } else {
+          setRecordedPoints([[lat, lng]]);
+          lastPoint = [lat, lng];
+          lastTime = now;
+        }
+      },
+      function(err) {
+        console.error("Geolocation error:", err);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  function cleanupRecording() {
+    setRecordingTrail(false);
+    setIsRecordingPaused(false);
+    setRecordedPoints([]);
+    setRecordedDistanceKm(0);
+    setRecordedDurationSec(0);
+
+    if (recordingTimerId.current) {
+      clearInterval(recordingTimerId.current);
+      recordingTimerId.current = null;
+    }
+    if (recordingWatchId.current) {
+      navigator.geolocation.clearWatch(recordingWatchId.current);
+      recordingWatchId.current = null;
+    }
+    
+    if (recordingTrailPolyline.current) {
+      recordingTrailPolyline.current.remove();
+      recordingTrailPolyline.current = null;
+    }
+  }
+
+  function handleCancelTrailRecording() {
+    if (confirm("Discard this recording session? All progress will be lost.")) {
+      cleanupRecording();
+      flash("❌ Recording discarded");
+    }
+  }
+
+  function handleSaveTrailRecording(trailDetails) {
+    if (recordedPoints.length < 2) {
+      flash("⚠️ Trail needs at least 2 recorded points to save");
+      return;
+    }
+
+    var newTrail = {
+      id: uid(),
+      name: trailDetails.name,
+      description: trailDetails.description,
+      color: trailDetails.color,
+      coordinates: recordedPoints,
+      distance_km: recordedDistanceKm,
+      duration_seconds: recordedDurationSec,
+      owner: uname,
+      is_public: trailDetails.is_public
+    };
+
+    api.createTrail(newTrail)
+      .then(function() {
+        flash("💾 Trail saved successfully!");
+        api.getTrails(uname).then(function(data) { setTrails(data || []); });
+        cleanupRecording();
+      })
+      .catch(function(err) {
+        console.error("Error saving trail:", err);
+        flash("❌ Error saving trail");
+      });
+  }
+
+  function handleDeleteTrail(id) {
+    api.deleteTrail(id)
+      .then(function() {
+        flash("🗑️ Trail deleted");
+        setTrails(function(prev) { return prev.filter(function(t) { return t.id !== id; }); });
+        if (activeTrail && activeTrail.id === id) {
+          setActiveTrail(null);
+        }
+      })
+      .catch(function(err) {
+        console.error("Error deleting trail:", err);
+        flash("❌ Error deleting trail");
+      });
+  }
+
+  function handleImportGPX(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var content = e.target.result;
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(content, "application/xml");
+        
+        var parserError = doc.querySelector("parsererror");
+        if (parserError) {
+          throw new Error("Invalid XML file");
+        }
+
+        var trkpts = doc.querySelectorAll("trkpt");
+        if (trkpts.length === 0) {
+          flash("⚠️ No track points found in GPX file");
+          return;
+        }
+
+        var coordinates = [];
+        var totalDist = 0;
+        var lastPt = null;
+
+        for (var i = 0; i < trkpts.length; i++) {
+          var pt = trkpts[i];
+          var lat = parseFloat(pt.getAttribute("lat"));
+          var lng = parseFloat(pt.getAttribute("lon"));
+          
+          if (!isNaN(lat) && !isNaN(lng)) {
+            coordinates.push([lat, lng]);
+            if (lastPt) {
+              totalDist += distKm(lastPt[0], lastPt[1], lat, lng);
+            }
+            lastPt = [lat, lng];
+          }
+        }
+
+        if (coordinates.length < 2) {
+          flash("⚠️ GPX trail needs at least 2 points");
+          return;
+        }
+
+        var nameNode = doc.querySelector("metadata > name") || doc.querySelector("trk > name");
+        var name = nameNode ? nameNode.textContent.trim() : file.name.replace(/\.[^/.]+$/, "");
+        
+        var descNode = doc.querySelector("metadata > desc") || doc.querySelector("trk > desc");
+        var desc = descNode ? descNode.textContent.trim() : "Imported GPX route";
+
+        var importedTrail = {
+          id: uid(),
+          name: name || "Imported Trail",
+          description: desc,
+          color: "#2a5d3c",
+          coordinates: coordinates,
+          distance_km: totalDist,
+          duration_seconds: 0,
+          owner: uname,
+          is_public: true
+        };
+
+        api.createTrail(importedTrail)
+          .then(function() {
+            flash("📥 GPX Trail imported successfully!");
+            api.getTrails(uname).then(function(data) { setTrails(data || []); });
+          })
+          .catch(function(err) {
+            console.error("Error saving imported trail:", err);
+            flash("❌ Error saving imported trail");
+          });
+
+      } catch (err) {
+        console.error("GPX parsing error:", err);
+        flash("❌ Error parsing GPX file. Make sure it is valid.");
+      }
+    };
+    reader.readAsText(file);
+  }
 
   useEffect(function(){
     if(!mapObj.current||!window.L) return;
@@ -2386,6 +2738,12 @@ function App() {
           allPins:pins,
           checkins:checkins,
           activeMapPack:activeMapPack,
+          trails:trails,
+          activeTrail:activeTrail,
+          onSelectTrail:setActiveTrail,
+          onDeleteTrail:handleDeleteTrail,
+          onStartTrailRecording:handleStartTrailRecording,
+          onImportGPX:handleImportGPX,
           onCreateMapPack:handleCreateMapPack,
           onDeleteMapPack:handleDeleteMapPack,
           onCreateChallenge:handleCreateChallenge,
@@ -2836,6 +3194,54 @@ function App() {
           padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer",flexShrink:0},
         onClick:function(){window.location.reload();}
       },"Reload")
+    ),
+
+    recordingTrail && e(TrailRecorder, {
+      isRecording: recordingTrail,
+      isPaused: isRecordingPaused,
+      distanceKm: recordedDistanceKm,
+      durationSec: recordedDurationSec,
+      onStart: handleStartTrailRecording,
+      onPause: handlePauseTrailRecording,
+      onResume: handleResumeTrailRecording,
+      onCancel: handleCancelTrailRecording,
+      onSave: handleSaveTrailRecording
+    }),
+
+    activeTrail && e("div", {
+      style: {
+        position: "absolute",
+        top: 16,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 1000,
+        background: "rgba(246,241,228,0.95)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid " + T.border,
+        borderRadius: 16,
+        padding: "8px 14px",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        boxShadow: T.shadow,
+        fontFamily: T.font
+      }
+    },
+      e("div", { style: { width: 8, height: 8, borderRadius: "50%", backgroundColor: activeTrail.color || T.forest } }),
+      e("div", { style: { fontSize: 13, fontWeight: 600, color: T.ink } }, 
+        activeTrail.name + " (" + Number(activeTrail.distance_km || 0).toFixed(2) + " km)"
+      ),
+      e("button", {
+        style: {
+          background: "transparent",
+          border: "none",
+          color: T.ink3,
+          cursor: "pointer",
+          fontSize: 14,
+          padding: "2px 6px"
+        },
+        onClick: function() { setActiveTrail(null); }
+      }, "✕")
     ),
 
     toast&&e("div",{className:"pm-toast",style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",color:"#2a5d3c",padding:"7px 16px",borderRadius:20,fontSize:13,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast),

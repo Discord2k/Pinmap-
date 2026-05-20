@@ -16,6 +16,18 @@ export function ProfilePanel(props) {
   var allPins = props.allPins || [];
   var checkins = props.checkins || [];
   var activeMapPack = props.activeMapPack || null;
+  var trails = props.trails || [];
+  var activeTrail = props.activeTrail || null;
+  
+  var fileInputRef = React.useRef(null);
+  var handleGpxImportChange = function(ev) {
+    var file = ev.target.files[0];
+    if (!file) return;
+    if (props.onImportGPX) {
+      props.onImportGPX(file);
+    }
+    ev.target.value = "";
+  };
 
   var [showCreatePackModal, setShowCreatePackModal] = React.useState(false);
   var [packName, setPackName] = React.useState("");
@@ -387,6 +399,171 @@ export function ProfilePanel(props) {
                         onClick={function(){
                           if(confirm("Delete this guide?")){
                             props.onDeleteMapPack(pack.id);
+                          }
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* ── Trails & Routes ────────────────────────────────────────────────── */}
+      {!editingProfile && (
+        <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={S.secHead}>Trails & Routes</div>
+            {user && (
+              <div style={{display:"flex",gap:6}}>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  accept=".gpx" 
+                  style={{display:"none"}} 
+                  onChange={handleGpxImportChange} 
+                />
+                <button 
+                  style={Object.assign({}, S.miniBtn, {background: T.paper3, border: "1px solid " + T.border, display: "flex", alignItems: "center", gap: 4})}
+                  onClick={function(){ if(fileInputRef.current) fileInputRef.current.click(); }}
+                >
+                  <span>📤 Import GPX</span>
+                </button>
+                <button 
+                  style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
+                  onClick={function(){
+                    props.setOpen(false); // Close Profile drawer
+                    if(props.onStartTrailRecording) props.onStartTrailRecording();
+                  }}
+                >
+                  <span>⏺️ Record Trail</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {trails.length === 0 ? (
+            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No recorded or imported trails.</div>
+          ) : (
+            trails.map(function(trail){
+              var isCurrentActive = activeTrail && activeTrail.id === trail.id;
+              var isOwner = trail.owner === uname;
+              
+              var formatDuration = function(secs) {
+                if (!secs) return "";
+                var h = Math.floor(secs / 3600);
+                var m = Math.floor((secs % 3600) / 60);
+                var s = secs % 60;
+                if (h > 0) return h + "h " + m + "m";
+                if (m > 0) return m + "m " + s + "s";
+                return s + "s";
+              };
+
+              var handleExport = function() {
+                var gpx = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+                          '<gpx version="1.1" creator="PINMAP" xmlns="http://www.topografix.com/GPX/1/1">\n' +
+                          '  <metadata>\n' +
+                          '    <name>' + trail.name.replace(/[<>&'"]/g, function(c){ return { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]; }) + '</name>\n' +
+                          '    <desc>' + (trail.description || '').replace(/[<>&'"]/g, function(c){ return { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]; }) + '</desc>\n' +
+                          '  </metadata>\n' +
+                          '  <trk>\n' +
+                          '    <name>' + trail.name.replace(/[<>&'"]/g, function(c){ return { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]; }) + '</name>\n' +
+                          '    <trkseg>\n' +
+                          (trail.coordinates || []).map(function(pt) {
+                            return '      <trkpt lat="' + pt[0] + '" lon="' + pt[1] + '"></trkpt>';
+                          }).join('\n') + '\n' +
+                          '    </trkseg>\n' +
+                          '  </trk>\n' +
+                          '</gpx>';
+                
+                var blob = new Blob([gpx], {type: "application/gpx+xml"});
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = url;
+                a.download = trail.name.toLowerCase().replace(/[^a-z0-9]/g, "_") + ".gpx";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              };
+
+              return (
+                <div 
+                  key={trail.id}
+                  style={Object.assign({}, S.card, {
+                    padding: "12px 14px",
+                    marginBottom: 10,
+                    cursor: "default",
+                    border: isCurrentActive ? "2px solid " + (trail.color || T.forest) : "1px solid " + T.borderSoft,
+                    background: isCurrentActive ? T.paper : T.paper2
+                  })}
+                >
+                  <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                    <div style={{width: 8, height: 8, borderRadius: "50%", background: trail.color || T.forest, marginTop: 5, flexShrink: 0}} />
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                        <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{trail.name}</span>
+                        {!trail.is_public && (
+                          <span style={{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}>
+                            Private
+                          </span>
+                        )}
+                        <span style={{color:T.ink3,fontSize:11}}>by @{trail.owner}</span>
+                      </div>
+                      
+                      {trail.description && (
+                        <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{trail.description}</div>
+                      )}
+
+                      <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
+                        <span style={{fontSize:11,fontFamily:T.mono,background:T.paper3,color:T.ink2,padding:"2px 6px",borderRadius:6}}>
+                          🥾 {Number(trail.distance_km || 0).toFixed(2)} km
+                        </span>
+                        {trail.duration_seconds > 0 && (
+                          <span style={{fontSize:11,fontFamily:T.mono,background:T.paper3,color:T.ink2,padding:"2px 6px",borderRadius:6}}>
+                            ⏱️ {formatDuration(trail.duration_seconds)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div style={{display:"flex",gap:8,marginTop:10}}>
+                        <button 
+                          style={Object.assign({}, S.miniBtn, {
+                            background: isCurrentActive ? (trail.color || T.forest) : "transparent",
+                            color: isCurrentActive ? T.paper : T.forest,
+                            border: "1px solid " + (trail.color || T.forest),
+                            padding: "4px 10px"
+                          })}
+                          onClick={function(){
+                            props.setOpen(false); // Close Profile drawer
+                            props.onSelectTrail(isCurrentActive ? null : trail);
+                          }}
+                        >
+                          {isCurrentActive ? "🗺️ Active Route" : "🗺️ View Trail"}
+                        </button>
+                        <button 
+                          style={Object.assign({}, S.miniBtn, {
+                            background: "transparent",
+                            color: T.ink2,
+                            border: "1px solid " + T.border,
+                            padding: "4px 10px"
+                          })}
+                          onClick={handleExport}
+                        >
+                          📥 Export GPX
+                        </button>
+                      </div>
+                    </div>
+                    {user && isOwner && (
+                      <button 
+                        style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
+                        onClick={function(){
+                          if(confirm("Delete this trail route?")){
+                            props.onDeleteTrail(trail.id);
                           }
                         }}
                       >

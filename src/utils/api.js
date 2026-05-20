@@ -104,6 +104,18 @@ export const api = {
   },
   deleteChallenge: function(id) {
     return sb.from("challenges").delete().eq("id", id);
+  },
+  getTrails: function(uname) {
+    return sb.from("trails").select("*").or("is_public.eq.true,owner.eq." + uname).order("created_at", {ascending: false}).then(function(r){return r.data||[];});
+  },
+  createTrail: function(trail) {
+    return sb.from("trails").insert(trail).select().then(function(r){return r.data;});
+  },
+  deleteTrail: function(id) {
+    return sb.from("trails").delete().eq("id", id);
+  },
+  linkTrailToPin: function(trailId, pinId) {
+    return sb.from("trails").update({pin_id: pinId}).eq("id", trailId);
   }
 };
 

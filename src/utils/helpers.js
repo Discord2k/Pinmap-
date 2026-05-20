@@ -1,9 +1,10 @@
 export const COLORS = ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
-export const ONBOARD_KEY = "pm-onboarded-v7";
-export const WHATSNEW_KEY = "pm-whatsnew-v14";
-export const APP_VERSION = "2.2.6";
+export const ONBOARD_KEY = "pm-onboarded-v8";
+export const WHATSNEW_KEY = "pm-whatsnew-v15";
+export const APP_VERSION = "2.2.7";
 
 export const WHATSNEW = [
+  {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files directly! View active paths drawn beautifully on the map with distance & duration tracking, and export your routes anytime."},
   {emoji:"🧭", title:"Guides & Map Packs", body:"Curate and publish custom map packs! Group your favorite spots into custom guides (e.g. 'Coffee Shops' or 'Weekend Hikes') from your profile. Select a map pack to filter the map view to just those spots."},
   {emoji:"🏆", title:"Explorer Quests", body:"Embark on location-based challenges! Design custom quests with target tags (e.g. check in to 3 #waterfalls) and see progress update in real time as you and other explorers check in to matching spots."},
   {emoji:"📷", title:"Field Journals (Logbooks)", body:"Turn pin log entries into a travel scrapbook! Attach photos to comments (taken live on camera or chosen from gallery). Logs are styled as vintage cards with fullscreen lightbox zooms. Full offline caching supported."},
@@ -19,6 +20,7 @@ export const WHATSNEW = [
 ];
 
 export const ALL_FEATURES = [
+  {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files directly! View active paths drawn beautifully on the map with distance & duration tracking, and export your routes anytime."},
   {emoji:"🧭", title:"Guides & Map Packs", body:"Design, publish, and view custom guides! Group your favorite pins into collections in your Profile, filter the map to see only those spots, and share guides with fellow explorers."},
   {emoji:"🏆", title:"Explorer Quests", body:"Create and join custom location challenges! Challenge yourself or other users by setting requirements like checking in to 3 spots tagged #viewpoint. Track quest completion status dynamically."},
   {emoji:"📍", title:"Drop pins", body:"Tap anywhere on the map to place a pin. Add a name, description, hashtags, colour, photo and optional expiry date."},
