@@ -11,6 +11,7 @@ export function Comments(props) {
   var [replyTo, setReplyTo] = useState(null);
   var [selectedPhoto, setSelectedPhoto] = useState(null);
   var [fullscreenPhoto, setFullscreenPhoto] = useState(null);
+  var [showPhotoSourcePrompt, setShowPhotoSourcePrompt] = useState(false);
 
   useEffect(function(){
     setCLoading(true);
@@ -50,6 +51,18 @@ export function Comments(props) {
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  function triggerCapture(useCamera) {
+    setShowPhotoSourcePrompt(false);
+    var input = document.getElementById("journal-file-input");
+    if (!input) return;
+    if (useCamera) {
+      input.setAttribute("capture", "environment");
+    } else {
+      input.removeAttribute("capture");
+    }
+    input.click();
   }
 
   async function submit(){
@@ -238,7 +251,7 @@ export function Comments(props) {
               <>
                 <button 
                   style={{background:"#efe9d8",border:"1px solid #d8cfb8",height:34,width:34,fontSize:15,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}
-                  onClick={() => document.getElementById("journal-file-input").click()}
+                  onClick={() => setShowPhotoSourcePrompt(true)}
                   title="Attach journal photo"
                 >
                   📷
@@ -295,6 +308,100 @@ export function Comments(props) {
               onClick={() => setFullscreenPhoto(null)}
             >
               ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Source Selection Prompt */}
+      {showPhotoSourcePrompt && (
+        <div 
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 3100,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center"
+          }}
+          onClick={() => setShowPhotoSourcePrompt(false)}
+        >
+          <div 
+            style={{
+              background: "#faf6ed",
+              borderRadius: "16px 16px 0 0",
+              padding: "20px 16px 24px",
+              width: "100%",
+              maxWidth: 480,
+              boxShadow: "0 -4px 16px rgba(0,0,0,0.1)",
+              boxSizing: "border-box",
+              fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{fontSize:14,fontWeight:700,color:"#6f786f",marginBottom:16,textAlign:"center"}}>Attach Journal Photo</div>
+            
+            <button 
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "14px",
+                marginBottom: 10,
+                background: "#f6f1e4",
+                border: "1px solid #dcd3bc",
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 700,
+                color: "#2a5d3c",
+                cursor: "pointer",
+                textAlign: "left"
+              }}
+              onClick={() => triggerCapture(true)}
+            >
+              📷 Take Photo
+            </button>
+            
+            <button 
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "14px",
+                marginBottom: 16,
+                background: "#f6f1e4",
+                border: "1px solid #dcd3bc",
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 700,
+                color: "#2a5d3c",
+                cursor: "pointer",
+                textAlign: "left"
+              }}
+              onClick={() => triggerCapture(false)}
+            >
+              🖼️ Choose from Gallery
+            </button>
+            
+            <button 
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "12px",
+                background: "none",
+                border: "none",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#c05050",
+                cursor: "pointer",
+                textAlign: "center",
+                margin: "0 auto"
+              }}
+              onClick={() => setShowPhotoSourcePrompt(false)}
+            >
+              Cancel
             </button>
           </div>
         </div>
