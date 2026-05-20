@@ -42,6 +42,8 @@ export function ProfilePanel(props) {
   var [chalCount, setChalCount] = React.useState(3);
 
   var [questTab, setQuestTab] = React.useState("active"); // "active" or "discover"
+  var [questsCollapsed, setQuestsCollapsed] = React.useState(true); // Collapsed by default to save space
+  var [helpPopup, setHelpPopup] = React.useState(null); // Explains new features
   var [trackedQuestIds, setTrackedQuestIds] = React.useState(function() {
     try {
       var saved = localStorage.getItem("pinmap_tracked_quests");
@@ -261,9 +263,40 @@ export function ProfilePanel(props) {
       {/* ── Explorer Challenges ────────────────────────────────────────────────── */}
       {!editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={S.secHead}>Explorer Quests</div>
-            {user && (
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:questsCollapsed ? 0 : 12}}>
+            <div 
+              style={Object.assign({}, S.secHead, {display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none"})}
+              onClick={function(){ setQuestsCollapsed(function(prev){ return !prev; }); }}
+            >
+              <span style={{fontSize: 10, color: T.ink3}}>{questsCollapsed ? "▶" : "▼"}</span>
+              <span>Explorer Quests</span>
+              <span 
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: "rgba(26,32,28,0.06)",
+                  fontSize: 11,
+                  color: T.ink3,
+                  marginLeft: 4,
+                  cursor: "pointer"
+                }} 
+                onClick={function(e){ 
+                  e.stopPropagation(); 
+                  setHelpPopup({
+                    title: "Explorer Quests",
+                    emoji: "🏆",
+                    desc: "Design or track custom location-based challenges! Challenge yourself or others to visit and check in to spots with specific tags (e.g. visit 3 spots tagged #waterfalls). Progress is verified automatically using GPS."
+                  });
+                }}
+              >
+                ?
+              </span>
+            </div>
+            {user && !questsCollapsed && (
               <button 
                 style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
                 onClick={function(){ setShowCreateChallengeModal(true); }}
@@ -273,7 +306,9 @@ export function ProfilePanel(props) {
             )}
           </div>
 
-          {/* Quest Tabs */}
+          {!questsCollapsed && (
+            <div>
+              {/* Quest Tabs */}
           <div style={{display: "flex", gap: 8, marginBottom: 12}}>
             <button
               style={{
@@ -421,14 +456,42 @@ export function ProfilePanel(props) {
               );
             });
           })()}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
+    )}
 
       {/* ── Collections ────────────────────────────────────────────────── */}
       {!editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={S.secHead}>Collections</div>
+            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:6})}>
+              <span>Collections</span>
+              <span 
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: "rgba(26,32,28,0.06)",
+                  fontSize: 11,
+                  color: T.ink3,
+                  cursor: "pointer"
+                }} 
+                onClick={function(e){ 
+                  e.stopPropagation(); 
+                  setHelpPopup({
+                    title: "Collections",
+                    emoji: "🧭",
+                    desc: "Themed groups of your favorite locations. Create custom lists like 'Weekend Coffee Walks' or 'Favorite Viewpoints' from your profile, then toggle them to filter the map view or add new pins directly from their pin details."
+                  });
+                }}
+              >
+                ?
+              </span>
+            </div>
             {user && (
               <button 
                 style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
@@ -510,7 +573,33 @@ export function ProfilePanel(props) {
       {!editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={S.secHead}>Trails & Routes</div>
+            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:6})}>
+              <span>Trails & Routes</span>
+              <span 
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: "rgba(26,32,28,0.06)",
+                  fontSize: 11,
+                  color: T.ink3,
+                  cursor: "pointer"
+                }} 
+                onClick={function(e){ 
+                  e.stopPropagation(); 
+                  setHelpPopup({
+                    title: "Trails & Routes",
+                    emoji: "⏺️",
+                    desc: "Record your hiking trails, walks, or cycling routes in real-time using your device GPS. You can also import external GPX files to visualize paths, calculate distance & duration statistics, and share them on the map."
+                  });
+                }}
+              >
+                ?
+              </span>
+            </div>
             {user && (
               <div style={{display:"flex",gap:6}}>
                 <input 
@@ -1012,6 +1101,24 @@ export function ProfilePanel(props) {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── Help Explainer Modal ────────────────────────────────────────────── */}
+      {helpPopup && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(26,32,28,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:16}} onClick={function(){ setHelpPopup(null); }}>
+          <div style={{background:T.paper,border:"2px solid "+T.forest,borderRadius:16,padding:22,width:"100%",maxWidth:400,boxShadow:T.shadowLg,animation:"slideUp 0.3s ease-out"}} onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+              <span style={{fontSize:28}}>{helpPopup.emoji}</span>
+              <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:T.mono,letterSpacing:"0.02em"}}>{helpPopup.title}</div>
+            </div>
+            <div style={{fontSize:13.5,color:T.ink2,lineHeight:1.6,marginBottom:18}}>{helpPopup.desc}</div>
+            <button 
+              style={Object.assign({}, S.btn, {width:"100%"})}
+              onClick={function(){ setHelpPopup(null); }}
+            >
+              Got it!
+            </button>
           </div>
         </div>
       )}

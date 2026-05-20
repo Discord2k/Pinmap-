@@ -1,7 +1,7 @@
 export const COLORS = ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 export const ONBOARD_KEY = "pm-onboarded-v8";
 export const WHATSNEW_KEY = "pm-whatsnew-v15";
-export const APP_VERSION = "2.2.8";
+export const APP_VERSION = "2.2.9";
 
 export const WHATSNEW = [
   {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files directly! View active paths drawn beautifully on the map with distance & duration tracking, and export your routes anytime."},
@@ -21,7 +21,7 @@ export const WHATSNEW = [
 
 export const ALL_FEATURES = [
   {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files directly! View active paths drawn beautifully on the map with distance & duration tracking, and export your routes anytime."},
-  {emoji:"🧭", title:"Guides & Map Packs", body:"Design, publish, and view custom guides! Group your favorite pins into collections in your Profile, filter the map to see only those spots, and share guides with fellow explorers."},
+  {emoji:"🧭", title:"Collections", body:"Design, publish, and view custom collections! Group your favorite pins into collections in your Profile, filter the map to see only those spots, and share collections with fellow explorers."},
   {emoji:"🏆", title:"Explorer Quests", body:"Create and join custom location challenges! Challenge yourself or other users by setting requirements like checking in to 3 spots tagged #viewpoint. Track quest completion status dynamically."},
   {emoji:"📍", title:"Drop pins", body:"Tap anywhere on the map to place a pin. Add a name, description, hashtags, colour, photo and optional expiry date."},
   {emoji:"🎨", title:"Pin colours & icons", body:"Choose from 9 colours for your pin. Icons are automatically assigned based on hashtags — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot and more."},
@@ -67,6 +67,9 @@ export const ONBOARD_STEPS = [
   {title:"Off-Grid Compass Mode",body:"Tap 🧭 Compass on any pin detail view to open a sensor-based circular navigation dial. Keep your device flat to view live bearing and distance to the target pin, working 100% offline.",pos:"center"},
   {title:"Push Notifications",body:"Enable push notifications in your Profile tab to get alerts when someone comments on your pin or a user you follow posts something new.",pos:"center"},
   {title:"Check-ins & Badges",body:"Earn custom badges by active exploration! Place pins to unlock milestone badges, and check in to other users' pins when you are within 30m of their physical location. Track your achievements under the Profile tab.",pos:"center"},
+  {title:"Explorer Quests",body:"Design or track custom location-based challenges! Challenge yourself or others to visit and check in to spots with specific tags (e.g. visit 3 spots tagged #waterfalls). Progress is verified automatically via GPS.",pos:"center"},
+  {title:"Collections",body:"Group your favorite locations into custom themed lists. Toggle them on/off to filter the map view, or add pins to your collections directly from their details panel.",pos:"center"},
+  {title:"Interactive GPX Trails",body:"Record your hiking trails, walks, or cycling routes in real-time using your device's GPS. You can also import external GPX files to visualize paths and view distance & duration stats.",pos:"center"},
   {title:"You are all set!",body:"Sign in with Google to save everything across your devices. Your pins, saves, follows and notifications are all stored securely. Happy exploring!",pos:"center"}
 ];
 
