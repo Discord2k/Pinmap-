@@ -18,7 +18,7 @@ export function PinCard(props) {
   };
 
   return (
-    <div style={cardStyle} onClick={props.onFocus}>
+    <div className="pm-card-hover" style={cardStyle} onClick={props.onFocus}>
       {pin.photo && <img src={pin.photo} style={{width:"100%",borderRadius:4,marginBottom:5,maxHeight:80,objectFit:"cover"}} alt="Pin photo" />}
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
         <span style={{width:8,height:8,borderRadius:"50%",background:pin.color||tagColor(pin.tags&&pin.tags[0]||"x"),display:"inline-block",flexShrink:0}}></span>

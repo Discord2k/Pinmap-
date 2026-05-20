@@ -263,14 +263,16 @@ export function ProfilePanel(props) {
       {/* ── Explorer Challenges ────────────────────────────────────────────────── */}
       {!editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:questsCollapsed ? 0 : 12}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom: 12}}>
             <div 
+              className="pm-section-header"
               style={Object.assign({}, S.secHead, {display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none"})}
               onClick={function(){ setQuestsCollapsed(function(prev){ return !prev; }); }}
             >
-              <span style={{fontSize: 10, color: T.ink3}}>{questsCollapsed ? "▶" : "▼"}</span>
+              <span style={{fontSize: 10, color: T.ink3, transition: "transform 0.2s", transform: questsCollapsed ? "rotate(0deg)" : "rotate(90deg)"}}>▶</span>
               <span>Explorer Quests</span>
               <span 
+                className="pm-info-btn"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -296,9 +298,20 @@ export function ProfilePanel(props) {
                 ?
               </span>
             </div>
-            {user && !questsCollapsed && (
+            {user && (
               <button 
-                style={Object.assign({}, S.miniBtn, {background: T.forestPale, color: T.forest, border: "none", display: "flex", alignItems: "center", gap: 4})}
+                style={Object.assign({}, S.miniBtn, {
+                  background: T.forestPale,
+                  color: T.forest,
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  opacity: questsCollapsed ? 0 : 1,
+                  transform: questsCollapsed ? "scale(0.9)" : "scale(1)",
+                  pointerEvents: questsCollapsed ? "none" : "auto",
+                  transition: "opacity 0.2s, transform 0.2s"
+                })}
                 onClick={function(){ setShowCreateChallengeModal(true); }}
               >
                 <span>➕ Design Quest</span>
@@ -306,7 +319,7 @@ export function ProfilePanel(props) {
             )}
           </div>
 
-          {!questsCollapsed && (
+          <div className={"pm-collapsible " + (questsCollapsed ? "collapsed" : "")}>
             <div>
               {/* Quest Tabs */}
           <div style={{display: "flex", gap: 8, marginBottom: 12}}>
@@ -373,6 +386,7 @@ export function ProfilePanel(props) {
               return (
                 <div 
                   key={ch.id} 
+                  className="pm-card-hover"
                   style={Object.assign({}, S.card, {
                     padding: "12px 14px", 
                     marginBottom: 10, 
@@ -457,7 +471,7 @@ export function ProfilePanel(props) {
             });
           })()}
           </div>
-        )}
+        </div>
       </div>
     )}
 
@@ -510,6 +524,7 @@ export function ProfilePanel(props) {
               return (
                 <div 
                   key={pack.id}
+                  className="pm-card-hover"
                   style={Object.assign({}, S.card, {
                     padding: "12px 14px",
                     marginBottom: 10,
@@ -676,6 +691,7 @@ export function ProfilePanel(props) {
               return (
                 <div 
                   key={trail.id}
+                  className="pm-card-hover"
                   style={Object.assign({}, S.card, {
                     padding: "12px 14px",
                     marginBottom: 10,
