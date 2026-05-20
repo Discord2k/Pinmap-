@@ -955,6 +955,8 @@ export function ProfilePanel(props) {
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:12}}>{"Following · "+userFollows.length}</div>
           {(showAllFollowing ? userFollows : userFollows.slice(0,10)).map(function(f){
+            var bellKey = "pm-bell-notify-"+f.following;
+            var bellOn = localStorage.getItem(bellKey) !== "0"; // default ON
             return (
               <div key={f.following} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={() => loadUserProfile(f.following)}>
                 <div style={{width:40,height:40,borderRadius:20,background:T.forestPale,color:T.forest,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0}}>
@@ -962,9 +964,26 @@ export function ProfilePanel(props) {
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:600,fontSize:15,color:T.ink}}>{f.following}</div>
-                  <div style={{fontSize:13,color:T.ink3}}></div>
+                  <div style={{fontSize:11,color:bellOn?T.forest:T.ink4,marginTop:1}}>{bellOn?"🔔 Notifying":"🔕 Muted"}</div>
                 </div>
-                <button 
+                {/* Bell toggle */}
+                <button
+                  title={bellOn?"Mute new pin notifications":"Get notified of new pins"}
+                  style={{width:34,height:34,borderRadius:8,border:"1px solid "+(bellOn?T.forest:T.border),
+                    background:bellOn?T.forestPale:"transparent",
+                    display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:16}}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    var next = bellOn ? "0" : "1";
+                    localStorage.setItem(bellKey, next);
+                    flash(next==="1"?"🔔 Notifications ON for @"+f.following:"🔕 Muted @"+f.following);
+                    // Force re-render via a dummy state toggle
+                    setShowAllFollowing(function(v){return v;});
+                  }}
+                >
+                  {bellOn ? "🔔" : "🔕"}
+                </button>
+                <button
                   style={{padding:"6px 14px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:13,cursor:"pointer",color:T.ink2}}
                   onClick={(ev) => {ev.stopPropagation();toggleUserFollow(f.following);}}
                 >
@@ -980,6 +999,7 @@ export function ProfilePanel(props) {
           )}
         </div>
       )}
+
 
       {/* ── Followers ───────────────────────────────────────────────────────────── */}
       {!editingProfile && followers.length>0 && (

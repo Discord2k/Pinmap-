@@ -7,6 +7,7 @@ export function MineTab(props) {
   var activeFilter = props.activeFilter, setActiveFilter = props.setActiveFilter;
   var mapObj = props.mapObj, setSelPin = props.setSelPin, setOpen = props.setOpen;
   var unreadPinIds = props.unreadPinIds || [];
+  var newUpvotePinIds = props.newUpvotePinIds || [];
   var commentCounts = props.commentCounts || {};
   var totalUpvotes = myPins.reduce(function(s,p){return s+((p.upvotes&&Array.isArray(p.upvotes))?p.upvotes.length:0);},0);
   
@@ -87,7 +88,7 @@ export function MineTab(props) {
           {/* ── Tag groups ──────────────────────────────────────────────────── */}
           {filteredTags.map(function(tag){
             var tp = filteredPins.filter(function(p){return (p.tags||[]).indexOf(tag)>=0;});
-            var tagHasUnread = tp.some(function(p){return unreadPinIds.indexOf(p.id)>=0;});
+            var tagHasUnread = tp.some(function(p){return unreadPinIds.indexOf(p.id)>=0 || newUpvotePinIds.indexOf(p.id)>=0;});
             var isOpen = expanded[tag]===true;
             var tagComments = tp.reduce(function(s,p){return s+(commentCounts[p.id]||0);},0);
 
@@ -126,6 +127,7 @@ export function MineTab(props) {
                   var commentCount = commentCounts[p.id]||0;
                   var upvoteCount = (p.upvotes&&Array.isArray(p.upvotes))?p.upvotes.length:0;
                   var pinHasUnread = unreadPinIds.indexOf(p.id)>=0;
+                  var pinHasUpvoteNew = newUpvotePinIds.indexOf(p.id)>=0;
                   var coordStr = p.lat&&p.lng?formatLL(p.lat, p.lng, 2):"";
 
                   return (
@@ -144,7 +146,8 @@ export function MineTab(props) {
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
                           <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>
                             {"Entry № "+entryNum}
-                            {pinHasUnread && <span style={{marginLeft:8,background:"#b85c2a",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>NEW</span>}
+                            {pinHasUnread && <span style={{marginLeft:8,background:"#b85c2a",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>💬 NEW</span>}
+                            {pinHasUpvoteNew && <span style={{marginLeft:4,background:"#2a5d3c",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>👍 NEW</span>}
                           </div>
                           {coordStr && <div style={{fontSize:10,color:T.ink4,fontFamily:T.mono}}>{coordStr}</div>}
                         </div>
@@ -172,7 +175,7 @@ export function MineTab(props) {
                         )}
                         {/* Stats */}
                         <div style={{display:"flex",alignItems:"center",gap:10,fontSize:12,color:T.ink4}}>
-                          <span>{"↑ "+upvoteCount}</span>
+                          <span>{"↑ "+upvoteCount+(pinHasUpvoteNew?" 🆕":"")}</span>
                           {commentCount>0 && <span style={{color:pinHasUnread?"#b85c2a":T.ink4,fontWeight:pinHasUnread?600:400}}>{"💬 "+commentCount+(pinHasUnread?" new":"")}</span>}
                           <span style={{marginLeft:"auto",fontSize:10,letterSpacing:"0.08em",textTransform:"uppercase"}}>{p.privacy}</span>
                         </div>

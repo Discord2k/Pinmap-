@@ -92,6 +92,7 @@ function App() {
   var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
   var s54=useState({bio:"",location:"",website:"",twitter:"",instagram:"",youtube:"",avatar_url:""}); var profileForm=s54[0]; var setProfileForm=s54[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
+  var s72=useState([]); var newUpvotePinIds=s72[0]; var setNewUpvotePinIds=s72[1];
   var s69=useState(function(){try{return JSON.parse(localStorage.getItem("pm-drafts")||"[]");}catch(e){return [];}}); var drafts=s69[0]; var setDrafts=s69[1];
   var s70=useState(false); var offlineMode=s70[0]; var setOfflineMode=s70[1];
   // reticle box: {top,left,width,height} in viewport-px, initialised when offlineMode opens
@@ -564,8 +565,11 @@ function App() {
       lastSeen = now;
     }
     var lastSeenTime = new Date(lastSeen);
-    var myPinIds = pinsData.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
+    var myPins = pinsData.filter(function(p){return p.owner===name&&!p.saved_from;});
+    var myPinIds = myPins.map(function(p){return p.id;});
     if(!myPinIds.length) return;
+
+    // ── Check new comments / journals ──────────────────────────────
     sb.from("comments").select("id,pin_id,created_at").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
       if(r.data&&r.data.length>0){
         setUnreadCount(r.data.length);
@@ -576,12 +580,30 @@ function App() {
         setUnreadPinIds([]);
       }
     });
+
+    // ── Check new upvotes via localStorage snapshot ─────────────────
+    // Stored as JSON: { pinId: upvoteCount, ... } at last-seen time
+    var snapKey = "pm-upvote-snap-"+name;
+    var snap = {};
+    try { snap = JSON.parse(localStorage.getItem(snapKey)||"{}")||{}; } catch(e) {}
+    var upvoteNewIds = [];
+    myPins.forEach(function(p){
+      var cur = (p.upvotes&&Array.isArray(p.upvotes)) ? p.upvotes.length : 0;
+      var prev = snap[p.id] !== undefined ? snap[p.id] : cur; // first run: no diff
+      if(cur > prev) upvoteNewIds.push(p.id);
+    });
+    // Save current snapshot
+    var newSnap = {};
+    myPins.forEach(function(p){ newSnap[p.id] = (p.upvotes&&Array.isArray(p.upvotes))?p.upvotes.length:0; });
+    try { localStorage.setItem(snapKey, JSON.stringify(newSnap)); } catch(e) {}
+    setNewUpvotePinIds(upvoteNewIds);
   }
 
   function markCommentsSeen() {
     localStorage.setItem("pm-comments-seen-"+uname, new Date().toISOString());
     setUnreadCount(0);
     setUnreadPinIds([]);
+    setNewUpvotePinIds([]);
   }
   function dismissWhatsNew() {
     localStorage.setItem(WHATSNEW_KEY,"1");
@@ -2370,6 +2392,25 @@ function App() {
           e("circle",{cx:"12",cy:"12",r:"7",stroke:T.forest,strokeWidth:1.5,fill:"none"}),
           e("path",{d:"M12 2v4M12 18v4M2 12h4M18 12h4",stroke:T.ink2,strokeWidth:1.5,strokeLinecap:"round"})
         )
+      ),
+
+      // ── Zoom In / Out buttons ───────────────────────────────────
+      e("div",{style:{display:"flex",flexDirection:"column",borderRadius:10,overflow:"hidden",
+        boxShadow:T.shadow,border:"1px solid "+T.border}},
+        e("button",{
+          id:"btn-zoom-in",
+          onClick:function(){if(mapObj.current) mapObj.current.zoomIn();},
+          style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
+            border:"none",borderBottom:"1px solid "+T.border,
+            display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:22,color:T.ink,fontWeight:300}
+        },"+"),
+        e("button",{
+          id:"btn-zoom-out",
+          onClick:function(){if(mapObj.current) mapObj.current.zoomOut();},
+          style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
+            border:"none",
+            display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:28,color:T.ink,fontWeight:300,lineHeight:1}
+        },"−")
       )
     ),
 
@@ -3013,6 +3054,7 @@ function App() {
           activeFilter:activeFilter, setActiveFilter:setActiveFilter,
           mapObj:mapObj, setSelPin:setSelPin, setOpen:setOpen,
           unreadPinIds:unreadPinIds, commentCounts:commentCounts,
+          newUpvotePinIds:newUpvotePinIds,
           deletePin:deletePin, toggleUpvote:toggleUpvote,
           saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
           markCommentsSeen:markCommentsSeen
