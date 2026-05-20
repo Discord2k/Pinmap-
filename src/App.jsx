@@ -125,6 +125,9 @@ function App() {
   var activeTrailPolyline = useRef(null);
   var recordingTrailPolyline = useRef(null);
 
+  var [myActivity, setMyActivity] = useState([]);
+  var activityCache = useRef({data: null, ts: 0}); // {data:[], ts: ms epoch}
+
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
@@ -790,7 +793,7 @@ function App() {
       adminInterval = setInterval(function(){ loadAdminStats(); }, 30000);
     }
     return function(){ if(adminInterval) clearInterval(adminInterval); };
-    // Load comment counts for all my pins when Mine tab opens
+    // Load comment counts + activity feed when Mine tab opens
     if(tab==="mine" && pins.length>0 && name && name!=="guest"){
       var myPinIds=pins.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
       if(myPinIds.length){
@@ -799,6 +802,14 @@ function App() {
           (r.data||[]).forEach(function(c){counts[c.pin_id]=(counts[c.pin_id]||0)+1;});
           setCommentCounts(counts);
         });
+        // Activity feed — throttle to once per 60 s
+        var now = Date.now();
+        if (!activityCache.current.data || (now - activityCache.current.ts) > 60000) {
+          api.getMyActivity(myPinIds).then(function(rows) {
+            activityCache.current = {data: rows, ts: Date.now()};
+            setMyActivity(rows);
+          }).catch(function() {});
+        }
       }
     }
   },[user, pins, tab]);
@@ -3057,7 +3068,8 @@ function App() {
           newUpvotePinIds:newUpvotePinIds,
           deletePin:deletePin, toggleUpvote:toggleUpvote,
           saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
-          markCommentsSeen:markCommentsSeen
+          markCommentsSeen:markCommentsSeen,
+          myActivity:myActivity, pins:pins
         })
       ),
 

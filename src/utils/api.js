@@ -155,6 +155,15 @@ export const api = {
       if (r.error) throw r.error;
       return r.data;
     });
+  },
+  getMyActivity: function(myPinIds) {
+    if (!myPinIds || !myPinIds.length) return Promise.resolve([]);
+    return sb.from("comments")
+      .select("id,pin_id,owner,body,photo_url,created_at")
+      .in("pin_id", myPinIds)
+      .order("created_at", {ascending: false})
+      .limit(25)
+      .then(function(r) { return r.data || []; });
   }
 };
 
