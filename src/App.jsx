@@ -2214,28 +2214,7 @@ function App() {
       },"Got it ✓")
     ),
 
-    updateReady && e("div",{style:{
-      position:"fixed",
-      bottom:"calc(100px + env(safe-area-inset-bottom,0px))",
-      left:16,right:16,
-      background:"#2a5d3c",color:"#fff",
-      padding:"12px 16px",borderRadius:12,
-      display:"flex",alignItems:"center",justifyContent:"space-between",
-      zIndex:9998,boxShadow:"0 4px 20px rgba(0,0,0,0.25)",
-      fontSize:13,gap:10
-    }},
-      e("span",{style:{flex:1,lineHeight:1.4}},"New version of PINMAP is ready"),
-      e("div",{style:{display:"flex",gap:8,flexShrink:0}},
-        e("button",{
-          style:{background:"rgba(255,255,255,0.2)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"6px 10px",fontSize:12,cursor:"pointer"},
-          onClick:function(){setUpdateReady(false);}
-        },"Later"),
-        e("button",{
-          style:{background:"#fff",color:"#2a5d3c",border:"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"},
-          onClick:function(){window.location.reload();}
-        },"Update")
-      )
-    ),
+
 
     e("div",{style:{position:"absolute",top:"calc(16px + env(safe-area-inset-top,0px))",left:16,right:16,zIndex:999}},
       e("div",{style:{display:"flex",alignItems:"center",gap:8,background:"rgba(246,241,228,0.96)",backdropFilter:"blur(12px)",border:"1px solid "+T.border,borderRadius:12,padding:"10px 14px",boxShadow:T.shadow,cursor:"pointer"},
