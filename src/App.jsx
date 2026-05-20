@@ -652,7 +652,9 @@ function App() {
         navigator.geolocation.getCurrentPosition(function(pos) {
           var lat = pos.coords.latitude;
           var lng = pos.coords.longitude;
+          setUserLL({lat: lat, lng: lng});
           map.setView([lat, lng], 13);
+          updateUserLocationMarker(lat, lng);
         }, function(err) {
           console.warn("Auto-center geolocation failed:", err);
         });
@@ -1769,6 +1771,27 @@ function App() {
     if(!results.length) flash("No pins within "+nearbyKm+"km");
   }
 
+  function updateUserLocationMarker(lat, lng) {
+    if (!window.L || !mapObj.current) return;
+    if (window._gpsM) {
+      try { window._gpsM.remove(); } catch(e) {}
+    }
+    if (window._userDotMarker) {
+      try { window._userDotMarker.remove(); } catch(e) {}
+    }
+    var dotIcon = window.L.divIcon({
+      className: "",
+      html: '<div style="width:16px;height:16px;border-radius:50%;background:#2979ff;border:3px solid #fff;box-shadow:0 0 0 4px rgba(41,121,255,0.25);animation:pmpulse 2s infinite"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+    window._userDotMarker = window.L.marker([lat, lng], {
+      icon: dotIcon,
+      zIndexOffset: 1000
+    }).addTo(mapObj.current);
+    window._gpsM = window._userDotMarker;
+  }
+
   function gpsLocate(){
     if(!navigator.geolocation){flash("Not supported");return;}
     setLocating(true);
@@ -1776,8 +1799,7 @@ function App() {
       var lat=pos.coords.latitude,lng=pos.coords.longitude;
       setUserLL({lat:lat,lng:lng});
       if(mapObj.current) mapObj.current.setView([lat,lng],14);
-      if(window._gpsM) window._gpsM.remove();
-      if(window.L&&mapObj.current) window._gpsM=window.L.circleMarker([lat,lng],{radius:10,fillColor:"#1565c0",color:"#fff",weight:3,fillOpacity:0.85}).addTo(mapObj.current).bindPopup("You are here").openPopup();
+      updateUserLocationMarker(lat, lng);
       setLocating(false); flash("Location found!");
     },function(){setLocating(false);flash("Location unavailable");},{enableHighAccuracy:true,timeout:8000});
   }
@@ -2336,16 +2358,8 @@ function App() {
               var lat=pos.coords.latitude, lng=pos.coords.longitude;
               if(mapObj.current){
                 mapObj.current.setView([lat,lng],15);
-                // Remove old dot
-                if(window._userDotMarker){ window._userDotMarker.remove(); }
-                // Add pulsing blue dot
-                var dotIcon=window.L.divIcon({
-                  className:"",
-                  html:'<div style="width:16px;height:16px;border-radius:50%;background:#2979ff;border:3px solid #fff;box-shadow:0 0 0 4px rgba(41,121,255,0.25);animation:pmpulse 2s infinite"></div>',
-                  iconSize:[16,16],iconAnchor:[8,8]
-                });
-                window._userDotMarker=window.L.marker([lat,lng],{icon:dotIcon,zIndexOffset:1000}).addTo(mapObj.current);
               }
+              updateUserLocationMarker(lat, lng);
               setUserLL({lat:lat,lng:lng});
               flash("Your location");
             },
