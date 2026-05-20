@@ -59,16 +59,25 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 -- 2. Define Policies
 -- Note: Policies are dropped before re-creation so this script is safely re-runnable.
 
+-- Helper function to retrieve the end-user's username from their JWT claims
+CREATE OR REPLACE FUNCTION public.current_username()
+RETURNS TEXT AS $$
+  SELECT coalesce(
+    NULLIF(auth.jwt() -> 'user_metadata' ->> 'full_name', ''),
+    split_part(auth.jwt() ->> 'email', '@', 1)
+  );
+$$ LANGUAGE sql STABLE;
+
 -- PINS
 DROP POLICY IF EXISTS "Public pins are viewable by everyone" ON pins;
 DROP POLICY IF EXISTS "Public and insider pins are viewable by everyone" ON pins;
 DROP POLICY IF EXISTS "Users can insert their own pins" ON pins;
 DROP POLICY IF EXISTS "Users can update their own pins" ON pins;
 DROP POLICY IF EXISTS "Users can delete their own pins" ON pins;
-CREATE POLICY "Public and insider pins are viewable by everyone" ON pins FOR SELECT USING (privacy IN ('public', 'insider') OR owner = current_user);
-CREATE POLICY "Users can insert their own pins" ON pins FOR INSERT WITH CHECK (owner = current_user);
-CREATE POLICY "Users can update their own pins" ON pins FOR UPDATE USING (owner = current_user);
-CREATE POLICY "Users can delete their own pins" ON pins FOR DELETE USING (owner = current_user);
+CREATE POLICY "Public and insider pins are viewable by everyone" ON pins FOR SELECT USING (privacy IN ('public', 'insider') OR owner = public.current_username());
+CREATE POLICY "Users can insert their own pins" ON pins FOR INSERT WITH CHECK (owner = public.current_username());
+CREATE POLICY "Users can update their own pins" ON pins FOR UPDATE USING (owner = public.current_username());
+CREATE POLICY "Users can delete their own pins" ON pins FOR DELETE USING (owner = public.current_username());
 
 -- COMMENTS
 DROP POLICY IF EXISTS "Comments are viewable by everyone" ON comments;
@@ -76,9 +85,9 @@ DROP POLICY IF EXISTS "Users can insert their own comments" ON comments;
 DROP POLICY IF EXISTS "Users can update their own comments" ON comments;
 DROP POLICY IF EXISTS "Users can delete their own comments" ON comments;
 CREATE POLICY "Comments are viewable by everyone" ON comments FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own comments" ON comments FOR INSERT WITH CHECK (owner = current_user);
-CREATE POLICY "Users can update their own comments" ON comments FOR UPDATE USING (owner = current_user);
-CREATE POLICY "Users can delete their own comments" ON comments FOR DELETE USING (owner = current_user);
+CREATE POLICY "Users can insert their own comments" ON comments FOR INSERT WITH CHECK (owner = public.current_username());
+CREATE POLICY "Users can update their own comments" ON comments FOR UPDATE USING (owner = public.current_username());
+CREATE POLICY "Users can delete their own comments" ON comments FOR DELETE USING (owner = public.current_username());
 
 -- PROFILES
 DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON profiles;
@@ -92,25 +101,25 @@ CREATE POLICY "Users can update their own profile" ON profiles FOR UPDATE USING 
 DROP POLICY IF EXISTS "Users can view their own tag follows" ON follows;
 DROP POLICY IF EXISTS "Users can insert their own tag follows" ON follows;
 DROP POLICY IF EXISTS "Users can delete their own tag follows" ON follows;
-CREATE POLICY "Users can view their own tag follows" ON follows FOR SELECT USING (owner = current_user);
-CREATE POLICY "Users can insert their own tag follows" ON follows FOR INSERT WITH CHECK (owner = current_user);
-CREATE POLICY "Users can delete their own tag follows" ON follows FOR DELETE USING (owner = current_user);
+CREATE POLICY "Users can view their own tag follows" ON follows FOR SELECT USING (owner = public.current_username());
+CREATE POLICY "Users can insert their own tag follows" ON follows FOR INSERT WITH CHECK (owner = public.current_username());
+CREATE POLICY "Users can delete their own tag follows" ON follows FOR DELETE USING (owner = public.current_username());
 
 -- USER FOLLOWS
 DROP POLICY IF EXISTS "Users can view their own user follows" ON user_follows;
 DROP POLICY IF EXISTS "Users can insert their own user follows" ON user_follows;
 DROP POLICY IF EXISTS "Users can delete their own user follows" ON user_follows;
-CREATE POLICY "Users can view their own user follows" ON user_follows FOR SELECT USING (owner = current_user);
-CREATE POLICY "Users can insert their own user follows" ON user_follows FOR INSERT WITH CHECK (owner = current_user);
-CREATE POLICY "Users can delete their own user follows" ON user_follows FOR DELETE USING (owner = current_user);
+CREATE POLICY "Users can view their own user follows" ON user_follows FOR SELECT USING (owner = public.current_username());
+CREATE POLICY "Users can insert their own user follows" ON user_follows FOR INSERT WITH CHECK (owner = public.current_username());
+CREATE POLICY "Users can delete their own user follows" ON user_follows FOR DELETE USING (owner = public.current_username());
 
 -- PUSH SUBSCRIPTIONS
 DROP POLICY IF EXISTS "Users can view their own push subscriptions" ON push_subscriptions;
 DROP POLICY IF EXISTS "Users can insert their own push subscriptions" ON push_subscriptions;
 DROP POLICY IF EXISTS "Users can delete their own push subscriptions" ON push_subscriptions;
-CREATE POLICY "Users can view their own push subscriptions" ON push_subscriptions FOR SELECT USING (owner = current_user);
-CREATE POLICY "Users can insert their own push subscriptions" ON push_subscriptions FOR INSERT WITH CHECK (owner = current_user);
-CREATE POLICY "Users can delete their own push subscriptions" ON push_subscriptions FOR DELETE USING (owner = current_user);
+CREATE POLICY "Users can view their own push subscriptions" ON push_subscriptions FOR SELECT USING (owner = public.current_username());
+CREATE POLICY "Users can insert their own push subscriptions" ON push_subscriptions FOR INSERT WITH CHECK (owner = public.current_username());
+CREATE POLICY "Users can delete their own push subscriptions" ON push_subscriptions FOR DELETE USING (owner = public.current_username());
 
 -- PRESENCE
 DROP POLICY IF EXISTS "Presence is viewable by everyone" ON presence;
@@ -118,17 +127,17 @@ DROP POLICY IF EXISTS "Users can insert their own presence" ON presence;
 DROP POLICY IF EXISTS "Users can update their own presence" ON presence;
 DROP POLICY IF EXISTS "Users can delete their own presence" ON presence;
 CREATE POLICY "Presence is viewable by everyone" ON presence FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own presence" ON presence FOR INSERT WITH CHECK (owner = current_user);
-CREATE POLICY "Users can update their own presence" ON presence FOR UPDATE USING (owner = current_user);
-CREATE POLICY "Users can delete their own presence" ON presence FOR DELETE USING (owner = current_user);
+CREATE POLICY "Users can insert their own presence" ON presence FOR INSERT WITH CHECK (owner = public.current_username());
+CREATE POLICY "Users can update their own presence" ON presence FOR UPDATE USING (owner = public.current_username());
+CREATE POLICY "Users can delete their own presence" ON presence FOR DELETE USING (owner = public.current_username());
 
 -- NOTIFICATIONS
 DROP POLICY IF EXISTS "Users can view their own notifications" ON notifications;
 DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
 DROP POLICY IF EXISTS "Users can delete their own notifications" ON notifications;
-CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (owner = current_user);
-CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (owner = current_user);
-CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (owner = current_user);
+CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (owner = public.current_username());
+CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (owner = public.current_username());
+CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (owner = public.current_username());
 
 
 CREATE TABLE IF NOT EXISTS public.checkins (
@@ -279,7 +288,7 @@ ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 -- Select policies
 DROP POLICY IF EXISTS "Anyone can view public mappacks" ON public.mappacks;
 CREATE POLICY "Anyone can view public mappacks" ON public.mappacks
-  FOR SELECT USING (is_public = true OR owner = current_user);
+  FOR SELECT USING (is_public = true OR owner = public.current_username());
 
 DROP POLICY IF EXISTS "Anyone can view mappack pins" ON public.mappack_pins;
 CREATE POLICY "Anyone can view mappack pins" ON public.mappack_pins
@@ -292,33 +301,33 @@ CREATE POLICY "Anyone can view challenges" ON public.challenges
 -- Edit/Delete policies for Map Packs
 DROP POLICY IF EXISTS "Users can create their own mappacks" ON public.mappacks;
 CREATE POLICY "Users can create their own mappacks" ON public.mappacks
-  FOR INSERT WITH CHECK (owner = current_user);
+  FOR INSERT WITH CHECK (owner = public.current_username());
 
 DROP POLICY IF EXISTS "Users can edit their own mappacks" ON public.mappacks;
 CREATE POLICY "Users can edit their own mappacks" ON public.mappacks
-  FOR UPDATE USING (owner = current_user);
+  FOR UPDATE USING (owner = public.current_username());
 
 DROP POLICY IF EXISTS "Users can delete their own mappacks" ON public.mappacks;
 CREATE POLICY "Users can delete their own mappacks" ON public.mappacks
-  FOR DELETE USING (owner = current_user);
+  FOR DELETE USING (owner = public.current_username());
 
 DROP POLICY IF EXISTS "Mappack owners can modify mappack pins" ON public.mappack_pins;
 CREATE POLICY "Mappack owners can modify mappack pins" ON public.mappack_pins
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.mappacks 
-      WHERE mappacks.id = mappack_pins.mappack_id AND mappacks.owner = current_user
+      WHERE mappacks.id = mappack_pins.mappack_id AND mappacks.owner = public.current_username()
     )
   );
 
 -- Edit/Delete policies for Challenges
 DROP POLICY IF EXISTS "Authenticated users can create challenges" ON public.challenges;
 CREATE POLICY "Authenticated users can create challenges" ON public.challenges
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND owner = current_user);
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND owner = public.current_username());
 
 DROP POLICY IF EXISTS "Owners can delete their challenges" ON public.challenges;
 CREATE POLICY "Owners can delete their challenges" ON public.challenges
-  FOR DELETE USING (owner = current_user);
+  FOR DELETE USING (owner = public.current_username());
 
 -- Populate initial default system challenges
 INSERT INTO public.challenges (id, title, description, icon, tags, required_count, owner)
@@ -359,22 +368,22 @@ ALTER TABLE public.trails ENABLE ROW LEVEL SECURITY;
 -- Select policies
 DROP POLICY IF EXISTS "Anyone can view public trails" ON public.trails;
 CREATE POLICY "Anyone can view public trails" ON public.trails
-  FOR SELECT USING (is_public = true OR owner = current_user);
+  FOR SELECT USING (is_public = true OR owner = public.current_username());
 
 -- Insert policies
 DROP POLICY IF EXISTS "Users can insert their own trails" ON public.trails;
 CREATE POLICY "Users can insert their own trails" ON public.trails
-  FOR INSERT WITH CHECK (owner = current_user);
+  FOR INSERT WITH CHECK (owner = public.current_username());
 
 -- Update policies
 DROP POLICY IF EXISTS "Users can edit their own trails" ON public.trails;
 CREATE POLICY "Users can edit their own trails" ON public.trails
-  FOR UPDATE USING (owner = current_user);
+  FOR UPDATE USING (owner = public.current_username());
 
 -- Delete policies
 DROP POLICY IF EXISTS "Users can delete their own trails" ON public.trails;
 CREATE POLICY "Users can delete their own trails" ON public.trails
-  FOR DELETE USING (owner = current_user);
+  FOR DELETE USING (owner = public.current_username());
 
 -- Optimize queries
 CREATE INDEX IF NOT EXISTS idx_trails_owner ON public.trails(owner);
