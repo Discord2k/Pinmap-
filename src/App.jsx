@@ -3587,12 +3587,12 @@ function App() {
       }},
 
         /* ── Header: gradient banner + avatar row ── */
-        e("div",{style:{flexShrink:0,borderRadius:"20px 20px 0 0",overflow:"hidden"}},
+        e("div",{style:{flexShrink:0,borderRadius:"20px 20px 0 0",position:"relative"}},
 
           /* Banner */
           e("div",{style:{
             background:"linear-gradient(135deg,#1b4332 0%,#2e7d32 100%)",
-            height:90,position:"relative",borderRadius:"20px 20px 0 0"
+            height:100,borderRadius:"20px 20px 0 0",position:"relative"
           }},
             /* Close button top-right inside banner */
             e("button",{
@@ -3606,30 +3606,33 @@ function App() {
               e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none"},
                 e("path",{d:"M18 6L6 18M6 6l12 12",stroke:"#f6f1e4",strokeWidth:2.5,strokeLinecap:"round"})
               )
+            ),
+
+            /* Avatar — absolutely positioned, centred on the banner bottom edge */
+            e("div",{style:{
+              position:"absolute",bottom:-36,left:18,
+              width:72,height:72,borderRadius:"50%",
+              border:"3px solid #f6f1e4",overflow:"hidden",
+              background:"#e6dfca",flexShrink:0,
+              boxShadow:"0 2px 8px rgba(0,0,0,0.18)",
+              zIndex:2
+            }},
+              e("img",{
+                src:(viewProfile&&viewProfile.avatar_url)||(viewProfile&&viewProfile.google_avatar)||
+                    "https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=72",
+                style:{width:"100%",height:"100%",objectFit:"cover"},
+                onError:function(ev){
+                  ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=72";
+                }
+              })
             )
           ),
 
-          /* Avatar + Follow row — sits below banner with avatar overlapping */
-          e("div",{style:{padding:"0 18px 14px",marginTop:-32,background:"#f6f1e4"}},
-            e("div",{style:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:10}},
-              /* Avatar */
-              e("div",{style:{
-                width:64,height:64,borderRadius:"50%",
-                border:"3px solid #f6f1e4",overflow:"hidden",
-                background:"#e6dfca",flexShrink:0,
-                boxShadow:"0 2px 8px rgba(0,0,0,0.15)"
-              }},
-                e("img",{
-                  src:(viewProfile&&viewProfile.avatar_url)||(viewProfile&&viewProfile.google_avatar)||
-                      "https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=64",
-                  style:{width:"100%",height:"100%",objectFit:"cover"},
-                  onError:function(ev){
-                    ev.target.src="https://ui-avatars.com/api/?name="+encodeURIComponent(viewUser)+"&background=2e7d32&color=fff&size=64";
-                  }
-                })
-              ),
-              /* Follow button */
-              viewUser!==uname&&e("button",{
+          /* Avatar + Follow row — content area, top padding makes room for the overlapping avatar */
+          e("div",{style:{padding:"44px 18px 14px",background:"#f6f1e4"}},
+            /* Follow button — floats top-right of content area */
+            viewUser!==uname&&e("div",{style:{display:"flex",justifyContent:"flex-end",marginTop:-36,marginBottom:6}},
+              e("button",{
                 style:{
                   fontSize:13,padding:"7px 18px",borderRadius:20,
                   cursor:"pointer",fontWeight:700,
