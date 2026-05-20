@@ -57,76 +57,78 @@ export function TrailRecorder(props) {
   };
 
   return (
-    <div style={{
-      position: "absolute",
-      bottom: "calc(76px + env(safe-area-inset-bottom, 0px))",
-      left: 16,
-      right: 16,
-      margin: "0 auto",
-      zIndex: 1002,
-      width: "auto",
-      maxWidth: 380,
-      background: "rgba(246,241,228,0.96)",
-      backdropFilter: "blur(16px)",
-      border: "1px solid " + T.border,
-      borderRadius: 20,
-      padding: "16px 20px",
-      boxShadow: T.shadowLg,
-      fontFamily: T.font,
-      boxSizing: "border-box"
-    }}>
-      {/* Metrics Section */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <div style={{ flex: 1, textAlign: "left" }}>
-          <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: "uppercase", color: T.ink3, letterSpacing: "0.1em" }}>Duration</div>
-          <div style={{ fontSize: 24, fontWeight: 700, fontFamily: T.mono, color: T.ink }}>{formatTime(durationSec)}</div>
+    <>
+      <div style={{
+        position: "absolute",
+        bottom: "calc(76px + env(safe-area-inset-bottom, 0px))",
+        left: 16,
+        right: 16,
+        margin: "0 auto",
+        zIndex: 1002,
+        width: "auto",
+        maxWidth: 380,
+        background: "rgba(246,241,228,0.96)",
+        backdropFilter: "blur(16px)",
+        border: "1px solid " + T.border,
+        borderRadius: 20,
+        padding: "16px 20px",
+        boxShadow: T.shadowLg,
+        fontFamily: T.font,
+        boxSizing: "border-box"
+      }}>
+        {/* Metrics Section */}
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ flex: 1, textAlign: "left" }}>
+            <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: "uppercase", color: T.ink3, letterSpacing: "0.1em" }}>Duration</div>
+            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: T.mono, color: T.ink }}>{formatTime(durationSec)}</div>
+          </div>
+          <div style={{ flex: 1, textAlign: "right" }}>
+            <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: "uppercase", color: T.ink3, letterSpacing: "0.1em" }}>Distance</div>
+            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: T.mono, color: T.ink }}>{distanceKm.toFixed(2)} <span style={{ fontSize: 14, fontWeight: 500, color: T.ink2 }}>km</span></div>
+          </div>
         </div>
-        <div style={{ flex: 1, textAlign: "right" }}>
-          <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: "uppercase", color: T.ink3, letterSpacing: "0.1em" }}>Distance</div>
-          <div style={{ fontSize: 24, fontWeight: 700, fontFamily: T.mono, color: T.ink }}>{distanceKm.toFixed(2)} <span style={{ fontSize: 14, fontWeight: 500, color: T.ink2 }}>km</span></div>
-        </div>
-      </div>
 
-      {/* Controls Section */}
-      <div style={{ display: "flex", gap: 10 }}>
-        {!isRecording ? (
-          <button 
-            style={Object.assign({}, S.btn, { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
-            onClick={onStart}
-          >
-            <span>⏺️</span> Start Recording
-          </button>
-        ) : (
-          <>
+        {/* Controls Section */}
+        <div style={{ display: "flex", gap: 10 }}>
+          {!isRecording ? (
             <button 
-              style={Object.assign({}, S.btnOutline, { flex: 1, background: T.paper, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
-              onClick={onCancel}
+              style={Object.assign({}, S.btn, { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
+              onClick={onStart}
             >
-              Cancel
+              <span>⏺️</span> Start Recording
             </button>
-            {isPaused ? (
+          ) : (
+            <>
+              <button 
+                style={Object.assign({}, S.btnOutline, { flex: 1, background: T.paper, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+              {isPaused ? (
+                <button 
+                  style={Object.assign({}, S.btn, { flex: 1, background: T.forest, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
+                  onClick={onResume}
+                >
+                  <span>▶️</span> Resume
+                </button>
+              ) : (
+                <button 
+                  style={Object.assign({}, S.btnOutline, { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
+                  onClick={onPause}
+                >
+                  <span>⏸️</span> Pause
+                </button>
+              )}
               <button 
                 style={Object.assign({}, S.btn, { flex: 1, background: T.forest, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
-                onClick={onResume}
+                onClick={handleSaveClick}
               >
-                <span>▶️</span> Resume
+                <span>💾</span> Save
               </button>
-            ) : (
-              <button 
-                style={Object.assign({}, S.btnOutline, { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
-                onClick={onPause}
-              >
-                <span>⏸️</span> Pause
-              </button>
-            )}
-            <button 
-              style={Object.assign({}, S.btn, { flex: 1, background: T.forest, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 })} 
-              onClick={handleSaveClick}
-            >
-              <span>💾</span> Save
-            </button>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Save Details Modal */}
@@ -242,6 +244,6 @@ export function TrailRecorder(props) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
