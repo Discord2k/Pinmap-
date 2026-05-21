@@ -43,10 +43,14 @@ export function ProfilePanel(props) {
   var [chalTag, setChalTag] = React.useState("");
   var [chalCount, setChalCount] = React.useState(3);
 
-  var [questTab, setQuestTab] = React.useState("active"); // "active" or "discover"
-  var [questsCollapsed, setQuestsCollapsed] = React.useState(true); // Collapsed by default to save space
-  var [collectionsCollapsed, setCollectionsCollapsed] = React.useState(true); // Collapsed by default to save space when there is > 1 item
-  var [helpPopup, setHelpPopup] = React.useState(null); // Explains new features
+  var [questTab, setQuestTab] = React.useState("active");
+  var [questsCollapsed, setQuestsCollapsed] = React.useState(true);
+  var [collectionsCollapsed, setCollectionsCollapsed] = React.useState(true);
+  var [trailsCollapsed, setTrailsCollapsed] = React.useState(true);
+  var [badgesCollapsed, setBadgesCollapsed] = React.useState(true);
+  var [followingCollapsed, setFollowingCollapsed] = React.useState(true);
+  var [followersCollapsed, setFollowersCollapsed] = React.useState(true);
+  var [helpPopup, setHelpPopup] = React.useState(null);
   var [trackedQuestIds, setTrackedQuestIds] = React.useState(function() {
     try {
       var saved = localStorage.getItem("pinmap_tracked_quests");
@@ -299,69 +303,41 @@ export function ProfilePanel(props) {
 
       {/* ── Trails & Routes ────────────────────────────────────────────────── */}
       {!editingProfile && (
-        <div style={{padding:"22px 22px 20px",borderBottom:"1px solid "+T.borderSoft,background:"linear-gradient(180deg, rgba(42,93,60,0.06) 0%, rgba(246,241,228,0) 100%)"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,fontSize:13,letterSpacing:"0.06em",color:T.ink,fontFamily:T.font,fontWeight:700,textTransform:"uppercase"}}>
-              <span>Trails & Routes</span>
-              <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.06em",background:T.forest,color:T.paper,padding:"2.5px 6.5px",borderRadius:6,marginLeft:4,textTransform:"uppercase",lineHeight:1,fontFamily:T.font}}>GPS Active</span>
-              <span 
-                className="pm-info-btn"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 18,
-                  height: 18,
-                  borderRadius: "50%",
-                  background: "rgba(26,32,28,0.06)",
-                  fontSize: 11,
-                  color: T.ink3,
-                  marginLeft: 4,
-                  cursor: "pointer"
-                }} 
-                onClick={function(e){ 
-                  e.stopPropagation(); 
-                  setHelpPopup({
-                    title: "Trails & Routes",
-                    emoji: "⏺️",
-                    desc: "Record your hiking trails, walks, or cycling routes in real-time using your device GPS. You can also import external GPX files to visualize paths, calculate distance & duration statistics, and share them on the map."
-                  });
-                }}
-              >
-                ?
-              </span>
-            </div>
-            {user && (
-              <div style={{display:"flex",gap:6}}>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  accept=".gpx" 
-                  style={{display:"none"}} 
-                  onChange={handleGpxImportChange} 
-                />
-                <button 
-                  style={Object.assign({}, S.miniBtn, {background: "transparent", border: "1px solid " + T.forest, color: T.forest, display: "flex", alignItems: "center", gap: 4})}
-                  onClick={function(){ if(fileInputRef.current) fileInputRef.current.click(); }}
-                >
-                  <span>📤 Import GPX</span>
-                </button>
-                <button 
-                  style={Object.assign({}, S.miniBtn, {background: T.forest, color: T.paper, border: "none", display: "flex", alignItems: "center", gap: 4, boxShadow: "0 2px 8px rgba(42,93,60,0.18)"})}
-                  onClick={function(){
-                    props.setOpen(false); // Close Profile drawer
-                    if(props.onStartTrailRecording) props.onStartTrailRecording();
-                  }}
-                >
-                  <span style={{fontSize:8,animation:"pulse 1.5s infinite"}}>🔴</span>
-                  <span>Record Trail</span>
-                </button>
+        <div style={{borderBottom:"1px solid "+T.borderSoft}}>
+          <input type="file" ref={fileInputRef} accept=".gpx" style={{display:"none"}} onChange={handleGpxImportChange} />
+          <div
+            style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
+            onClick={function(){ setTrailsCollapsed(function(v){ return !v; }); }}
+          >
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>
+                {"Trails & Routes"+(trails.length>0?" \u00b7 "+trails.length:"")}
               </div>
-            )}
+              <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.06em",background:T.forest,color:T.paper,padding:"2.5px 6.5px",borderRadius:6,textTransform:"uppercase",lineHeight:1,fontFamily:T.font}}>GPS</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              {!trailsCollapsed && user && (
+                <>
+                  <button
+                    style={Object.assign({},S.miniBtn,{background:"transparent",border:"1px solid "+T.forest,color:T.forest,display:"flex",alignItems:"center",gap:4,fontSize:11,padding:"4px 8px"})}
+                    onClick={function(e){ e.stopPropagation(); if(fileInputRef.current) fileInputRef.current.click(); }}
+                  >\ud83d\udce4 GPX</button>
+                  <button
+                    style={Object.assign({},S.miniBtn,{background:T.forest,color:T.paper,border:"none",display:"flex",alignItems:"center",gap:4,fontSize:11,padding:"4px 8px"})}
+                    onClick={function(e){ e.stopPropagation(); props.setOpen(false); if(props.onStartTrailRecording) props.onStartTrailRecording(); }}
+                  ><span style={{fontSize:8}}>\ud83d\udd34</span> Record</button>
+                </>
+              )}
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:trailsCollapsed?"rotate(0deg)":"rotate(180deg)",flexShrink:0}}>
+                <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
 
-          {trails.length === 0 ? (
-            <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No recorded or imported trails.</div>
+          {!trailsCollapsed && (
+            <div style={{padding:"0 22px 16px"}}>
+            {trails.length === 0 ? (
+              <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No recorded or imported trails.</div>
           ) : (
             trails.map(function(trail){
               var isCurrentActive = activeTrail && activeTrail.id === trail.id;
@@ -489,14 +465,29 @@ export function ProfilePanel(props) {
                 </div>
               );
             })
+            )}
+            </div>
           )}
         </div>
       )}
 
       {/* ── Achievements ───────────────────────────────────────────────────────── */}
       {!editingProfile && (
-        <div style={{padding:"0 22px 12px",borderBottom:"1px solid "+T.borderSoft}}>
-          <UserBadges pinsCount={own.length} checkinsCount={props.checkinsCount || 0} />
+        <div style={{borderBottom:"1px solid "+T.borderSoft}}>
+          <div
+            style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
+            onClick={function(){ setBadgesCollapsed(function(v){ return !v; }); }}
+          >
+            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>Achievements</div>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:badgesCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
+              <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          {!badgesCollapsed && (
+            <div style={{padding:"0 22px 12px"}}>
+              <UserBadges pinsCount={own.length} checkinsCount={props.checkinsCount || 0} />
+            </div>
+          )}
         </div>
       )}
 
@@ -950,85 +941,106 @@ export function ProfilePanel(props) {
 
 
 
-      {/* ── Following ───────────────────────────────────────────────────────────── */}
+      {/* ── Following ──────────────────────────────────────────────────────────── */}
       {!editingProfile && userFollows.length>0 && (
-        <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
-          <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:12}}>{"Following · "+userFollows.length}</div>
-          {(showAllFollowing ? userFollows : userFollows.slice(0,10)).map(function(f){
-            var bellKey = "pm-bell-notify-"+f.following;
-            var bellOn = localStorage.getItem(bellKey) !== "0"; // default ON
-            return (
-              <div key={f.following} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={() => loadUserProfile(f.following)}>
-                <div style={{width:40,height:40,borderRadius:20,background:T.forestPale,color:T.forest,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0}}>
-                  {f.following[0].toUpperCase()}
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:600,fontSize:15,color:T.ink}}>{f.following}</div>
-                  <div style={{fontSize:11,color:bellOn?T.forest:T.ink4,marginTop:1}}>{bellOn?"🔔 Notifying":"🔕 Muted"}</div>
-                </div>
-                {/* Bell toggle */}
-                <button
-                  title={bellOn?"Mute new pin notifications":"Get notified of new pins"}
-                  style={{width:34,height:34,borderRadius:8,border:"1px solid "+(bellOn?T.forest:T.border),
-                    background:bellOn?T.forestPale:"transparent",
-                    display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:16}}
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    var next = bellOn ? "0" : "1";
-                    localStorage.setItem(bellKey, next);
-                    flash(next==="1"?"🔔 Notifications ON for @"+f.following:"🔕 Muted @"+f.following);
-                    // Force re-render via a dummy state toggle
-                    setShowAllFollowing(function(v){return v;});
-                  }}
-                >
-                  {bellOn ? "🔔" : "🔕"}
+        <div style={{borderBottom:"1px solid "+T.borderSoft}}>
+          <div
+            style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
+            onClick={function(){ setFollowingCollapsed(function(v){ return !v; }); }}
+          >
+            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>{"Following · "+userFollows.length}</div>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:followingCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
+              <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          {!followingCollapsed && (
+            <div style={{padding:"0 22px 12px"}}>
+              {(showAllFollowing ? userFollows : userFollows.slice(0,10)).map(function(f){
+                var bellKey = "pm-bell-notify-"+f.following;
+                var bellOn = localStorage.getItem(bellKey) !== "0";
+                return (
+                  <div key={f.following} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={() => loadUserProfile(f.following)}>
+                    <div style={{width:40,height:40,borderRadius:20,background:T.forestPale,color:T.forest,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0}}>
+                      {f.following[0].toUpperCase()}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:600,fontSize:15,color:T.ink}}>{f.following}</div>
+                      <div style={{fontSize:11,color:bellOn?T.forest:T.ink4,marginTop:1}}>{bellOn?"🔔 Notifying":"🔕 Muted"}</div>
+                    </div>
+                    <button
+                      title={bellOn?"Mute new pin notifications":"Get notified of new pins"}
+                      style={{width:34,height:34,borderRadius:8,border:"1px solid "+(bellOn?T.forest:T.border),
+                        background:bellOn?T.forestPale:"transparent",
+                        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:16}}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        var next = bellOn ? "0" : "1";
+                        localStorage.setItem(bellKey, next);
+                        flash(next==="1"?"🔔 Notifications ON for @"+f.following:"🔕 Muted @"+f.following);
+                        setShowAllFollowing(function(v){return v;});
+                      }}
+                    >
+                      {bellOn ? "🔔" : "🔕"}
+                    </button>
+                    <button
+                      style={{padding:"6px 14px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:13,cursor:"pointer",color:T.ink2}}
+                      onClick={(ev) => {ev.stopPropagation();toggleUserFollow(f.following);}}
+                    >
+                      Following
+                    </button>
+                  </div>
+                );
+              })}
+              {!showAllFollowing && userFollows.length > 10 && (
+                <button style={{width:"100%",padding:"12px",marginTop:12,borderRadius:10,border:"1px solid "+T.borderSoft,background:T.paper2,color:T.ink2,fontSize:13,fontWeight:600,cursor:"pointer"}} onClick={() => setShowAllFollowing(true)}>
+                  Show all {userFollows.length}
                 </button>
-                <button
-                  style={{padding:"6px 14px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:13,cursor:"pointer",color:T.ink2}}
-                  onClick={(ev) => {ev.stopPropagation();toggleUserFollow(f.following);}}
-                >
-                  Following
-                </button>
-              </div>
-            );
-          })}
-          {!showAllFollowing && userFollows.length > 10 && (
-            <button style={{width:"100%",padding:"12px",marginTop:12,borderRadius:10,border:"1px solid "+T.borderSoft,background:T.paper2,color:T.ink2,fontSize:13,fontWeight:600,cursor:"pointer"}} onClick={() => setShowAllFollowing(true)}>
-              Show all {userFollows.length}
-            </button>
+              )}
+            </div>
           )}
         </div>
       )}
 
 
-      {/* ── Followers ───────────────────────────────────────────────────────────── */}
+      {/* ── Followers ──────────────────────────────────────────────────────────── */}
       {!editingProfile && followers.length>0 && (
-        <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
-          <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:12}}>{"Followers · "+followers.length}</div>
-          {(showAllFollowers ? followers : followers.slice(0,10)).map(function(f){
-            var isFollowingBack = userFollows.some(function(uf){return uf.following === f.owner;});
-            return (
-              <div key={f.owner} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={() => loadUserProfile(f.owner)}>
-                <div style={{width:40,height:40,borderRadius:20,background:T.forestPale,color:T.forest,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0}}>
-                  {f.owner[0].toUpperCase()}
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:600,fontSize:15,color:T.ink}}>{f.owner}</div>
-                  <div style={{fontSize:13,color:T.ink3}}></div>
-                </div>
-                <button 
-                  style={{padding:"6px 14px",borderRadius:10,border:"1px solid "+(isFollowingBack?T.border:T.forest),background:isFollowingBack?"transparent":T.forestPale,fontSize:13,cursor:"pointer",color:isFollowingBack?T.ink2:T.forest,fontWeight:isFollowingBack?400:600}}
-                  onClick={(ev) => {ev.stopPropagation();toggleUserFollow(f.owner);}}
-                >
-                  {isFollowingBack ? "Following" : "Follow"}
+        <div style={{borderBottom:"1px solid "+T.borderSoft}}>
+          <div
+            style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
+            onClick={function(){ setFollowersCollapsed(function(v){ return !v; }); }}
+          >
+            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>{"Followers · "+followers.length}</div>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:followersCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
+              <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          {!followersCollapsed && (
+            <div style={{padding:"0 22px 12px"}}>
+              {(showAllFollowers ? followers : followers.slice(0,10)).map(function(f){
+                var isFollowingBack = userFollows.some(function(uf){return uf.following === f.owner;});
+                return (
+                  <div key={f.owner} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={() => loadUserProfile(f.owner)}>
+                    <div style={{width:40,height:40,borderRadius:20,background:T.forestPale,color:T.forest,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0}}>
+                      {f.owner[0].toUpperCase()}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:600,fontSize:15,color:T.ink}}>{f.owner}</div>
+                    </div>
+                    <button
+                      style={{padding:"6px 14px",borderRadius:10,border:"1px solid "+(isFollowingBack?T.border:T.forest),background:isFollowingBack?"transparent":T.forestPale,fontSize:13,cursor:"pointer",color:isFollowingBack?T.ink2:T.forest,fontWeight:isFollowingBack?400:600}}
+                      onClick={(ev) => {ev.stopPropagation();toggleUserFollow(f.owner);}}
+                    >
+                      {isFollowingBack ? "Following" : "Follow"}
+                    </button>
+                  </div>
+                );
+              })}
+              {!showAllFollowers && followers.length > 10 && (
+                <button style={{width:"100%",padding:"12px",marginTop:12,borderRadius:10,border:"1px solid "+T.borderSoft,background:T.paper2,color:T.ink2,fontSize:13,fontWeight:600,cursor:"pointer"}} onClick={() => setShowAllFollowers(true)}>
+                  Show all {followers.length}
                 </button>
-              </div>
-            );
-          })}
-          {!showAllFollowers && followers.length > 10 && (
-            <button style={{width:"100%",padding:"12px",marginTop:12,borderRadius:10,border:"1px solid "+T.borderSoft,background:T.paper2,color:T.ink2,fontSize:13,fontWeight:600,cursor:"pointer"}} onClick={() => setShowAllFollowers(true)}>
-              Show all {followers.length}
-            </button>
+              )}
+            </div>
           )}
         </div>
       )}

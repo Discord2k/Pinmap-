@@ -114,6 +114,7 @@ function App() {
 
   var [trails, setTrails] = useState([]);
   var [activeTrail, setActiveTrail] = useState(null);
+  var [showTrailQuestPanel, setShowTrailQuestPanel] = useState(false);
   var [recordingTrail, setRecordingTrail] = useState(false);
   var [isRecordingPaused, setIsRecordingPaused] = useState(false);
   var [recordedPoints, setRecordedPoints] = useState([]);
@@ -320,8 +321,9 @@ function App() {
   // Wire SW update signal
   useEffect(function(){
     window._setUpdateReady = setUpdateReady;
+    window._startTrailRecording = handleStartTrailRecording;
     if(window._swUpdateReady) setUpdateReady(true);
-    return function(){ window._setUpdateReady = null; };
+    return function(){ window._setUpdateReady = null; window._startTrailRecording = null; };
   },[]);
 
   // Online/offline detection with debounce to prevent flickering
@@ -2372,6 +2374,123 @@ function App() {
               )
             );
           })
+        )
+      ),
+
+      // ── Trails & Quests quick-access ────────────────────────────────────
+      e("div",{style:{position:"relative"}},
+        e("button",{
+          id:"btn-trail-quest",
+          onClick:function(){ setShowTrailQuestPanel(function(v){return !v;}); },
+          style:{width:40,height:40,borderRadius:10,
+            background:showTrailQuestPanel ? T.forest : "rgba(246,241,228,0.95)",
+            backdropFilter:"blur(12px)",
+            border:"1px solid "+(showTrailQuestPanel ? T.forest : T.border),
+            display:"flex",alignItems:"center",justifyContent:"center",
+            cursor:"pointer",boxShadow:T.shadow}
+        },
+          e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none"},
+            e("path",{d:"M3 17l4-8 4 4 4-6 4 10",stroke:showTrailQuestPanel ? T.paper : T.ink2,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"})
+          )
+        ),
+
+        showTrailQuestPanel && e("div",{
+          style:{
+            position:"absolute",right:48,top:0,
+            width:260,
+            background:"rgba(246,241,228,0.98)",backdropFilter:"blur(20px)",
+            border:"1px solid "+T.border,borderRadius:14,
+            boxShadow:T.shadowLg,overflow:"hidden",zIndex:1000
+          }
+        },
+          // Panel header
+          e("div",{style:{padding:"12px 14px",borderBottom:"1px solid "+T.borderSoft,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+            e("div",{style:{fontSize:10,letterSpacing:"0.16em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},"Trails & Quests"),
+            e("button",{onClick:function(){setShowTrailQuestPanel(false);},style:{background:"none",border:"none",cursor:"pointer",color:T.ink3,fontSize:18,lineHeight:1,padding:0}},"\u00d7")
+          ),
+
+          // Active quest
+          (function(){
+            var activeQ = challenges.find(function(c){return c.id === activeQuestId;});
+            if (!activeQuestId || !activeQ) {
+              return e("div",{style:{padding:"10px 14px",borderBottom:"1px solid "+T.borderSoft}},
+                e("div",{style:{fontSize:12,color:T.ink4,fontStyle:"italic"}},"No active quest — open Profile to start one."),
+                e("button",{
+                  style:{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:12,cursor:"pointer",fontWeight:600},
+                  onClick:function(){ setShowTrailQuestPanel(false); setTab("profile"); setOpen(true); }
+                },"\ud83c\udfc6 Go to Quests")
+              );
+            }
+            var chTags = activeQ.tags || [];
+            var checkedPinIds = checkins.map(function(c){return c.pin_id;});
+            var matchingCount = Math.min(
+              pins.filter(function(p){
+                if (checkedPinIds.indexOf(p.id) < 0) return false;
+                return p.tags && p.tags.some(function(t){return chTags.indexOf(t)>=0;});
+              }).length,
+              activeQ.required_count || 3
+            );
+            var isDone = matchingCount >= (activeQ.required_count || 3);
+            return e("div",{style:{padding:"10px 14px",borderBottom:"1px solid "+T.borderSoft}},
+              e("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:6}},
+                e("span",{style:{fontSize:18}},activeQ.icon||"\ud83c\udfc6"),
+                e("div",{style:{flex:1,minWidth:0}},
+                  e("div",{style:{fontSize:13,fontWeight:700,color:T.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},activeQ.title),
+                  e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},matchingCount+" / "+(activeQ.required_count||3)+" check-ins"+(isDone?" \u2705":""))
+                ),
+                e("button",{
+                  onClick:function(){ setActiveQuestId(""); localStorage.setItem("pinmap_active_quest_id",""); flash("Quest paused."); },
+                  style:{padding:"4px 10px",borderRadius:6,border:"none",background:"#d4af37",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}
+                },"\u23f8 Pause")
+              ),
+              e("div",{style:{width:"100%",height:5,background:T.borderSoft,borderRadius:3,overflow:"hidden"}},
+                e("div",{style:{width:(matchingCount/(activeQ.required_count||3)*100)+"%",height:"100%",background:isDone?"#d4af37":T.forest,borderRadius:3}})
+              )
+            );
+          }()),
+
+          // Collections quick-link
+          e("div",{style:{padding:"8px 14px",borderBottom:"1px solid "+T.borderSoft,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+            e("div",{style:{fontSize:12,color:T.ink2,fontWeight:600}},
+              "\ud83d\uddc2 Collections",
+              e("span",{style:{marginLeft:6,fontSize:11,color:T.ink4}},mapPacks.length>0 ? mapPacks.length+" total" : "none")
+            ),
+            e("button",{
+              style:{padding:"4px 10px",borderRadius:6,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:11,cursor:"pointer"},
+              onClick:function(){ setShowTrailQuestPanel(false); setTab("profile"); setOpen(true); }
+            },"Manage \u2192")
+          ),
+
+          // Trails list
+          e("div",{style:{padding:"8px 14px 4px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid "+T.borderSoft}},
+            e("div",{style:{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},"Trails"),
+            e("button",{
+              style:{padding:"4px 10px",borderRadius:6,border:"none",background:T.forest,color:T.paper,fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4},
+              onClick:function(){ setShowTrailQuestPanel(false); if(window._startTrailRecording) window._startTrailRecording(); else flash("Open Profile \u2192 Trails to record"); }
+            },
+              e("span",{style:{fontSize:8}},"\ud83d\udd34"),
+              "Record"
+            )
+          ),
+          trails.length===0
+            ? e("div",{style:{padding:"10px 14px 12px",fontSize:12,color:T.ink4,fontStyle:"italic"}},"No trails recorded yet.")
+            : e("div",{style:{maxHeight:180,overflowY:"auto"}},
+                trails.slice(0,8).map(function(trail){
+                  var isActive = activeTrail && activeTrail.id===trail.id;
+                  return e("div",{
+                    key:trail.id,
+                    style:{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},
+                    onClick:function(){ setShowTrailQuestPanel(false); setActiveTrail(isActive ? null : trail); }
+                  },
+                    e("div",{style:{width:7,height:7,borderRadius:"50%",background:trail.color||T.forest,flexShrink:0}}),
+                    e("div",{style:{flex:1,minWidth:0}},
+                      e("div",{style:{fontSize:12,fontWeight:600,color:T.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},trail.name),
+                      e("div",{style:{fontSize:10,color:T.ink4,fontFamily:T.mono}},Number(trail.distance_km||0).toFixed(2)+" km")
+                    ),
+                    e("div",{style:{fontSize:10,fontWeight:700,color:isActive?T.forest:T.ink4,flexShrink:0}},isActive?"\u25cf ON":"View")
+                  );
+                })
+              )
         )
       ),
 
