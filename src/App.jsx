@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api, sb, subscribeToPush, uploadPhoto, callEdgeFunction } from './utils/api';
-import { dbGetAll, dbPut, dbDelete, uid, formatLL, tagColor, getPinIcon, distKm, checkBannedTags, userName, userAvatar, dlFile, toGeoJSON, toGPX, WHATSNEW, ONBOARD_KEY, WHATSNEW_KEY, ALL_FEATURES, ONBOARD_STEPS } from './utils/helpers';
+import { dbGetAll, dbPut, dbDelete, uid, formatLL, tagColor, getPinIcon, distKm, checkBannedTags, userName, userAvatar, dlFile, toGeoJSON, toGPX, WHATSNEW, ONBOARD_KEY, WHATSNEW_KEY, ALL_FEATURES, ONBOARD_STEPS, getOnboardSteps, getWhatsNewList, getAllFeatures } from './utils/helpers';
 import { T, S } from './utils/styles';
 import { Splash } from './components/Splash';
 import { Onboarding } from './components/Onboarding';
@@ -11,6 +11,7 @@ import { MineTab } from './components/MineTab';
 import { WhatsNew } from './components/WhatsNew';
 import { CompassModal } from './components/CompassModal';
 import { TrailRecorder } from './components/TrailRecorder';
+import { LANGUAGES, translations } from './utils/i18n';
 
 var e = React.createElement;
 
@@ -23,6 +24,33 @@ function App() {
   var s5=useState(false);    var loading=s5[0];        var setLoading=s5[1];
   var s6=useState(false);    var open=s6[0];           var setOpen=s6[1];
   var s7=useState("search"); var tab=s7[0];            var setTab=s7[1];
+
+  var sl=useState(function() {
+    var stored = localStorage.getItem("pm-lang");
+    if (stored) return stored;
+    var navLang = navigator.language || navigator.userLanguage || "en";
+    return navLang.startsWith("es") ? "es" : "en";
+  });
+  var lang = sl[0];
+  var setLang = sl[1];
+
+  React.useEffect(function() {
+    localStorage.setItem("pm-lang", lang);
+  }, [lang]);
+
+  function t(key, params) {
+    var dict = translations[lang] || translations.en;
+    var str = dict[key];
+    if (str === undefined) {
+      str = translations.en[key] || (typeof params === "string" ? params : key);
+    }
+    if (params && typeof params === "object") {
+      Object.keys(params).forEach(function(pKey) {
+        str = str.split("{" + pKey + "}").join(params[pKey]);
+      });
+    }
+    return str;
+  }
   var fabSaved=(function(){try{var s=localStorage.getItem("pm-fab-pos");return s?JSON.parse(s):{bottom:32,right:20};}catch(e){return {bottom:32,right:20};}})();
   var s8=useState(fabSaved); var fabPos=s8[0]; var setFabPos=s8[1];
   var s9=useState("");       var searchTag=s9[0];      var setSearchTag=s9[1];
@@ -134,7 +162,7 @@ function App() {
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
 
   function saveDraft() {
-    if(!form.name.trim() && !pendingLL) { flash("Add a name or location first"); return; }
+    if(!form.name.trim() && !pendingLL) { flash(t("toast_draft_error")); return; }
     var draft = {
       id: "draft_"+Date.now(),
       form: Object.assign({}, form),
@@ -142,7 +170,7 @@ function App() {
       date: new Date().toISOString()
     };
     setDrafts(function(d){return [draft].concat(d);});
-    flash("Saved to drafts");
+    flash(t("toast_save_draft"));
     setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:""});
     setPendingLL(null);
   }
@@ -198,17 +226,17 @@ function App() {
       }
     }
     tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
-    if(tiles.length > 8000) { flash("Region too large ("+tiles.length+" tiles). Zoom in first."); setOfflineMode(false); return; }
+    if(tiles.length > 8000) { flash(t("toast_trail_too_large", {count: tiles.length})); setOfflineMode(false); return; }
     setOfflineMode(false);
-    flash("Downloading "+tiles.length+" tiles...");
+    flash(t("toast_tiles_downloading", {count: tiles.length}));
     var loaded = 0;
     function fetchBatch(idx) {
-      if(idx >= tiles.length) { flash("✅ Offline map downloaded!"); return; }
+      if(idx >= tiles.length) { flash(t("toast_tiles_success")); return; }
       var batch = tiles.slice(idx, idx+20);
       Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
         .then(function(){
           loaded += batch.length;
-          if(loaded % 100 === 0 || loaded === tiles.length) flash("Downloading: " + Math.round((loaded/tiles.length)*100) + "%");
+          if(loaded % 100 === 0 || loaded === tiles.length) flash(t("toast_trail_download_progress", {progress: Math.round((loaded/tiles.length)*100)}));
           fetchBatch(idx+20);
         });
     }
@@ -217,9 +245,9 @@ function App() {
 
   function purgeOfflineTiles() {
     caches.delete("pinmap-tiles-v2").then(function(){
-      flash("🗑 Offline tiles cleared!");
+      flash(t("toast_tiles_cleared"));
     }).catch(function(){
-      flash("Could not clear tile cache");
+      flash(t("toast_tiles_error"));
     });
   }
 
@@ -279,14 +307,14 @@ function App() {
               pins.push({ name: cells[ni] || "CSV Pin", description: di >= 0 ? (cells[di] || "") : "", lat: lat, lng: lng });
           });
         }
-      } catch(e) { flash("Parse error: " + e.message); }
+      } catch(e) { flash(t("toast_import_error") + e.message); }
       onDone(pins);
     };
     reader.readAsText(file);
   }
 
   function doImport() {
-    if (!importPreview || !importPreview.length) { flash("No pins to import"); return; }
+    if (!importPreview || !importPreview.length) { flash(t("toast_no_pins_import")); return; }
     setImportLoading(true);
     var tags = importTags.split(/[,\s]+/).filter(Boolean).map(function(t){return t.replace(/^#/,"");});
     var toSave = importPreview.map(function(p) {
@@ -301,7 +329,7 @@ function App() {
         setShowImport(false);
         setImportPreview(null);
         setImportTags("");
-        flash("Imported " + saved + " pins!");
+        flash(t("toast_import_success", {count: saved}));
         api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });
         return;
       }
@@ -381,7 +409,7 @@ function App() {
       var pendingComments = results[1]||[];
       var total = pendingPins.length + pendingComments.length;
       if(!total) return;
-      flash("Syncing "+total+" offline item"+(total>1?"s":"")+"...");
+      flash(t("toast_syncing_items", {count: total}));
       var pinPromises = pendingPins.map(function(pin){
         return api.insert(pin).then(function(){ return dbDelete("pins", pin.id); });
       });
@@ -390,9 +418,9 @@ function App() {
       });
       Promise.all(pinPromises.concat(commentPromises)).then(function(){
         setQueueCount(0);
-        flash("✅ Synced "+total+" item"+(total>1?"s":"")+" successfully!");
+        flash(t("toast_sync_success", {count: total}));
         api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });
-      }).catch(function(){ flash("Sync failed — will retry when online"); });
+      }).catch(function(){ flash(t("toast_sync_failed")); });
     });
   }
 
@@ -623,7 +651,7 @@ function App() {
   }, [showWhatsNew]);
 
   function nextOnboard() {
-    if(onboardStep>=ONBOARD_STEPS.length-1){ localStorage.setItem(ONBOARD_KEY,"1"); setOnboardStep(-1); }
+    if(onboardStep>=getOnboardSteps(lang).length-1){ localStorage.setItem(ONBOARD_KEY,"1"); setOnboardStep(-1); }
     else { setOnboardStep(function(s){return s+1;}); }
   }
   function skipOnboard() { localStorage.setItem(ONBOARD_KEY,"1"); setOnboardStep(-1); }
@@ -649,7 +677,6 @@ function App() {
       if(!mapDiv.current||!window.L){setTimeout(tryInit,100);return;}
       if(mapObj.current) return;
       var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
-      window.L.control.zoom({position:"bottomleft"}).addTo(map);
       var initTile = window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19});
       initTile.addTo(map);
       currentBase.current = [initTile];
@@ -1422,9 +1449,9 @@ function App() {
   function saveProfile(){
     var profile = Object.assign({id:uname, updated_at:new Date().toISOString()}, profileForm);
     api.upsertProfile(profile).then(function(r){
-      if(r&&r.error) flash("Save failed: "+r.error.message);
-      else { setMyProfile(profile); setEditingProfile(false); flash("Profile saved!"); }
-    }).catch(function(e){flash("Save failed: "+e.message);});
+      if(r&&r.error) flash(t("toast_profile_save_failed") + r.error.message);
+      else { setMyProfile(profile); setEditingProfile(false); flash(t("toast_profile_saved")); }
+    }).catch(function(e){flash(t("toast_profile_save_failed") + e.message);});
   }
 
   function handleDeleteAccount(){
@@ -1978,12 +2005,12 @@ function App() {
 
   // Recent tags: from pins sorted by created_at desc, deduplicated, max 4
   var BASE_LAYERS = [
-    {id:"osm",       label:"Standard",  icon:"🗺", url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors"},
-    {id:"topo",      label:"Topo",      icon:"▲",  url:"https://a.tile.opentopomap.org/{z}/{x}/{y}.png",                                               attr:"(c) OpenTopoMap contributors"},
-    {id:"satellite", label:"Satellite", icon:"🛰",  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",  attr:"(c) Esri"},
-    {id:"trails",    label:"Trails",    icon:"🥾",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors", overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
-    {id:"cycleosm",  label:"Cycle",     icon:"🚲",  url:"https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",                              attr:"(c) OpenStreetMap contributors | Style: CyclOSM"},
-    {id:"seamap",    label:"Sea",       icon:"⚓",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenSeaMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
+    {id:"osm",       label:t("layer_standard", "Standard"),  icon:"🗺", url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors"},
+    {id:"topo",      label:t("layer_topo", "Topo"),      icon:"▲",  url:"https://a.tile.opentopomap.org/{z}/{x}/{y}.png",                                               attr:"(c) OpenTopoMap contributors"},
+    {id:"satellite", label:t("layer_satellite", "Satellite"), icon:"🛰",  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",  attr:"(c) Esri"},
+    {id:"trails",    label:t("layer_trails", "Trails"),    icon:"🥾",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors", overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
+    {id:"cycleosm",  label:t("layer_cycle", "Cycle"),     icon:"🚲",  url:"https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",                              attr:"(c) OpenStreetMap contributors | Style: CyclOSM"},
+    {id:"seamap",    label:t("layer_sea", "Sea"),       icon:"⚓",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenSeaMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
   ];
 
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
@@ -2019,7 +2046,7 @@ function App() {
   }
 
   if(!sessionChecked||!splashDone){
-    return e(Splash,{loading:!sessionChecked,onGoogle:api.signInGoogle,onGuest:function(){setSplashDone(true);}});
+    return e(Splash,{loading:!sessionChecked,onGoogle:api.signInGoogle,onGuest:function(){setSplashDone(true);},t:t});
   }
 
   return e("div",{style:{position:"relative",height:"100vh",width:"100%",overflow:"hidden"}},
@@ -2269,7 +2296,7 @@ function App() {
       e("div",{style:{display:"flex",alignItems:"center",gap:8,background:"rgba(246,241,228,0.96)",backdropFilter:"blur(12px)",border:"1px solid "+T.border,borderRadius:12,padding:"10px 14px",boxShadow:T.shadow,cursor:"pointer"},
         onClick:function(){setSearchMode("tags");setTab("search");setOpen(true);}},
         e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},e("circle",{cx:"11",cy:"11",r:"8",stroke:T.ink3,strokeWidth:2}),e("path",{d:"M21 21l-4.35-4.35",stroke:T.ink3,strokeWidth:2,strokeLinecap:"round"})),
-        e("span",{style:{fontSize:15,color:T.ink3,flex:1}},"Search tags or places…"),
+        e("span",{style:{fontSize:15,color:T.ink3,flex:1}},t("map_search_placeholder")),
         !open&&unreadCount>0&&e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#b85c2a",flexShrink:0}})
       )
     ),
@@ -2336,7 +2363,7 @@ function App() {
         ),
         e("span",{style:{fontSize:8,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:T.mono,
           color:mapLayer==="mine"?T.paper:mapLayer==="none"?T.ink4:T.ink2,lineHeight:1}},
-          mapLayer==="mine"?"mine":mapLayer==="public"?"all":"off"
+          mapLayer==="mine"?t("layer_mine", "mine"):mapLayer==="public"?t("layer_all", "all"):t("layer_off", "off")
         )
       ),
 
@@ -2370,7 +2397,7 @@ function App() {
               e("span",{style:{fontSize:18,width:22,textAlign:"center",flexShrink:0}},layer.icon),
               e("div",null,
                 e("div",{style:{fontSize:13,fontWeight:active?600:400,color:active?T.paper:T.ink}},(layer.label||layer.name)),
-                active&&e("div",{style:{fontSize:10,color:"rgba(246,241,228,0.7)",fontFamily:T.mono,letterSpacing:"0.06em"}},"active")
+                active&&e("div",{style:{fontSize:10,color:"rgba(246,241,228,0.7)",fontFamily:T.mono,letterSpacing:"0.06em"}},t("layer_active"))
               )
             );
           })
@@ -2405,7 +2432,7 @@ function App() {
         },
           // Panel header
           e("div",{style:{padding:"12px 14px",borderBottom:"1px solid "+T.borderSoft,display:"flex",alignItems:"center",justifyContent:"space-between"}},
-            e("div",{style:{fontSize:10,letterSpacing:"0.16em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},"Trails & Quests"),
+            e("div",{style:{fontSize:10,letterSpacing:"0.16em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},t("trails_and_quests")),
             e("button",{onClick:function(){setShowTrailQuestPanel(false);},style:{background:"none",border:"none",cursor:"pointer",color:T.ink3,fontSize:18,lineHeight:1,padding:0}},"\u00d7")
           ),
 
@@ -2414,11 +2441,11 @@ function App() {
             var activeQ = challenges.find(function(c){return c.id === activeQuestId;});
             if (!activeQuestId || !activeQ) {
               return e("div",{style:{padding:"10px 14px",borderBottom:"1px solid "+T.borderSoft}},
-                e("div",{style:{fontSize:12,color:T.ink4,fontStyle:"italic"}},"No active quest — open Profile to start one."),
+                e("div",{style:{fontSize:12,color:T.ink4,fontStyle:"italic"}},t("no_active_quest_hint")),
                 e("button",{
                   style:{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:12,cursor:"pointer",fontWeight:600},
                   onClick:function(){ setShowTrailQuestPanel(false); setTab("profile"); setOpen(true); }
-                },"\ud83c\udfc6 Go to Quests")
+                },t("go_to_quests"))
               );
             }
             var chTags = activeQ.tags || [];
@@ -2436,12 +2463,12 @@ function App() {
                 e("span",{style:{fontSize:18}},activeQ.icon||"\ud83c\udfc6"),
                 e("div",{style:{flex:1,minWidth:0}},
                   e("div",{style:{fontSize:13,fontWeight:700,color:T.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},activeQ.title),
-                  e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},matchingCount+" / "+(activeQ.required_count||3)+" check-ins"+(isDone?" \u2705":""))
+                  e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},t("checkins_count_of", {count: matchingCount, total: activeQ.required_count||3})+(isDone?" ✅":""))
                 ),
                 e("button",{
-                  onClick:function(){ setActiveQuestId(""); localStorage.setItem("pinmap_active_quest_id",""); flash("Quest paused."); },
+                  onClick:function(){ setActiveQuestId(""); localStorage.setItem("pinmap_active_quest_id",""); flash(t("toast_quest_paused")); },
                   style:{padding:"4px 10px",borderRadius:6,border:"none",background:"#d4af37",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}
-                },"\u23f8 Pause")
+                },"\u23f8 " + t("pause"))
               ),
               e("div",{style:{width:"100%",height:5,background:T.borderSoft,borderRadius:3,overflow:"hidden"}},
                 e("div",{style:{width:(matchingCount/(activeQ.required_count||3)*100)+"%",height:"100%",background:isDone?"#d4af37":T.forest,borderRadius:3}})
@@ -2452,28 +2479,28 @@ function App() {
           // Collections quick-link
           e("div",{style:{padding:"8px 14px",borderBottom:"1px solid "+T.borderSoft,display:"flex",alignItems:"center",justifyContent:"space-between"}},
             e("div",{style:{fontSize:12,color:T.ink2,fontWeight:600}},
-              "\ud83d\uddc2 Collections",
-              e("span",{style:{marginLeft:6,fontSize:11,color:T.ink4}},mapPacks.length>0 ? mapPacks.length+" total" : "none")
+              "📂 " + t("collections"),
+              e("span",{style:{marginLeft:6,fontSize:11,color:T.ink4}},mapPacks.length>0 ? mapPacks.length+" "+t("total") : t("none"))
             ),
             e("button",{
               style:{padding:"4px 10px",borderRadius:6,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:11,cursor:"pointer"},
               onClick:function(){ setShowTrailQuestPanel(false); setTab("profile"); setOpen(true); }
-            },"Manage \u2192")
+            },t("manage_btn"))
           ),
 
           // Trails list
           e("div",{style:{padding:"8px 14px 4px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid "+T.borderSoft}},
-            e("div",{style:{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},"Trails"),
+            e("div",{style:{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},t("trails_routes")),
             e("button",{
               style:{padding:"4px 10px",borderRadius:6,border:"none",background:T.forest,color:T.paper,fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4},
-              onClick:function(){ setShowTrailQuestPanel(false); if(window._startTrailRecording) window._startTrailRecording(); else flash("Open Profile \u2192 Trails to record"); }
+              onClick:function(){ setShowTrailQuestPanel(false); if(window._startTrailRecording) window._startTrailRecording(); else flash(t("open_profile_to_record")); }
             },
-              e("span",{style:{fontSize:8}},"\ud83d\udd34"),
-              "Record"
+              e("span",{style:{fontSize:8}},"🔴"),
+              t("record_btn")
             )
           ),
           trails.length===0
-            ? e("div",{style:{padding:"10px 14px 12px",fontSize:12,color:T.ink4,fontStyle:"italic"}},"No trails recorded yet.")
+            ? e("div",{style:{padding:"10px 14px 12px",fontSize:12,color:T.ink4,fontStyle:"italic"}},t("no_recorded_trails"))
             : e("div",{style:{maxHeight:180,overflowY:"auto"}},
                 trails.slice(0,8).map(function(trail){
                   var isActive = activeTrail && activeTrail.id===trail.id;
@@ -2485,9 +2512,9 @@ function App() {
                     e("div",{style:{width:7,height:7,borderRadius:"50%",background:trail.color||T.forest,flexShrink:0}}),
                     e("div",{style:{flex:1,minWidth:0}},
                       e("div",{style:{fontSize:12,fontWeight:600,color:T.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},trail.name),
-                      e("div",{style:{fontSize:10,color:T.ink4,fontFamily:T.mono}},Number(trail.distance_km||0).toFixed(2)+" km")
+                      e("div",{style:{fontSize:10,color:T.ink4,fontFamily:T.mono}},Number(trail.distance_km||0).toFixed(2)+" "+t("km"))
                     ),
-                    e("div",{style:{fontSize:10,fontWeight:700,color:isActive?T.forest:T.ink4,flexShrink:0}},isActive?"\u25cf ON":"View")
+                    e("div",{style:{fontSize:10,fontWeight:700,color:isActive?T.forest:T.ink4,flexShrink:0}},isActive?t("active_badge_on"):t("view_label"))
                   );
                 })
               )
@@ -2497,7 +2524,7 @@ function App() {
       // Locate / GPS button
       e("button",{
         onClick:function(){
-          if(!navigator.geolocation){flash("Geolocation not supported");return;}
+          if(!navigator.geolocation){flash(t("toast_geo_not_supported"));return;}
           navigator.geolocation.getCurrentPosition(
             function(pos){
               var lat=pos.coords.latitude, lng=pos.coords.longitude;
@@ -2506,9 +2533,9 @@ function App() {
               }
               updateUserLocationMarker(lat, lng);
               setUserLL({lat:lat,lng:lng});
-              flash("Your location");
+              flash(t("toast_your_location"));
             },
-            function(err){flash("Location unavailable — check permissions");},
+            function(err){flash(t("toast_location_unavailable"));},
             {enableHighAccuracy:true,timeout:8000}
           );
         },
@@ -2522,26 +2549,25 @@ function App() {
           e("circle",{cx:"12",cy:"12",r:"7",stroke:T.forest,strokeWidth:1.5,fill:"none"}),
           e("path",{d:"M12 2v4M12 18v4M2 12h4M18 12h4",stroke:T.ink2,strokeWidth:1.5,strokeLinecap:"round"})
         )
-      ),
-
-      // ── Zoom In / Out buttons ───────────────────────────────────
-      e("div",{style:{display:"flex",flexDirection:"column",borderRadius:10,overflow:"hidden",
-        boxShadow:T.shadow,border:"1px solid "+T.border}},
-        e("button",{
-          id:"btn-zoom-in",
-          onClick:function(){if(mapObj.current) mapObj.current.zoomIn();},
-          style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
-            border:"none",borderBottom:"1px solid "+T.border,
-            display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:22,color:T.ink,fontWeight:300}
-        },"+"),
-        e("button",{
-          id:"btn-zoom-out",
-          onClick:function(){if(mapObj.current) mapObj.current.zoomOut();},
-          style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
-            border:"none",
-            display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:28,color:T.ink,fontWeight:300,lineHeight:1}
-        },"−")
       )
+    ),
+
+    // Bottom-left: Zoom controls (above coordinates)
+    e("div",{style:{position:"absolute",bottom:"calc(108px + env(safe-area-inset-bottom,0px))",left:14,zIndex:999,display:"flex",flexDirection:"column",borderRadius:10,overflow:"hidden",boxShadow:T.shadow,border:"1px solid "+T.border}},
+      e("button",{
+        id:"btn-zoom-in",
+        onClick:function(){if(mapObj.current) mapObj.current.zoomIn();},
+        style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
+          border:"none",borderBottom:"1px solid "+T.border,
+          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:22,color:T.ink,fontWeight:300}
+      },"+"),
+      e("button",{
+        id:"btn-zoom-out",
+        onClick:function(){if(mapObj.current) mapObj.current.zoomOut();},
+        style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
+          border:"none",
+          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:28,color:T.ink,fontWeight:300,lineHeight:1}
+      },"−")
     ),
 
     // Bottom-left: coordinates + zoom
@@ -2735,29 +2761,29 @@ function App() {
           e("input",{
             style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
               borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:10},
-            placeholder:searchMode==="tags"?"#hashtag or tag name":searchMode==="quests"?"Search quests by name, description or tag…":"Place, address or city…",
+            placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):t("search_placeholder_places_detail"),
             value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:addrSearch,
             onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else setAddrSearch(ev.target.value);},
             onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
           }),
           searchMode!=="quests" && e("button",{
             style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:12},
-            onClick:function(){if(searchMode==="tags")doSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash("Place search failed");});}}
-          },"Search"),
+            onClick:function(){if(searchMode==="tags")doSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
+          },t("search_btn")),
           e("div",{style:{display:"flex",borderBottom:"1px solid "+T.borderSoft}},
-            e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="tags"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("tags");setAddrResults([]);setAddrSearch("");}
-            },"# Tags"),
+            e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="tags"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
+            },"# " + t("search_mode_tags")),
             e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="places"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("places");}
-            },"📍 Places"),
+            },"📍 " + t("search_mode_places")),
             e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="quests"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("quests");}
-            },"🏆 Quests")
+            },"🏆 " + t("search_mode_quests"))
           )
         ),
 
         e("div",{style:{flex:1,overflowY:"auto",padding:"0 22px"}},
           searchMode==="places"
             ? e("div",null,
-                addrLoading&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},"Searching…"),
+                addrLoading&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},t("searching_loading")),
                 addrResults.length>0&&addrResults.map(function(r,i){
                   var parts=r.display_name.split(",");
                   return e("div",{key:i,style:{display:"flex",alignItems:"center",gap:12,padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){goToAddr(r);setOpen(false);}},
@@ -2768,7 +2794,7 @@ function App() {
                     )
                   );
                 }),
-                addrResults.length===0&&!addrLoading&&addrSearch&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},"No places found")
+                addrResults.length===0&&!addrLoading&&addrSearch&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},t("no_places_found"))
               )
             : searchMode==="quests"
             ? e("div",null,
@@ -3188,23 +3214,24 @@ function App() {
           deletePin:deletePin, toggleUpvote:toggleUpvote,
           saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
           markCommentsSeen:markCommentsSeen,
-          myActivity:myActivity, pins:pins
+          myActivity:myActivity, pins:pins,
+          lang:lang, t:t
         })
       ),
 
       tab==="add" && e("div",{style:{padding:"22px",overflowY:"auto"}},
         e("div",{style:{padding:"0 0 16px"}},
-          e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:6}},"Drop a pin"),
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:6}},t("form_title_add")),
           pendingLL && e("div",{style:{fontSize:12,color:T.forest,fontFamily:T.mono,marginTop:4}},
             formatLL(pendingLL.lat, pendingLL.lng, 4)
           )
         ),
         !user && e("div",{style:{background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,padding:14,marginBottom:12,textAlign:"center"}},
-          e("div",{style:{fontSize:13,color:T.ink2,marginBottom:8}},"Sign in to save pins to your account"),
-          e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},"Sign in with Google")
+          e("div",{style:{fontSize:13,color:T.ink2,marginBottom:8}},t("signin_to_save_pins")),
+          e("button",{style:Object.assign({},S.btn,{width:"100%"}),onClick:api.signInGoogle},t("signin_google"))
         ),
         drafts.length > 0 && e("div",{style:{marginBottom:16}},
-          e("div",{style:{fontSize:11,color:T.ink3,marginBottom:8}},"Your Drafts"),
+          e("div",{style:{fontSize:11,color:T.ink3,marginBottom:8}},t("your_drafts")),
           drafts.map(function(d){
             return e("div",{key:d.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:6,cursor:"pointer"},onClick:function(){
               setForm(d.form);
@@ -3212,7 +3239,7 @@ function App() {
               else setPendingLL(null);
             }},
               e("div",{style:{flex:1}},
-                e("div",{style:{fontWeight:600,fontSize:14,color:T.ink}},d.form.name || "Untitled Draft"),
+                e("div",{style:{fontWeight:600,fontSize:14,color:T.ink}},d.form.name || t("untitled_draft")),
                 e("div",{style:{fontSize:11,color:T.ink3}},new Date(d.date).toLocaleString())
               ),
               e("button",{style:{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:5,fontSize:18,lineHeight:1},onClick:function(ev){ev.stopPropagation();setDrafts(function(ds){return ds.filter(function(x){return x.id!==d.id;});});}},"×")
@@ -3220,13 +3247,13 @@ function App() {
           })
         ),
         e("div",{style:{position:"relative",marginBottom:10}},
-          e("input",{style:S.input,placeholder:"Name / Place",value:form.name,
+          e("input",{style:S.input,placeholder:t("form_placeholder_name"),value:form.name,
             onChange:function(ev){setForm(function(f){return Object.assign({},f,{name:ev.target.value});});}})
         ),
         e("textarea",{style:Object.assign({},S.input,{resize:"vertical",minHeight:70}),
-          placeholder:"Description (optional)",value:form.description,
+          placeholder:t("form_placeholder_desc_optional"),value:form.description,
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
-        e("input",{style:S.input,placeholder:"#tags — space or comma separated",value:form.tags,
+        e("input",{style:S.input,placeholder:t("form_placeholder_tags_hint"),value:form.tags,
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}},
           ["#2a5d3c","#b85c2a","#1565c0","#c62828","#6a1b9a","#00695c","#4e342e","#37474f","#f57f17"].map(function(c){
@@ -3246,14 +3273,14 @@ function App() {
                   setShowInsiderExplainer(true);
                   localStorage.setItem("pm-seen-insider-explainer","1");
                 }
-              }},p);
+              }},t("form_privacy_" + p));
           })
         ),
         !pendingLL && e("div",{style:{background:T.paper2,border:"1px dashed "+T.border,borderRadius:10,padding:"16px",marginBottom:12,textAlign:"center",color:T.ink3,fontSize:13}},
-          "Close this panel and touch the map to set a location"
+          t("form_no_location_hint")
         ),
         e("div",{style:{marginBottom:12}},
-          e("div",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:6}},"Photo"),
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:6}},t("photo_label")),
           form.photo
             ? e("div",{style:{position:"relative",marginBottom:6}},
                 e("img",{src:form.photo,style:{width:"100%",borderRadius:6,maxHeight:130,objectFit:"cover"}}),
@@ -3271,17 +3298,17 @@ function App() {
               e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
               e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
             ),
-            form.photo?"Replace photo":"Add photo"
+            form.photo?t("replace_photo"):t("add_photo")
           )
         ),
         e("div",{style:{marginBottom:12}},
-          e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},"Expires (optional)"),
+          e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},t("expires_optional")),
           e("input",{type:"datetime-local",style:S.input,value:form.expires_at,
             onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}})
         ),
         e("div",{style:{display:"flex",gap:8}},
-          e("button",{style:Object.assign({},S.btn,{flex:1,background:"transparent",color:T.ink2,border:"1px solid "+T.border}),onClick:saveDraft},"Save Draft"),
-          e("button",{style:Object.assign({},S.btn,{flex:2}),onClick:savePin},"Publish Pin")
+          e("button",{style:Object.assign({},S.btn,{flex:1,background:"transparent",color:T.ink2,border:"1px solid "+T.border}),onClick:saveDraft},t("form_save_draft_btn")),
+          e("button",{style:Object.assign({},S.btn,{flex:2}),onClick:savePin},t("publish_pin"))
         )
       ),
 
@@ -3347,7 +3374,10 @@ function App() {
           onGeoJSON:function(){dlFile(toGeoJSON(myPins),"pins.geojson","application/json");},
           onGPX:function(){dlFile(toGPX(myPins),"pins.gpx","application/gpx+xml");},
           onStartOfflineMode:function(){setOpen(false);setOfflineMode(true);},
-          onPurgeOfflineTiles:purgeOfflineTiles
+          onPurgeOfflineTiles:purgeOfflineTiles,
+          lang:lang,
+          setLang:setLang,
+          t:t
         })
         )
 
@@ -3518,11 +3548,11 @@ function App() {
           onClick:function(){setShowCompass(true);}
         },"🧭 Compass")
       ),
-      e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash})
+      e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash,lang:lang,t:t})
     ),
 
-    showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew}),
-    showCompass&&e(CompassModal,{pin:selPin,onClose:function(){setShowCompass(false);},flash:flash}),
+    showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
+    showCompass&&e(CompassModal,{pin:selPin,onClose:function(){setShowCompass(false);},flash:flash,lang:lang,t:t}),
 
     showImport&&e("div",{style:{position:"fixed",top:0,left:0,right:0,bottom:"calc(60px + env(safe-area-inset-bottom,0px))",background:T.paper,zIndex:2000,display:"flex",flexDirection:"column",overflow:"hidden"}},
       // Header
@@ -3630,14 +3660,15 @@ function App() {
       e("div",{style:{background:"#f6f1e4",border:"none",boxShadow:"0 -4px 40px rgba(0,0,0,0.12)",borderRadius:16,padding:"24px 22px",maxWidth:420,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",maxHeight:"80vh",display:"flex",flexDirection:"column"}},
         e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}},
           e("div",null,
-            e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}},"All Features"),
+            e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}},lang === 'es' ? "Todas las funciones" : "All Features"),
             e("div",{style:{fontSize:11,color:"#6f786f"}},"v 1.0.0")
           ),
           e("button",{style:{background:"none",border:"none",fontSize:22,color:"#6f786f",cursor:"pointer"},onClick:function(){setShowFeatures(false);}},"×")
         ),
         e("div",{style:{overflowY:"auto",flex:1,marginBottom:16}},
-          ALL_FEATURES.map(function(item,i){
-            return e("div",{key:i,style:{display:"flex",gap:12,padding:"10px 0",borderBottom:i<ALL_FEATURES.length-1?"1px solid #e8dcc4":"none"}},
+          getAllFeatures(lang).map(function(item,i){
+            var featList = getAllFeatures(lang);
+            return e("div",{key:i,style:{display:"flex",gap:12,padding:"10px 0",borderBottom:i<featList.length-1?"1px solid #e8dcc4":"none"}},
               e("div",{style:{fontSize:24,flexShrink:0,width:32,textAlign:"center"}},item.emoji),
               e("div",null,
                 e("div",{style:{fontWeight:700,fontSize:14,color:"#1a201c",marginBottom:2}},item.title),
@@ -3649,10 +3680,10 @@ function App() {
         e("button",{
           style:{width:"100%",padding:"12px",background:"#2a5d3c",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
           onClick:function(){setShowFeatures(false);}
-        },"Got it!")
+        },t('got_it'))
       )
     ),
-    !showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard}),
+    !showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
 
     showInsiderExplainer && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",borderRadius:16,padding:"24px 22px",maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",display:"flex",flexDirection:"column"}},
@@ -3805,7 +3836,7 @@ function App() {
           userPinsLoading&&e("div",{style:{textAlign:"center",padding:28,color:"#9a8f74",fontSize:14}},"Loading pins…"),
           !userPinsLoading&&userPins.length===0&&e("div",{style:{textAlign:"center",padding:28,color:"#9a8f74",fontSize:14}},"No public pins yet."),
           !userPinsLoading&&userPins.map(function(p){
-            return e(PinCard,{key:p.id,pin:p,uname:uname,
+            return e(PinCard,{key:p.id,pin:p,uname:uname,lang:lang,t:t,
               onFocus:function(){setViewUser(null);focusPin(p);},
               onDelete:deletePin,onUpvote:toggleUpvote,onSave:saveToCollection,onViewUser:loadUserProfile});
           })
@@ -3815,12 +3846,12 @@ function App() {
 
     editPin&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
       e("div",{style:{background:"#f6f1e4",border:"none",boxShadow:"0 -4px 40px rgba(0,0,0,0.12)",borderRadius:14,padding:"22px 20px",width:"100%",maxWidth:420,boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}},
-        e("div",{style:{fontSize:15,fontWeight:700,color:"#1a201c",marginBottom:14}},"Edit Pin"),
-        e("input",{style:Object.assign({},S.input),placeholder:"Name",value:editForm.name,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
-        e("textarea",{style:Object.assign({},S.input,{height:60,resize:"none"}),placeholder:"Description",value:editForm.description,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
-        e("input",{style:Object.assign({},S.input),placeholder:"#tags",value:editForm.tags,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
+        e("div",{style:{fontSize:15,fontWeight:700,color:"#1a201c",marginBottom:14}},t("form_title_edit")),
+        e("input",{style:Object.assign({},S.input),placeholder:t("form_placeholder_name"),value:editForm.name,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
+        e("textarea",{style:Object.assign({},S.input,{height:60,resize:"none"}),placeholder:t("form_placeholder_desc_optional"),value:editForm.description,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
+        e("input",{style:Object.assign({},S.input),placeholder:t("form_label_tags"),value:editForm.tags,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         e("div",{style:{marginBottom:12}},
-          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},"Pin color"),
+          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},t("form_label_color")),
           e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}},
             ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e","#f57f17","#00838f"].map(function(col){
               return e("div",{key:col,onClick:function(){setEditForm(function(f){return Object.assign({},f,{color:col});});},
@@ -3831,7 +3862,7 @@ function App() {
           )
         ),
         e("div",{style:{marginBottom:12}},
-          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},"Photo"),
+          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},t("photo_label")),
           editForm.photo
             ? e("div",{style:{position:"relative",marginBottom:6}},
                 e("img",{src:editForm.photo,style:{width:"100%",borderRadius:6,maxHeight:130,objectFit:"cover"}}),
@@ -3849,12 +3880,12 @@ function App() {
               e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
               e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
             ),
-            editForm.photo?"Replace photo":"Add photo"
+            editForm.photo?t("replace_photo"):t("add_photo")
           )
         ),
         e("div",{style:{display:"flex",gap:8}},
-          e("button",{style:{flex:1,padding:"9px",background:"none",border:"1px solid #d8cfb8",borderRadius:8,fontSize:13,color:"#6f786f",cursor:"pointer"},onClick:function(){setEditPin(null);}},"Cancel"),
-          e("button",{style:{flex:2,padding:"9px",background:"#2a5d3c",border:"none",borderRadius:8,fontSize:13,color:"#fff",fontWeight:700,cursor:"pointer"},onClick:saveEdit},"Save Changes")
+          e("button",{style:{flex:1,padding:"9px",background:"none",border:"1px solid #d8cfb8",borderRadius:8,fontSize:13,color:"#6f786f",cursor:"pointer"},onClick:function(){setEditPin(null);}},t("form_cancel_btn")),
+          e("button",{style:{flex:2,padding:"9px",background:"#2a5d3c",border:"none",borderRadius:8,fontSize:13,color:"#fff",fontWeight:700,cursor:"pointer"},onClick:saveEdit},t("form_save_changes_btn"))
         )
       )
     ),
@@ -3877,9 +3908,9 @@ function App() {
       gap: 12
     }},
       e("div",null,
-        e("div",{style:{fontWeight:700,fontSize:14,color:T.forest,marginBottom:2}},"Update Available"),
+        e("div",{style:{fontWeight:700,fontSize:14,color:T.forest,marginBottom:2}},t("update_available")),
         e("div",{style:{fontSize:12,color:T.ink2}},
-          "A new version of PINMAP is ready"
+          t("update_ready_msg")
         )
       ),
       e("button",{
@@ -3896,7 +3927,7 @@ function App() {
           boxShadow:T.shadow
         },
         onClick:function(){window.location.reload();}
-      },"Reload")
+      },t("reload_btn"))
     ),
 
     recordingTrail && e(TrailRecorder, {
@@ -3908,7 +3939,9 @@ function App() {
       onPause: handlePauseTrailRecording,
       onResume: handleResumeTrailRecording,
       onCancel: handleCancelTrailRecording,
-      onSave: handleSaveTrailRecording
+      onSave: handleSaveTrailRecording,
+      lang: lang,
+      t: t
     }),
 
     activeTrail && e("div", {
@@ -3980,7 +4013,7 @@ function App() {
           },
             isActive && e("div",{style:{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:28,height:2,background:T.forest,borderRadius:"0 0 2px 2px"}}),
             e("div",{style:{opacity:isActive?1:0.7,transition:"opacity 0.15s"}},icons[it.id]||icons.map),
-            e("span",{style:{fontSize:10,fontWeight:isActive?700:500,letterSpacing:"0.14em",textTransform:"uppercase"}},it.label),
+            e("span",{style:{fontSize:10,fontWeight:isActive?700:500,letterSpacing:"0.14em",textTransform:"uppercase"}},t("tab_" + it.id, it.label)),
             it.id==="mine" && unreadCount>0 && e("div",{style:{position:"absolute",top:8,right:"calc(50% - 18px)",width:6,height:6,borderRadius:"50%",background:"#b85c2a",pointerEvents:"none"}})
           );
         })

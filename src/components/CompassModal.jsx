@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { distKm } from '../utils/helpers';
 
-export function CompassModal({ pin, onClose, flash }) {
+export function CompassModal({ pin, onClose, flash, lang, t }) {
+  var activeLang = lang || 'en';
+  var translate = t || function(key) { return key; };
   var [heading, setHeading] = useState(0);
   var [userLoc, setUserLoc] = useState(null);
   var [sensorPermission, setSensorPermission] = useState('unknown');
@@ -28,7 +30,7 @@ export function CompassModal({ pin, onClose, flash }) {
             window.addEventListener('deviceorientation', handleOrientation, true);
           } else {
             setSensorPermission('denied');
-            if (flash) flash("⚠️ Orientation sensor permission denied.");
+            if (flash) flash(activeLang === 'es' ? "⚠️ Permiso de sensor de orientación denegado." : "⚠️ Orientation sensor permission denied.");
           }
         })
         .catch(function(e) {
@@ -68,12 +70,12 @@ export function CompassModal({ pin, onClose, flash }) {
         },
         function(err) {
           console.error(err);
-          if (flash) flash("⚠️ GPS location tracking unavailable.");
+          if (flash) flash(activeLang === 'es' ? "⚠️ Ubicación GPS no disponible." : "⚠️ GPS location tracking unavailable.");
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      if (flash) flash("⚠️ Geolocation is not supported by your browser.");
+      if (flash) flash(activeLang === 'es' ? "⚠️ Tu navegador no soporta geolocalización." : "⚠️ Geolocation is not supported by your browser.");
     }
 
     // 2. Automatically check if permission is already granted/not needed (non-iOS)
@@ -97,6 +99,14 @@ export function CompassModal({ pin, onClose, flash }) {
   // Angle of the pin relative to the top of the phone screen
   var relativeArrowAngle = (bearing - heading + 360) % 360;
 
+  var getCardinal = function(deg) {
+    var cards = activeLang === 'es' 
+      ? ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]
+      : ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    var idx = Math.round(deg / 45) % 8;
+    return cards[idx];
+  };
+
   return (
     <div 
       style={{
@@ -119,14 +129,14 @@ export function CompassModal({ pin, onClose, flash }) {
       {/* Header */}
       <div style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div>
-          <div style={{fontSize:12,textTransform:"uppercase",letterSpacing:"0.15em",color:"#6f786f",fontWeight:700,marginBottom:4}}>Off-Grid Navigation</div>
+          <div style={{fontSize:12,textTransform:"uppercase",letterSpacing:"0.15em",color:"#6f786f",fontWeight:700,marginBottom:4}}>{translate('off_grid_nav')}</div>
           <div style={{fontSize:22,fontWeight:800,color:"#2a5d3c",lineHeight:1.2}}>{pin.name}</div>
         </div>
         <button 
           style={{background:"#2a5d3c",color:"#fff",border:"none",borderRadius:20,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(42,93,60,0.2)"}}
           onClick={onClose}
         >
-          Close
+          {translate('close')}
         </button>
       </div>
 
@@ -135,13 +145,13 @@ export function CompassModal({ pin, onClose, flash }) {
         {sensorPermission === 'unknown' ? (
           <div style={{textAlign:"center",padding:24,background:"rgba(255,255,255,0.7)",borderRadius:16,border:"1px solid #d8cfb8",maxWidth:300,boxShadow:"0 8px 24px rgba(0,0,0,0.05)"}}>
             <div style={{fontSize:42,marginBottom:12}}>🧭</div>
-            <div style={{fontSize:16,fontWeight:700,color:"#2a5d3c",marginBottom:8}}>Sensor Access Required</div>
-            <div style={{fontSize:13,color:"#6f786f",lineHeight:1.5,marginBottom:18}}>PINMAP needs access to your device orientation to rotate the compass dial.</div>
+            <div style={{fontSize:16,fontWeight:700,color:"#2a5d3c",marginBottom:8}}>{translate('sensor_access_req')}</div>
+            <div style={{fontSize:13,color:"#6f786f",lineHeight:1.5,marginBottom:18}}>{translate('sensor_access_desc')}</div>
             <button 
               style={{background:"#2a5d3c",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,fontWeight:700,cursor:"pointer",width:"100%"}}
               onClick={initOrientation}
             >
-              Allow Compass
+              {translate('allow_compass')}
             </button>
           </div>
         ) : (
@@ -183,7 +193,7 @@ export function CompassModal({ pin, onClose, flash }) {
               <div style={{position:"absolute",top:8,fontWeight:900,color:"#c05050",fontSize:18}}>N</div>
               <div style={{position:"absolute",bottom:8,fontWeight:800,color:"#2a5d3c",fontSize:16}}>S</div>
               <div style={{position:"absolute",right:8,fontWeight:800,color:"#2a5d3c",fontSize:16}}>E</div>
-              <div style={{position:"absolute",left:8,fontWeight:800,color:"#2a5d3c",fontSize:16}}>W</div>
+              <div style={{position:"absolute",left:8,fontWeight:800,color:"#2a5d3c",fontSize:16}}>{activeLang === 'es' ? 'O' : 'W'}</div>
               
               {/* Radial ticks */}
               {[...Array(12)].map(function(_, i) {
@@ -257,22 +267,22 @@ export function CompassModal({ pin, onClose, flash }) {
         {/* Navigation Stats */}
         <div style={{display:"flex",justifyContent:"space-around",width:"100%",textAlign:"center"}}>
           <div>
-            <div style={{fontSize:11,textTransform:"uppercase",color:"#9a8f74",letterSpacing:"0.05em",marginBottom:4}}>Distance</div>
+            <div style={{fontSize:11,textTransform:"uppercase",color:"#9a8f74",letterSpacing:"0.05em",marginBottom:4}}>{translate('distance')}</div>
             <div style={{fontSize:28,fontWeight:900,color:"#1a201c"}}>
-              {distance !== null ? (distance < 1 ? Math.round(distance * 1000) + " m" : distance.toFixed(2) + " km") : "Waiting..."}
+              {distance !== null ? (distance < 1 ? Math.round(distance * 1000) + " " + translate('m') : distance.toFixed(2) + " " + translate('km')) : translate('waiting')}
             </div>
           </div>
           <div>
-            <div style={{fontSize:11,textTransform:"uppercase",color:"#9a8f74",letterSpacing:"0.05em",marginBottom:4}}>Heading</div>
+            <div style={{fontSize:11,textTransform:"uppercase",color:"#9a8f74",letterSpacing:"0.05em",marginBottom:4}}>{translate('heading')}</div>
             <div style={{fontSize:28,fontWeight:900,color:"#1a201c"}}>
-              {heading}° <span style={{fontSize:16,color:"#6f786f"}}>{heading >= 337.5 || heading < 22.5 ? "N" : heading >= 22.5 && heading < 67.5 ? "NE" : heading >= 67.5 && heading < 112.5 ? "E" : heading >= 112.5 && heading < 157.5 ? "SE" : heading >= 157.5 && heading < 202.5 ? "S" : heading >= 202.5 && heading < 247.5 ? "SW" : heading >= 247.5 && heading < 292.5 ? "W" : "NW"}</span>
+              {heading}° <span style={{fontSize:16,color:"#6f786f"}}>{getCardinal(heading)}</span>
             </div>
           </div>
         </div>
 
         {/* Tip banner */}
         <div style={{padding:"12px 16px",background:"rgba(42,93,60,0.06)",borderRadius:10,fontSize:12,color:"#2a5d3c",textAlign:"center",lineHeight:1.4,maxWidth:340,border:"1px solid rgba(42,93,60,0.1)"}}>
-          💡 Keep your phone flat in front of you. The green arrow points directly to <b>{pin.name}</b>.
+          💡 {translate('compass_tip')} <b>{pin.name}</b>.
         </div>
       </div>
     </div>

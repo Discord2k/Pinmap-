@@ -4,6 +4,12 @@ import { dbPut, uid } from '../utils/helpers';
 
 export function Comments(props) {
   var pinId = props.pinId, uname = props.uname;
+  var lang = props.lang || 'en';
+  var t = props.t || function(key, p) {
+    if (key === 'reply_placeholder') return "Reply to @" + (p ? p.owner : '') + "...";
+    if (key === 'replying_to') return "Replying to @" + (p ? p.owner : '');
+    return key;
+  };
   var [comments, setComments] = useState([]);
   var [cLoading, setCLoading] = useState(true);
   var [draft, setDraft] = useState("");
@@ -38,7 +44,7 @@ export function Comments(props) {
         } else {
           if (height > max_height) {
             width *= max_height / height;
-            height = max_height;
+            width = max_height;
           }
         }
         canvas.width = width;
@@ -89,7 +95,7 @@ export function Comments(props) {
         dbPut("comments", Object.assign({},c,{_offline:true})).then(function(){
           setComments(function(prev){return prev.concat([Object.assign({},c,{_offline:true})]);});
           setDraft(""); setSelectedPhoto(null); setReplyTo(null); setSending(false);
-          if(props.flash) props.flash("📡 Journal log saved offline — will sync when online");
+          if(props.flash) props.flash(t('toast_comment_posted_offline'));
         });
       } else {
         api.addComment(c).then(function(){
@@ -107,7 +113,7 @@ export function Comments(props) {
       }
     } catch(e) {
       setSending(false);
-      if(props.flash) props.flash("❌ Failed to upload photo: " + e.message);
+      if(props.flash) props.flash(t('toast_photo_upload_failed') + e.message);
     }
   }
 
@@ -148,7 +154,7 @@ export function Comments(props) {
           borderLeft:isReply?"3px solid #2a5d3c":"none",
           boxShadow: isReply ? "none" : "0 1px 3px rgba(0,0,0,0.03)"
         }}>
-          {isReply && <div style={{fontSize:10,color:"#2a5d3c",marginBottom:2}}>{"↩ replying to @"+parentOwner}</div>}
+          {isReply && <div style={{fontSize:10,color:"#2a5d3c",marginBottom:2}}>{t('replying_to', {owner: parentOwner})}</div>}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
             <div style={{fontSize:13,fontWeight:700,color:"#2a5d3c"}}>{"@"+c.owner}</div>
             <div style={{fontSize:10,color:"#9a8f74",fontFamily:"monospace"}}>{timeStr}</div>
@@ -197,7 +203,7 @@ export function Comments(props) {
                 style={{background:"none",border:"none",fontSize:12,color:"#6f786f",cursor:"pointer",padding:0}}
                 onClick={() => {setReplyTo(replyTo&&replyTo.id===c.id?null:c);setDraft("");}}
               >
-                ↩ Reply
+                {lang === 'es' ? "↩ Responder" : "↩ Reply"}
               </button>
             )}
             {c.owner===uname && (
@@ -217,19 +223,19 @@ export function Comments(props) {
 
   return (
     <div style={{borderTop:"1px solid #e8dcc4",marginTop:14,paddingTop:12}}>
-      <div className="caps" style={{color:"#6f786f",marginBottom:10,fontSize:11,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:700}}>{"Journal Logs ("+(cLoading?"...":comments.length)+")"}</div>
+      <div className="caps" style={{color:"#6f786f",marginBottom:10,fontSize:11,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:700}}>{t('journal_logs') + " ("+(cLoading?"...":comments.length)+")"}</div>
       {cLoading ? (
-        <div style={{fontSize:13,color:"#6f786f"}}>Loading journal...</div>
+        <div style={{fontSize:13,color:"#6f786f"}}>{t('loading_journal')}</div>
       ) : (
         <div>
-          {topLevel.length===0 && <div style={{fontSize:13,color:"#9a8f74",fontStyle:"italic",marginBottom:12,textAlign:"center",padding:"16px 0",background:"#fcfbfa",borderRadius:8,border:"1px dashed #dcd3bc"}}>No logs recorded yet. Be the first to add to this pin's journal!</div>}
+          {topLevel.length===0 && <div style={{fontSize:13,color:"#9a8f74",fontStyle:"italic",marginBottom:12,textAlign:"center",padding:"16px 0",background:"#fcfbfa",borderRadius:8,border:"1px dashed #dcd3bc"}}>{t('no_logs_yet')}</div>}
           <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
             {topLevel.map(function(c){return renderComment(c,false);})}
           </div>
           
           {replyTo && (
             <div style={{fontSize:11,color:"#2a5d3c",marginBottom:4,marginTop:8,padding:"6px 10px",background:"#dde6dc",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span>{"Replying to @"+replyTo.owner}</span>
+              <span>{t('replying_to', {owner: replyTo.owner})}</span>
               <button style={{background:"none",border:"none",color:"#6f786f",cursor:"pointer",fontSize:13}} onClick={()=>{setReplyTo(null);setDraft("");}}>✕</button>
             </div>
           )}
@@ -252,7 +258,7 @@ export function Comments(props) {
                 <button 
                   style={{background:"#efe9d8",border:"1px solid #d8cfb8",height:34,width:34,fontSize:15,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,color:"#6f786f"}}
                   onClick={() => setShowPhotoSourcePrompt(true)}
-                  title="Attach journal photo"
+                  title={t('attach_photo_title')}
                 >
                   <svg width={16} height={16} viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy={13} r="4" stroke="currentColor" strokeWidth={2.2}/></svg>
                 </button>
@@ -267,7 +273,7 @@ export function Comments(props) {
             )}
             <input 
               style={{flex:1,background:"#efe9d8",border:"1px solid #d8cfb8",color:"#1a201c",padding:"8px 10px",fontSize:13,borderRadius:6,outline:"none",height:34,boxSizing:"border-box"}}
-              placeholder={replyTo?"Reply to @"+replyTo.owner+"...":(uname?"Write journal log...":"Sign in to record logs")}
+              placeholder={replyTo ? t('reply_placeholder', {owner: replyTo.owner}) : (uname ? t('write_log_placeholder') : t('signin_to_log_placeholder'))}
               value={draft}
               onChange={(ev) => setDraft(ev.target.value)}
               onKeyDown={(ev) => {if(ev.key==="Enter")submit();}}
@@ -277,7 +283,7 @@ export function Comments(props) {
               onClick={submit}
               disabled={sending}
             >
-              {sending?"...":"Post"}
+              {sending?"...":t('post_btn')}
             </button>
           </div>
         </div>
@@ -343,7 +349,7 @@ export function Comments(props) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{fontSize:14,fontWeight:700,color:"#6f786f",marginBottom:16,textAlign:"center"}}>Attach Journal Photo</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#6f786f",marginBottom:16,textAlign:"center"}}>{t('attach_photo_title')}</div>
             
             <button 
               style={{
@@ -364,7 +370,7 @@ export function Comments(props) {
             >
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy={13} r="4" stroke="currentColor" strokeWidth={2.2}/></svg>
-                <span>Take Photo</span>
+                <span>{t('take_photo')}</span>
               </div>
             </button>
             
@@ -387,7 +393,7 @@ export function Comments(props) {
             >
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <span>Choose from Gallery</span>
+                <span>{t('choose_gallery')}</span>
               </div>
             </button>
             
@@ -407,7 +413,7 @@ export function Comments(props) {
               }}
               onClick={() => setShowPhotoSourcePrompt(false)}
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </div>

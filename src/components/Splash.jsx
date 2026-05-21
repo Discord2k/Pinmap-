@@ -2,13 +2,14 @@ import React from 'react';
 import { formatLL } from '../utils/helpers';
 
 export function Splash(props) {
+  var t = props.t || function(key) { return key; };
   return (
     <div style={{position:"fixed",inset:0,zIndex:9999,overflow:"hidden",fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",background:"#f6f1e4"}}>
       <div style={{position:"absolute",inset:0,backgroundImage:"url(https://tile.openstreetmap.org/5/8/13.png)",backgroundSize:"cover",backgroundPosition:"center",filter:"blur(3px) brightness(0.35) saturate(0.4) sepia(0.2)",transform:"scale(1.05)"}}></div>
       <div style={{position:"absolute",inset:0,background:"linear-gradient(160deg,rgba(31,74,48,0.85) 0%,rgba(26,32,28,0.92) 100%)"}}></div>
       <div style={{position:"relative",display:"flex",flexDirection:"column",height:"100%",padding:"0 28px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:"calc(52px + env(safe-area-inset-top,0px))"}}>
-          <div style={{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:"rgba(246,241,228,0.5)",fontFamily:"'JetBrains Mono',monospace"}}>EDITION 01 · 2026</div>
+          <div style={{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:"rgba(246,241,228,0.5)",fontFamily:"'JetBrains Mono',monospace"}}>{t('edition')}</div>
           <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:"rgba(246,241,228,0.5)",fontFamily:"'JetBrains Mono',monospace"}}>{formatLL(28.54, -81.38, 2)}</div>
         </div>
         <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center"}}>
@@ -18,17 +19,17 @@ export function Splash(props) {
               <circle cx="14" cy="14" r="5" fill="#2a5d3c"></circle>
             </svg>
           </div>
-          <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.22em",color:"rgba(221,230,220,0.9)",marginBottom:14,textTransform:"uppercase"}}>A Field Atlas</div>
+          <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.22em",color:"rgba(221,230,220,0.9)",marginBottom:14,textTransform:"uppercase"}}>{t('splash_atlas')}</div>
           <div style={{fontSize:38,lineHeight:1.05,fontWeight:700,letterSpacing:"-0.02em",color:"#f6f1e4",marginBottom:16}}>
-            The map of the places <em style={{fontStyle:"italic",fontWeight:600,color:"#dde6dc"}}>that matter</em> to you.
+            {t('splash_tagline_part1')} <em style={{fontStyle:"italic",fontWeight:600,color:"#dde6dc"}}>{t('splash_tagline_highlight')}</em> {t('splash_tagline_part2')}
           </div>
           <div style={{fontSize:15,lineHeight:1.6,color:"rgba(246,241,228,0.7)",maxWidth:320,marginBottom:36}}>
-            Drop pins, add hashtags, and share your favourite spots. Discover locations shared by others.
+            {t('splash_desc')}
           </div>
         </div>
         <div style={{paddingBottom:"calc(40px + env(safe-area-inset-bottom,0px))"}}>
           {props.loading ? (
-            <div style={{textAlign:"center",color:"rgba(246,241,228,0.5)",fontSize:13,letterSpacing:"0.1em"}}>Loading...</div>
+            <div style={{textAlign:"center",color:"rgba(246,241,228,0.5)",fontSize:13,letterSpacing:"0.1em"}}>{t('loading')}</div>
           ) : (
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               <button 
@@ -41,13 +42,13 @@ export function Splash(props) {
                   <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.16C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
                   <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.16C12.43 13.72 17.74 9.5 24 9.5z"></path>
                 </svg>
-                Continue with Google
+                {t('continue_google')}
               </button>
               <button 
                 style={{width:"100%",padding:"13px 18px",borderRadius:12,background:"transparent",color:"rgba(246,241,228,0.7)",border:"1px solid rgba(246,241,228,0.2)",fontSize:14,fontWeight:500}}
                 onClick={props.onGuest}
               >
-                Browse as guest
+                {t('browse_guest')}
               </button>
             </div>
           )}

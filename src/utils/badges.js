@@ -181,17 +181,59 @@ export const BADGES = [
   }
 ];
 
+const BADGE_TRANSLATIONS = {
+  es: {
+    pins_1: {
+      title: "Brote Pionero",
+      description: "Colocaste tu primer pin y marcaste tu lugar en el globo."
+    },
+    pins_10: {
+      title: "Pionero de Rutas",
+      description: "Mapeaste 10 ubicaciones. Tu atlas personal está tomando forma."
+    },
+    pins_50: {
+      title: "Creador de Atlas",
+      description: "Colocaste 50 pines. Una crónica detallada de tu huella geográfica."
+    },
+    pins_100: {
+      title: "Explorador Supremo",
+      description: "Colocaste 100 pines. Tu marca en el mundo es vasta y duradera."
+    },
+    checkin_1: {
+      title: "Nómada Curioso",
+      description: "Registraste tu visita en el pin de otro usuario por primera vez."
+    },
+    checkin_5: {
+      title: "Habitual del Lugar",
+      description: "Visitaste 5 lugares compartidos por otros. Entrando en la comunidad."
+    },
+    checkin_15: {
+      title: "Compañero de Viaje",
+      description: "Registraste 15 visitas. Conectando los puntos entre historias locales."
+    },
+    checkin_35: {
+      title: "Gran Conector",
+      description: "Registraste 35 visitas. Un miembro célebre de la comunidad de Pin Map."
+    }
+  }
+};
+
 /**
  * Checks which badges are unlocked for a user based on their stats.
  * @param {number} pinsCount - Number of pins placed by the user
  * @param {number} checkinsCount - Number of check-ins to other users' pins
+ * @param {string} lang - The active language code ('en' or 'es')
  * @returns {Array} Array of badges with their unlock status
  */
-export function getBadgesStatus(pinsCount, checkinsCount) {
+export function getBadgesStatus(pinsCount, checkinsCount, lang) {
   return BADGES.map(function(badge) {
     var isUnlocked = badge.type === 'pins' 
       ? pinsCount >= badge.threshold 
       : checkinsCount >= badge.threshold;
-    return Object.assign({}, badge, { unlocked: isUnlocked });
+    var localized = badge;
+    if (lang === 'es' && BADGE_TRANSLATIONS.es[badge.id]) {
+      localized = Object.assign({}, badge, BADGE_TRANSLATIONS.es[badge.id]);
+    }
+    return Object.assign({}, localized, { unlocked: isUnlocked });
   });
 }

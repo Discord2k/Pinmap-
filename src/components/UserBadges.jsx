@@ -1,9 +1,12 @@
+import React from 'react';
 import { getBadgesStatus } from '../utils/badges';
 
 export function UserBadges(props) {
   var pinsCount = props.pinsCount || 0;
   var checkinsCount = props.checkinsCount || 0;
-  var badgeStatuses = getBadgesStatus(pinsCount, checkinsCount);
+  var lang = props.lang || 'en';
+  var t = props.t || function(key) { return key; };
+  var badgeStatuses = getBadgesStatus(pinsCount, checkinsCount, lang);
 
   return (
     <div style={{ padding: '16px 0' }}>
@@ -16,7 +19,7 @@ export function UserBadges(props) {
         fontWeight: 600, 
         fontFamily: "'JetBrains Mono', ui-monospace, monospace" 
       }}>
-        Achievements
+        {t('achievements')}
       </h4>
       
       <div style={{ 
@@ -86,8 +89,8 @@ export function UserBadges(props) {
                 }}
               >
                 {badge.type === 'pins' 
-                  ? badge.threshold + " pin" + (badge.threshold > 1 ? 's' : '') 
-                  : badge.threshold + " check-in" + (badge.threshold > 1 ? 's' : '')
+                  ? badge.threshold + " " + (lang === 'es' ? 'pin' + (badge.threshold > 1 ? 'es' : '') : 'pin' + (badge.threshold > 1 ? 's' : ''))
+                  : badge.threshold + " " + (lang === 'es' ? 'visita' + (badge.threshold > 1 ? 's' : '') : 'check-in' + (badge.threshold > 1 ? 's' : ''))
                 }
               </div>
             </div>

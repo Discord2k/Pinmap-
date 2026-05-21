@@ -3,13 +3,13 @@ import { formatLL, dlFile, toGeoJSON, toGPX } from '../utils/helpers';
 import { T } from '../utils/styles';
 
 // ─── Relative time helper ────────────────────────────────────────────────────
-function relTime(iso) {
+function relTime(iso, t) {
   if (!iso) return '';
   var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60)   return 'just now';
-  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-  return Math.floor(diff / 86400) + 'd ago';
+  if (diff < 60)   return t ? t('just_now') : 'just now';
+  if (diff < 3600) return t ? t('m_ago', {count: Math.floor(diff / 60)}) : Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return t ? t('h_ago', {count: Math.floor(diff / 3600)}) : Math.floor(diff / 3600) + 'h ago';
+  return t ? t('d_ago', {count: Math.floor(diff / 86400)}) : Math.floor(diff / 86400) + 'd ago';
 }
 
 // ─── Avatar initial circle ───────────────────────────────────────────────────
@@ -33,12 +33,16 @@ function AvatarDot({ name, size }) {
 }
 
 // ─── Activity row ─────────────────────────────────────────────────────────────
-function ActivityRow({ item, pinName, onClick }) {
+function ActivityRow({ item, pinName, onClick, t }) {
   var isJournal = item.type === 'journal';
   var isUpvote  = item.type === 'upvote';
 
   var icon  = isUpvote ? '👍' : isJournal ? '📷' : '💬';
-  var verb  = isUpvote ? 'upvoted' : isJournal ? 'added a photo to' : 'commented on';
+  var verb  = isUpvote 
+    ? (t ? t('verb_upvoted') : 'upvoted') 
+    : isJournal 
+      ? (t ? t('verb_added_photo') : 'added a photo to') 
+      : (t ? t('verb_commented_on') : 'commented on');
   var preview = !isUpvote && item.body
     ? item.body.slice(0, 60) + (item.body.length > 60 ? '…' : '')
     : null;
@@ -72,7 +76,7 @@ function ActivityRow({ item, pinName, onClick }) {
           </div>
         )}
         <div style={{ fontSize: 11, color: T.ink4, marginTop: 3, fontFamily: T.mono }}>
-          {icon} {relTime(item.created_at)}
+          {icon} {relTime(item.created_at, t)}
         </div>
       </div>
     </div>
@@ -88,6 +92,7 @@ function ActivitySection(props) {
   var setOpen         = props.setOpen;
   var mapObj          = props.mapObj;
   var markCommentsSeen = props.markCommentsSeen;
+  var t               = props.t;
 
   // Build a pinId → pin lookup
   var pinById = {};
@@ -144,7 +149,7 @@ function ActivitySection(props) {
         }}
       >
         <div style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, fontFamily: T.mono, color: T.ink3, flex: 1 }}>
-          ⚡ Recent Activity
+          ⚡ {t ? t('recent_activity') : 'Recent Activity'}
         </div>
         {!open && (
           <div style={{
@@ -172,11 +177,12 @@ function ActivitySection(props) {
                 item={row}
                 pinName={pinName}
                 onClick={pin ? function() { handleRowClick(row); } : null}
+                t={t}
               />
             );
           })}
           {total === 0 && (
-            <div style={{ padding: '12px 18px', fontSize: 13, color: T.ink4 }}>No recent activity yet.</div>
+            <div style={{ padding: '12px 18px', fontSize: 13, color: T.ink4 }}>{t ? t('no_recent_activity') : 'No recent activity yet.'}</div>
           )}
         </div>
       )}
@@ -196,6 +202,8 @@ export function MineTab(props) {
   var pins = props.pins || [];
   var totalUpvotes = myPins.reduce(function(s,p){return s+((p.upvotes&&Array.isArray(p.upvotes))?p.upvotes.length:0);},0);
   
+  var t = props.t || function(key) { return key; };
+
   var [expanded, setExpanded] = useState({});
   var [searchQuery, setSearchQuery] = useState("");
 
@@ -228,12 +236,12 @@ export function MineTab(props) {
       {/* ── Editorial header ───────────────────────────────────────────────────── */}
       <div style={{padding:"28px 22px 20px",borderBottom:"1px solid "+T.borderSoft,flexShrink:0}}>
         <div style={{fontSize:10.5,letterSpacing:"0.18em",color:T.ink3,textTransform:"uppercase",fontWeight:600,fontFamily:T.mono,marginBottom:8}}>
-          Vol. II · Your Field Log
+          {t('vol_ii')}
         </div>
-        <div style={{fontSize:38,fontWeight:700,letterSpacing:"-0.02em",color:T.ink,lineHeight:1,marginBottom:10}}>My Pins</div>
+        <div style={{fontSize:38,fontWeight:700,letterSpacing:"-0.02em",color:T.ink,lineHeight:1,marginBottom:10}}>{t('my_pins')}</div>
         {myPins.length>0 && (
           <div style={{fontSize:14,color:T.ink3}}>
-            {myPins.length+" entr"+(myPins.length===1?"y":"ies")+" · "+totalUpvotes+" upvote"+(totalUpvotes===1?"":"s")+" received"}
+            {myPins.length + " " + (myPins.length === 1 ? t('entry_noun') : t('entries_noun')) + " · " + totalUpvotes + " " + (totalUpvotes === 1 ? t('upvote_noun') : t('upvotes_noun')) + " " + t('received')}
           </div>
         )}
       </div>
@@ -253,8 +261,8 @@ export function MineTab(props) {
       {myPins.length === 0 ? (
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 20px",color:T.ink3}}>
           <div style={{fontSize:32,marginBottom:12}}>📍</div>
-          <div style={{fontSize:15,fontWeight:600,color:T.ink2,marginBottom:6}}>No entries yet</div>
-          <div style={{fontSize:13,color:T.ink3,lineHeight:1.6,textAlign:"center"}}>Touch the map to set a location, then fill in the details.</div>
+          <div style={{fontSize:15,fontWeight:600,color:T.ink2,marginBottom:6}}>{t('no_my_entries')}</div>
+          <div style={{fontSize:13,color:T.ink3,lineHeight:1.6,textAlign:"center"}}>{t('no_my_entries_desc')}</div>
         </div>
       ) : (
         <div style={{flex:1,overflowY:"auto"}}>
@@ -268,13 +276,14 @@ export function MineTab(props) {
             setOpen={setOpen}
             mapObj={mapObj}
             markCommentsSeen={props.markCommentsSeen}
+            t={t}
           />
 
           {/* Search Bar */}
           <div style={{padding:"14px 22px",borderBottom:"1px solid "+T.borderSoft,background:T.paper}}>
             <input
               style={{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,borderRadius:12,padding:"10px 14px",fontSize:15,outline:"none",color:T.ink,fontFamily:T.font}}
-              placeholder="Search my pins..."
+              placeholder={t('search_my_pins')}
               value={searchQuery}
               onChange={(ev) => setSearchQuery(ev.target.value)}
             />
@@ -299,11 +308,11 @@ export function MineTab(props) {
                     <div>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <span style={{fontWeight:700,fontSize:16,color:T.ink}}>{"#"+tag}</span>
-                        {activeFilter===tag && <span style={{fontSize:10,letterSpacing:"0.1em",textTransform:"uppercase",color:T.forest,background:T.forestPale,padding:"1px 6px",borderRadius:10,fontWeight:600}}>map</span>}
+                        {activeFilter===tag && <span style={{fontSize:10,letterSpacing:"0.1em",textTransform:"uppercase",color:T.forest,background:T.forestPale,padding:"1px 6px",borderRadius:10,fontWeight:600}}>{t('tab_map').toLowerCase()}</span>}
                         {tagHasUnread && <div style={{width:7,height:7,borderRadius:"50%",background:"#b85c2a",flexShrink:0}}></div>}
                       </div>
                       <div style={{fontSize:12,color:T.ink3,fontFamily:T.mono,marginTop:2}}>
-                        {tp.length+" pin"+(tp.length!==1?"s":"")}
+                        {tp.length + " " + (tp.length === 1 ? t('pin_noun') : t('pins_noun'))}
                         {tagComments>0?" · 💬 "+tagComments:""}
                       </div>
                     </div>
@@ -340,9 +349,9 @@ export function MineTab(props) {
                         {/* Entry stamp */}
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
                           <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>
-                            {"Entry № "+entryNum}
-                            {pinHasUnread && <span style={{marginLeft:8,background:"#b85c2a",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>💬 NEW</span>}
-                            {pinHasUpvoteNew && <span style={{marginLeft:4,background:"#2a5d3c",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>👍 NEW</span>}
+                            {t('entry_no') + entryNum}
+                            {pinHasUnread && <span style={{marginLeft:8,background:"#b85c2a",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>💬 {t('new_tag')}</span>}
+                            {pinHasUpvoteNew && <span style={{marginLeft:4,background:"#2a5d3c",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>👍 {t('new_tag')}</span>}
                           </div>
                           {coordStr && <div style={{fontSize:10,color:T.ink4,fontFamily:T.mono}}>{coordStr}</div>}
                         </div>
@@ -358,7 +367,7 @@ export function MineTab(props) {
                               background:new Date(p.expires_at)<new Date()?"#ffebee":"#fff8e1",
                               color:new Date(p.expires_at)<new Date()?"#c62828":"#e65100",border:"1px solid "+(new Date(p.expires_at)<new Date()?"#ef9a9a":"#ffe082")
                             }}>
-                              {new Date(p.expires_at)<new Date()?"Expired":"⏰ "+Math.ceil((new Date(p.expires_at)-new Date())/(864e5))+"d"}
+                              {new Date(p.expires_at)<new Date()?t('expired'):"⏰ "+Math.ceil((new Date(p.expires_at)-new Date())/(864e5))+"d"}
                             </span>
                           )}
                         </div>
@@ -371,8 +380,16 @@ export function MineTab(props) {
                         {/* Stats */}
                         <div style={{display:"flex",alignItems:"center",gap:10,fontSize:12,color:T.ink4}}>
                           <span>{"↑ "+upvoteCount+(pinHasUpvoteNew?" 🆕":"")}</span>
-                          {commentCount>0 && <span style={{color:pinHasUnread?"#b85c2a":T.ink4,fontWeight:pinHasUnread?600:400}}>{"💬 "+commentCount+(pinHasUnread?" new":"")}</span>}
-                          <span style={{marginLeft:"auto",fontSize:10,letterSpacing:"0.08em",textTransform:"uppercase"}}>{p.privacy}</span>
+                          {commentCount>0 && <span style={{color:pinHasUnread?"#b85c2a":T.ink4,fontWeight:pinHasUnread?600:400}}>{"💬 "+commentCount+(pinHasUnread?" " + t('new_tag').toLowerCase():"")}</span>}
+                          <span style={{marginLeft:"auto",fontSize:10,letterSpacing:"0.08em",textTransform:"uppercase"}}>
+                            {(function() {
+                              var prv = (p.privacy || "").toLowerCase();
+                              if (prv === 'public') return t('form_privacy_public');
+                              if (prv === 'private') return t('form_privacy_private');
+                              if (prv === 'insider') return t('form_privacy_insider');
+                              return p.privacy;
+                            })()}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -383,7 +400,7 @@ export function MineTab(props) {
           })}
           
           {/* ── End marker ──────────────────────────────────────────────────── */}
-          <div style={{textAlign:"center",padding:"24px",fontSize:11,letterSpacing:"0.18em",color:T.ink4,fontFamily:T.mono}}>-- End of Log --</div>
+          <div style={{textAlign:"center",padding:"24px",fontSize:11,letterSpacing:"0.18em",color:T.ink4,fontFamily:T.mono}}>{t('end_of_log')}</div>
           
           {/* ── Export ──────────────────────────────────────────────────────── */}
           {myPins.length>0 && (
