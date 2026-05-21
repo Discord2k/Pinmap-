@@ -4,11 +4,6 @@ import App from './App.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-// Capture PWA install prompt
-window.addEventListener("beforeinstallprompt",function(e){
-  e.preventDefault();
-  window._installPromptEvent = e;
-});
 
 if("serviceWorker" in navigator){
   window.addEventListener("load",function(){

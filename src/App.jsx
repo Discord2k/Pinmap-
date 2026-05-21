@@ -92,6 +92,7 @@ function App() {
   var sShowCompass=useState(false); var showCompass=sShowCompass[0]; var setShowCompass=sShowCompass[1];
   var s80=useState([]); var followers=s80[0]; var setFollowers=s80[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
+  var sReadyToShowBanner=useState(false); var readyToShowBanner=sReadyToShowBanner[0]; var setReadyToShowBanner=sReadyToShowBanner[1];
   var s45=useState(false); var pushEnabled=s45[0]; var setPushEnabled=s45[1];
   var s46=useState(null); var notifPin=s46[0]; var setNotifPin=s46[1];
   var s47=useState(null); var adminStats=s47[0]; var setAdminStats=s47[1];
@@ -564,24 +565,53 @@ function App() {
   // Keep mapLayerRef in sync so marker closures always see current value
   useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
 
-  // Show install prompt after 5 seconds if available
+  // Set timer to allow banner after 5 seconds
   useEffect(function(){
     if(!splashDone) return;
     var timer = setTimeout(function(){
-      // Check if already installed
-      if(window.matchMedia("(display-mode: standalone)").matches) return;
-      if(localStorage.getItem("pm-install-dismissed")) return;
-      if(window._installPromptEvent){
-        setInstallPrompt(window._installPromptEvent);
-        setShowInstall(true);
-      } else {
-        // iOS or unsupported - show manual instructions
-        var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        if(isIOS) setShowInstall("ios");
-      }
+      setReadyToShowBanner(true);
     }, 5000);
     return function(){ clearTimeout(timer); };
   },[splashDone]);
+
+  // Capture install prompt reactively and show banner when ready
+  useEffect(function(){
+    if(!splashDone) return;
+
+    function handlePrompt(e) {
+      if(e.preventDefault) e.preventDefault();
+      setInstallPrompt(e);
+    }
+
+    // Set initial from global if already captured
+    if(window._installPromptEvent) {
+      setInstallPrompt(window._installPromptEvent);
+    }
+
+    window.addEventListener("beforeinstallprompt", handlePrompt);
+    // Also listen to custom event dispatched by index.html early capture
+    window.addEventListener("installpromptavailable", function(e) {
+      if (e.detail) handlePrompt(e.detail);
+    });
+
+    return function(){
+      window.removeEventListener("beforeinstallprompt", handlePrompt);
+    };
+  },[splashDone]);
+
+  // Determine when to show the install banner
+  useEffect(function(){
+    if(!readyToShowBanner) return;
+    if(window.matchMedia("(display-mode: standalone)").matches) return;
+    if(localStorage.getItem("pm-install-dismissed")) return;
+
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS) {
+      setShowInstall("ios");
+    } else if(installPrompt) {
+      setShowInstall(true);
+    }
+  },[readyToShowBanner, installPrompt]);
 
 
 
@@ -2184,11 +2214,23 @@ function App() {
           style:{background:"#fff",color:"#1f4a30",border:"none",borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"},
           onClick:function(){
             if(installPrompt){
-              installPrompt.prompt();
-              installPrompt.userChoice.then(function(){
-                setShowInstall(false);
-                setInstallPrompt(null);
-              });
+              try {
+                installPrompt.prompt();
+                installPrompt.userChoice.then(function(choiceResult){
+                  console.log("PWA install choice outcome:", choiceResult ? choiceResult.outcome : "unknown");
+                  setShowInstall(false);
+                  setInstallPrompt(null);
+                }).catch(function(err){
+                  console.error("Error waiting for PWA install choice:", err);
+                  setShowInstall(false);
+                  setInstallPrompt(null);
+                });
+              } catch(err) {
+                console.error("PWA install prompt error:", err);
+                flash("Install prompt error: " + err.message);
+              }
+            } else {
+              flash("Install prompt event is not ready. Please try again in a moment.");
             }
           }
         },"Install")

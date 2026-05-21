@@ -13,6 +13,15 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+      // Early capture of PWA install prompt to avoid race conditions
+      window._installPromptEvent = null;
+      window.addEventListener("beforeinstallprompt", function(e) {
+        e.preventDefault();
+        window._installPromptEvent = e;
+        window.dispatchEvent(new CustomEvent("installpromptavailable", { detail: e }));
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
