@@ -3266,7 +3266,13 @@ function App() {
           e("button",{
             style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,color:T.ink,cursor:"pointer",background:T.paper2,border:"1px solid "+T.border,borderRadius:6,padding:"8px 12px",fontFamily:T.font},
             onClick:function(){takePhoto(function(compressed){setForm(function(f){return Object.assign({},f,{photo:compressed});});});}
-          }, form.photo?"📷 Replace photo":"📷 Add photo")
+          }, 
+            e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",style:{flexShrink:0}},
+              e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
+              e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
+            ),
+            form.photo?"Replace photo":"Add photo"
+          )
         ),
         e("div",{style:{marginBottom:12}},
           e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},"Expires (optional)"),
@@ -3838,7 +3844,13 @@ function App() {
           e("button",{
             style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,color:"#3c4540",cursor:"pointer",background:"#efe9d8",border:"1px solid #d8cfb8",borderRadius:6,padding:"8px 12px",fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"},
             onClick:function(){takePhoto(function(compressed){setEditForm(function(f){return Object.assign({},f,{photo:compressed});});});}
-          }, editForm.photo?"📷 Replace photo":"📷 Add photo")
+          }, 
+            e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",style:{flexShrink:0}},
+              e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
+              e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
+            ),
+            editForm.photo?"Replace photo":"Add photo"
+          )
         ),
         e("div",{style:{display:"flex",gap:8}},
           e("button",{style:{flex:1,padding:"9px",background:"none",border:"1px solid #d8cfb8",borderRadius:8,fontSize:13,color:"#6f786f",cursor:"pointer"},onClick:function(){setEditPin(null);}},"Cancel"),

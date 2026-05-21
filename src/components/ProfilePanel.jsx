@@ -206,7 +206,8 @@ export function ProfilePanel(props) {
                 background:T.forest,color:T.paper,
                 fontSize:13,fontWeight:600,cursor:"pointer"
               }}>
-                📷 Choose photo
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy={13} r="4" stroke="currentColor" strokeWidth={2}/></svg>
+                Choose photo
                 <input type="file" accept="image/*" style={{display:"none"}} onChange={(ev) => {
                   var file=ev.target.files[0]; if(!file) return;
                   flash("Uploading…");
@@ -319,13 +320,19 @@ export function ProfilePanel(props) {
               {!trailsCollapsed && user && (
                 <>
                   <button
-                    style={Object.assign({},S.miniBtn,{background:"transparent",border:"1px solid "+T.forest,color:T.forest,display:"flex",alignItems:"center",gap:4,fontSize:11,padding:"4px 8px"})}
+                    style={Object.assign({},S.miniBtn,{background:"transparent",border:"1px solid "+T.forest,color:T.forest,display:"flex",alignItems:"center",gap:5,fontSize:11,padding:"4px 8px"})}
                     onClick={function(e){ e.stopPropagation(); if(fileInputRef.current) fileInputRef.current.click(); }}
-                  >📤 GPX</button>
+                  >
+                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1M12 4v12m0-12L8 8m4-4l4 4" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    GPX
+                  </button>
                   <button
-                    style={Object.assign({},S.miniBtn,{background:T.forest,color:T.paper,border:"none",display:"flex",alignItems:"center",gap:4,fontSize:11,padding:"4px 8px"})}
+                    style={Object.assign({},S.miniBtn,{background:T.forest,color:T.paper,border:"none",display:"flex",alignItems:"center",gap:5,fontSize:11,padding:"4px 8px"})}
                     onClick={function(e){ e.stopPropagation(); props.setOpen(false); if(props.onStartTrailRecording) props.onStartTrailRecording(); }}
-                  ><span style={{fontSize:8}}>🔴</span> Record</button>
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={2.2}/><circle cx={12} cy={12} r={4.5} fill="#e05050"/></svg>
+                    Record
+                  </button>
                 </>
               )}
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:trailsCollapsed?"rotate(0deg)":"rotate(180deg)",flexShrink:0}}>
@@ -551,7 +558,8 @@ export function ProfilePanel(props) {
                 })}
                 onClick={function(){ setShowCreateChallengeModal(true); }}
               >
-                <span>➕ Design Quest</span>
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"/></svg>
+                <span>Design Quest</span>
               </button>
             )}
           </div>
@@ -850,7 +858,8 @@ export function ProfilePanel(props) {
                 })}
                 onClick={function(){ setShowCreatePackModal(true); }}
               >
-                <span>➕ Create Collection</span>
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"/></svg>
+                <span>Create Collection</span>
               </button>
             )}
           </div>
@@ -895,26 +904,31 @@ export function ProfilePanel(props) {
                                 background: isCurrentActive ? T.forest : "transparent",
                                 color: isCurrentActive ? T.paper : T.forest,
                                 border: "1px solid " + T.forest,
-                                padding: "4px 10px"
+                                padding: "4px 10px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6
                               })}
                               onClick={function(){
                                 props.onSelectMapPack(isCurrentActive ? null : pack);
                               }}
                             >
-                              {isCurrentActive ? "🗺️ Active Collection" : "🗺️ View on Map"}
+                              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <span>{isCurrentActive ? "Active Collection" : "View on Map"}</span>
                             </button>
                           </div>
                         </div>
                         {user && pack.owner === uname && (
                           <button 
-                            style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
+                            style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4,display:"flex",alignItems:"center",justifyContent:"center"}}
                             onClick={function(){
                               if(confirm("Delete this collection?")){
                                 props.onDeleteMapPack(pack.id);
                               }
                             }}
+                            title="Delete collection"
                           >
-                            🗑️
+                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-6 5v6m4-6v6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </button>
                         )}
                       </div>
@@ -953,13 +967,18 @@ export function ProfilePanel(props) {
                     </div>
                     <div style={{flex:1}}>
                       <div style={{fontWeight:600,fontSize:15,color:T.ink}}>{f.following}</div>
-                      <div style={{fontSize:11,color:bellOn?T.forest:T.ink4,marginTop:1}}>{bellOn?"🔔 Notifying":"🔕 Muted"}</div>
+                      <div style={{fontSize:11,color:bellOn?T.forest:T.ink4,marginTop:2,display:"flex",alignItems:"center",gap:4}}>
+                        {bellOn 
+                          ? <><svg width={11} height={11} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>Notifying</>
+                          : <><svg width={11} height={11} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M13.73 21a2 2 0 0 1-3.46 0M18.8 13A6 6 0 0 0 6 8c0 1.25.25 2.44.7 3.5M3 17h14M18 8c0 3 .66 5.5 1.5 7M2 2l20 20" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>Muted</>
+                        }
+                      </div>
                     </div>
                     <button
                       title={bellOn?"Mute new pin notifications":"Get notified of new pins"}
                       style={{width:34,height:34,borderRadius:8,border:"1px solid "+(bellOn?T.forest:T.border),
                         background:bellOn?T.forestPale:"transparent",
-                        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:16}}
+                        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,color:bellOn?T.forest:T.ink3}}
                       onClick={(ev) => {
                         ev.stopPropagation();
                         var next = bellOn ? "0" : "1";
@@ -968,7 +987,10 @@ export function ProfilePanel(props) {
                         setShowAllFollowing(function(v){return v;});
                       }}
                     >
-                      {bellOn ? "🔔" : "🔕"}
+                      {bellOn 
+                        ? <svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        : <svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M13.73 21a2 2 0 0 1-3.46 0M18.8 13A6 6 0 0 0 6 8c0 1.25.25 2.44.7 3.5M3 17h14M18 8c0 3 .66 5.5 1.5 7M2 2l20 20" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      }
                     </button>
                     <button
                       style={{padding:"6px 14px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:13,cursor:"pointer",color:T.ink2}}

@@ -250,11 +250,11 @@ export function Comments(props) {
             {uname && (
               <>
                 <button 
-                  style={{background:"#efe9d8",border:"1px solid #d8cfb8",height:34,width:34,fontSize:15,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}
+                  style={{background:"#efe9d8",border:"1px solid #d8cfb8",height:34,width:34,fontSize:15,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,color:"#6f786f"}}
                   onClick={() => setShowPhotoSourcePrompt(true)}
                   title="Attach journal photo"
                 >
-                  📷
+                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy={13} r="4" stroke="currentColor" strokeWidth={2.2}/></svg>
                 </button>
                 <input 
                   id="journal-file-input"
@@ -362,7 +362,10 @@ export function Comments(props) {
               }}
               onClick={() => triggerCapture(true)}
             >
-              📷 Take Photo
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy={13} r="4" stroke="currentColor" strokeWidth={2.2}/></svg>
+                <span>Take Photo</span>
+              </div>
             </button>
             
             <button 
@@ -382,7 +385,10 @@ export function Comments(props) {
               }}
               onClick={() => triggerCapture(false)}
             >
-              🖼️ Choose from Gallery
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Choose from Gallery</span>
+              </div>
             </button>
             
             <button 
