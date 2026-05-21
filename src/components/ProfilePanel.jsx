@@ -310,7 +310,7 @@ export function ProfilePanel(props) {
             onClick={function(){ setTrailsCollapsed(function(v){ return !v; }); }}
           >
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>
+              <div style={S.secHead}>
                 {"Trails & Routes"+(trails.length>0?" \u00b7 "+trails.length:"")}
               </div>
               <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.06em",background:T.forest,color:T.paper,padding:"2.5px 6.5px",borderRadius:6,textTransform:"uppercase",lineHeight:1,fontFamily:T.font}}>GPS</span>
@@ -321,11 +321,11 @@ export function ProfilePanel(props) {
                   <button
                     style={Object.assign({},S.miniBtn,{background:"transparent",border:"1px solid "+T.forest,color:T.forest,display:"flex",alignItems:"center",gap:4,fontSize:11,padding:"4px 8px"})}
                     onClick={function(e){ e.stopPropagation(); if(fileInputRef.current) fileInputRef.current.click(); }}
-                  >\ud83d\udce4 GPX</button>
+                  >📤 GPX</button>
                   <button
                     style={Object.assign({},S.miniBtn,{background:T.forest,color:T.paper,border:"none",display:"flex",alignItems:"center",gap:4,fontSize:11,padding:"4px 8px"})}
                     onClick={function(e){ e.stopPropagation(); props.setOpen(false); if(props.onStartTrailRecording) props.onStartTrailRecording(); }}
-                  ><span style={{fontSize:8}}>\ud83d\udd34</span> Record</button>
+                  ><span style={{fontSize:8}}>🔴</span> Record</button>
                 </>
               )}
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:trailsCollapsed?"rotate(0deg)":"rotate(180deg)",flexShrink:0}}>
@@ -478,7 +478,7 @@ export function ProfilePanel(props) {
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
             onClick={function(){ setBadgesCollapsed(function(v){ return !v; }); }}
           >
-            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>Achievements</div>
+            <div style={S.secHead}>Achievements</div>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:badgesCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -501,19 +501,13 @@ export function ProfilePanel(props) {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                fontSize: 13,
-                letterSpacing: "0.06em",
-                color: T.ink,
-                fontFamily: T.font,
-                fontWeight: 700,
-                textTransform: "uppercase",
                 cursor: "pointer",
                 userSelect: "none"
               }}
               onClick={function(){ setQuestsCollapsed(function(prev){ return !prev; }); }}
             >
               <span style={{fontSize: 10, color: T.ink3, display: "inline-block", transition: "transform 0.2s", transform: questsCollapsed ? "rotate(0deg)" : "rotate(90deg)"}}>▶</span>
-              <span>Explorer Quests</span>
+              <span style={S.secHead}>Explorer Quests</span>
               <span 
                 className="pm-info-btn"
                 style={{
@@ -794,12 +788,6 @@ export function ProfilePanel(props) {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                fontSize: 13,
-                letterSpacing: "0.06em",
-                color: T.ink,
-                fontFamily: T.font,
-                fontWeight: 700,
-                textTransform: "uppercase",
                 cursor: mapPacks.length > 1 ? "pointer" : "default",
                 userSelect: "none"
               }}
@@ -818,7 +806,7 @@ export function ProfilePanel(props) {
                   transform: collectionsCollapsed ? "rotate(0deg)" : "rotate(90deg)"
                 }}>▶</span>
               )}
-              <span>Collections</span>
+              <span style={S.secHead}>Collections</span>
               <span 
                 className="pm-info-btn"
                 style={{
@@ -948,7 +936,7 @@ export function ProfilePanel(props) {
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
             onClick={function(){ setFollowingCollapsed(function(v){ return !v; }); }}
           >
-            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>{"Following · "+userFollows.length}</div>
+            <div style={S.secHead}>{"Following · "+userFollows.length}</div>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:followingCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -1009,7 +997,7 @@ export function ProfilePanel(props) {
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
             onClick={function(){ setFollowersCollapsed(function(v){ return !v; }); }}
           >
-            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>{"Followers · "+followers.length}</div>
+            <div style={S.secHead}>{"Followers · "+followers.length}</div>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:followersCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -1048,7 +1036,7 @@ export function ProfilePanel(props) {
       {/* ── Settings ───────────────────────────────────────────────────────────── */}
       {!editingProfile && (
         <div style={{padding:"0 22px",borderBottom:"1px solid "+T.borderSoft}}>
-          <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,padding:"20px 0 8px"}}>Settings</div>
+          <div style={Object.assign({}, S.secHead, {padding:"20px 0 8px"})}>Settings</div>
           
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft}}>
             <div style={{flex:1,fontSize:15,color:T.ink}}>Push notifications</div>
@@ -1091,7 +1079,7 @@ export function ProfilePanel(props) {
 
           {/* Offline Maps */}
           <div style={{padding:"16px 0"}}>
-            <div style={{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}}>Offline Maps</div>
+            <div style={Object.assign({}, S.secHead, {marginBottom:10})}>Offline Maps</div>
             <div style={{fontSize:12,color:T.ink3,marginBottom:12,lineHeight:1.5}}>Cache map tiles for use without a signal. Navigate to your destination, then download.</div>
             <div style={{display:"flex",gap:8}}>
               <button

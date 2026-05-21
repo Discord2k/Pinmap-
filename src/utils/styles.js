@@ -16,7 +16,7 @@ export const S = {
   btnOutline:{background:"transparent",color:"#1a201c",border:"1px solid #d8cfb8",padding:"11px 16px",fontWeight:500,fontSize:13.5,cursor:"pointer",borderRadius:10,whiteSpace:"nowrap",transition:"background 0.15s,border-color 0.15s"},
   miniBtn:{background:"#f6f1e4",border:"1px solid #d8cfb8",color:"#3c4540",padding:"6px 12px",fontSize:12,cursor:"pointer",borderRadius:18,fontWeight:500,transition:"background 0.15s",letterSpacing:"0.01em"},
   chip:{background:"#dde6dc",border:"1px solid #dde6dc",color:"#1f4a30",padding:"5px 12px",fontSize:12,cursor:"pointer",borderRadius:18,fontWeight:500,letterSpacing:"0.005em"},
-  secHead:{fontSize:10.5,letterSpacing:"0.16em",color:"#6f786f",textTransform:"uppercase",marginBottom:10,fontWeight:600,fontFamily:"'JetBrains Mono', ui-monospace, monospace"},
+  secHead:{fontSize:12.5,letterSpacing:"0.06em",color:T.ink,textTransform:"uppercase",fontWeight:800,fontFamily:T.font},
   hint:{fontSize:13.5,color:"#6f786f",lineHeight:1.65},
   card:{background:"#fbf8ee",border:"1px solid #e6dfca",borderRadius:14,padding:"14px 16px",marginBottom:10,cursor:"pointer",position:"relative",boxShadow:"0 1px 0 rgba(28,32,28,0.02)",transition:"border-color 0.15s, box-shadow 0.15s"}
 };
