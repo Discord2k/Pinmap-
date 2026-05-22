@@ -3685,7 +3685,21 @@ function App() {
             onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}})
         ),
         e("div",{style:{marginBottom:12}},
-          e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},t("link_trail")),
+          e("div",{style:{display:"flex",alignItems:"center",gap:6,marginBottom:4}},
+            e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,margin:0}},t("link_trail")),
+            e("button",{
+              type:"button",
+              style:{
+                background:"none",border:"none",padding:0,cursor:"pointer",color:T.ink3,
+                display:"inline-flex",alignItems:"center",justifyContent:"center",
+                opacity:0.7,fontSize:13
+              },
+              onClick:function(ev){
+                ev.preventDefault();
+                alert(t("link_trail_help"));
+              }
+            },"❓")
+          ),
           e("select",{
             style:S.input,
             value:form.trail_id || "",
@@ -4366,7 +4380,21 @@ function App() {
           )
         ),
         e("div",{style:{marginBottom:12}},
-          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},t("link_trail")),
+          e("div",{style:{display:"flex",alignItems:"center",gap:6,marginBottom:6}},
+            e("div",{style:{fontSize:11,color:"#6f786f",margin:0}},t("link_trail")),
+            e("button",{
+              type:"button",
+              style:{
+                background:"none",border:"none",padding:0,cursor:"pointer",color:T.ink3,
+                display:"inline-flex",alignItems:"center",justifyContent:"center",
+                opacity:0.7,fontSize:13
+              },
+              onClick:function(ev){
+                ev.preventDefault();
+                alert(t("link_trail_help"));
+              }
+            },"❓")
+          ),
           e("select",{
             style:Object.assign({},S.input),
             value:editForm.trail_id || "",
