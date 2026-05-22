@@ -8,6 +8,7 @@ import { Comments } from './components/Comments';
 import { PinCard } from './components/PinCard';
 import { ProfilePanel } from './components/ProfilePanel';
 import { MineTab } from './components/MineTab';
+import { AdminPanel } from './components/AdminPanel';
 import { WhatsNew } from './components/WhatsNew';
 import { CompassModal } from './components/CompassModal';
 import { TrailRecorder } from './components/TrailRecorder';
@@ -101,8 +102,6 @@ function App() {
   var sReadyToShowBanner=useState(false); var readyToShowBanner=sReadyToShowBanner[0]; var setReadyToShowBanner=sReadyToShowBanner[1];
   var s45=useState(false); var pushEnabled=s45[0]; var setPushEnabled=s45[1];
   var s46=useState(null); var notifPin=s46[0]; var setNotifPin=s46[1];
-  var s47=useState(null); var adminStats=s47[0]; var setAdminStats=s47[1];
-  var s48=useState(false); var adminLoading=s48[0]; var setAdminLoading=s48[1];
   var s49=useState([]); var activeUsers=s49[0]; var setActiveUsers=s49[1];
   var s50=useState([]); var savedPins=s50[0]; var setSavedPins=s50[1];
   var s55=useState(false); var showExpiringOnly=s55[0]; var setShowExpiringOnly=s55[1];
@@ -1081,13 +1080,6 @@ function App() {
   useEffect(function(){
     var name = user ? (user.user_metadata&&user.user_metadata.full_name ? user.user_metadata.full_name : (user.email?user.email.split("@")[0]:"")) : "";
     if(pins.length > 0 && name && name !== "guest") checkNewComments(pins, name);
-    if(tab === "admin" && uname === "Seth Gray") loadAdminStats();
-    // Auto-refresh admin stats every 30 seconds while on admin tab
-    var adminInterval = null;
-    if(tab === "admin" && uname === "Seth Gray"){
-      adminInterval = setInterval(function(){ loadAdminStats(); }, 30000);
-    }
-    return function(){ if(adminInterval) clearInterval(adminInterval); };
     // Load comment counts + activity feed when Mine tab opens
     if(tab==="mine" && pins.length>0 && name && name!=="guest"){
       var myPinIds=pins.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
@@ -1648,68 +1640,7 @@ function App() {
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
-  function loadAdminStats() {
-    if(uname !== "Seth Gray") return;
-    setAdminLoading(true);
-    var now = new Date();
-    var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    var weekStart = new Date(now.getTime() - 7*24*60*60*1000).toISOString();
-    var fiveMinAgo = new Date(Date.now()-5*60*1000).toISOString();
-    Promise.all([
-      sb.from("pins").select("id,owner,created_at,tags,lat,lng").order("created_at",{ascending:false}),
-      sb.from("comments").select("id,owner,created_at"),
-      sb.from("push_subscriptions").select("owner"),
-      sb.from("follows").select("owner,tag"),
-      sb.from("user_follows").select("owner,following"),
-      sb.from("notifications").select("id,owner,created_at,seen"),
-      sb.from("presence").select("*").gte("last_seen",fiveMinAgo)
-    ]).then(function(results) {
-      var pins = results[0].data||[];
-      var comments = results[1].data||[];
-      var subs = results[2].data||[];
-      var tagFollows = results[3].data||[];
-      var userFollows = results[4].data||[];
-      var notifs = results[5].data||[];
-      var activeNow = results[6].data||[];
 
-      // Unique users
-      var allOwners = [...new Set(pins.map(function(p){return p.owner;}))];
-      // Pins today
-      var pinsToday = pins.filter(function(p){return p.created_at>=todayStart;}).length;
-      var pinsWeek = pins.filter(function(p){return p.created_at>=weekStart;}).length;
-      // Comments today
-      var commentsToday = comments.filter(function(c){return c.created_at>=todayStart;}).length;
-      // Top users by pin count
-      var userPinCounts = {};
-      pins.forEach(function(p){ userPinCounts[p.owner]=(userPinCounts[p.owner]||0)+1; });
-      var topUsers = Object.keys(userPinCounts).map(function(u){return {user:u,count:userPinCounts[u]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10);
-      // Top tags
-      var tagCounts = {};
-      pins.forEach(function(p){(p.tags||[]).forEach(function(t){tagCounts[t]=(tagCounts[t]||0)+1;});});
-      var topTags = Object.keys(tagCounts).map(function(t){return {tag:t,count:tagCounts[t]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10);
-      // Recent pins with location
-      var recentPins = pins.slice(0,20);
-      // Push enabled users
-      var pushUsers = [...new Set(subs.map(function(s){return s.owner;}))];
-      // Unseen notifications
-      var unseenNotifs = notifs.filter(function(n){return !n.seen;}).length;
-
-      setAdminStats({
-        totalPins: pins.length,
-        totalComments: comments.length,
-        totalUsers: allOwners.length,
-        pinsToday, pinsWeek, commentsToday,
-        topUsers, topTags, recentPins,
-        pushEnabled: pushUsers.length,
-        tagFollows: tagFollows.length,
-        userFollows: userFollows.length,
-        unseenNotifs, pushUsers,
-        activeNow: activeNow,
-        activeCount: activeNow.length
-      });
-      setAdminLoading(false);
-    });
-  }
 
   function focusPin(pin) {
     if(pin.owner!==uname && (mapLayerRef.current==="mine"||mapLayerRef.current==="none")){
@@ -3736,35 +3667,16 @@ function App() {
         )
       ),
 
-      tab==="admin" && uname==="Seth Gray" && e("div",{style:{padding:"16px",overflowY:"auto",height:"100%",background:T.paper}},
-        e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:10}},"Admin · Seth Gray"),
-        adminLoading&&e("div",{style:{color:T.ink3,fontSize:13,padding:"20px 0"}},"Loading stats…"),
-        adminStats&&e("div",null,
-          e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
-            [["📍","Total Pins",adminStats.totalPins],["💬","Total Comments",adminStats.totalComments],
-             ["👤","Total Users",adminStats.totalUsers],["🔥","Active (7d)",adminStats.activeCount]
-            ].map(function(s,i){
-              return e("div",{key:i,style:{background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,padding:"14px",textAlign:"center"}},
-                e("div",{style:{fontSize:11,marginBottom:4}},s[0]),
-                e("div",{style:{fontSize:22,fontWeight:700,color:T.ink}},(s[2]||0).toLocaleString()),
-                e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono,letterSpacing:"0.1em",textTransform:"uppercase",marginTop:2}},s[1])
-              );
-            })
-          ),
-          adminStats.recentPins&&adminStats.recentPins.length>0&&e("div",null,
-            e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:10}},"Recent Pins"),
-            adminStats.recentPins.slice(0,8).map(function(p,i){
-              return e("div",{key:i,style:{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid "+T.borderSoft}},
-                e("div",{style:{flex:1}},
-                  e("div",{style:{fontWeight:600,fontSize:14,color:T.ink}},p.name),
-                  e("div",{style:{fontSize:12,color:T.ink3}},"@"+(p.owner||"")+" · "+(p.created_at||"").slice(0,10))
-                )
-              );
-            })
-          )
-        ),
-        e("button",{style:{marginTop:16,padding:"10px 20px",borderRadius:10,background:T.forest,color:T.paper,border:"none",cursor:"pointer",fontSize:13,fontWeight:600},onClick:loadAdminStats},"↺ Refresh")
-      ),
+      tab==="admin" && uname==="Seth Gray" && e(AdminPanel,{
+        uname: uname,
+        lang: lang,
+        t: t,
+        flash: flash,
+        setOpen: setOpen,
+        focusPin: focusPin,
+        loadUserProfile: loadUserProfile,
+        focusUserPins: focusUserPins
+      }),
 
       tab==="mine" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",background:T.paper}},
         e(MineTab,{
