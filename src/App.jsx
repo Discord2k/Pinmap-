@@ -3777,6 +3777,7 @@ function App() {
           saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
           markCommentsSeen:markCommentsSeen,
           myActivity:myActivity, pins:pins,
+          setPins:setPins, flash:flash,
           lang:lang, t:t
         })
       ),
