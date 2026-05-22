@@ -3154,7 +3154,7 @@ function App() {
 
       e("div",{
         className: "pm-drawer-content" + (tab === "search" ? " pm-search-tab-content" : ""),
-        style: (unreadCount === 0 && tab !== "search") ? {display: "none"} : {flex:1,overflowY:"auto"}
+        style: {flex:1,overflowY:"auto"}
       },
         unreadCount>0 && e("div",{
           className: "pm-unread-banner",
