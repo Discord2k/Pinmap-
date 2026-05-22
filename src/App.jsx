@@ -110,6 +110,12 @@ function App() {
   var s65=useState("#2a5d3c"); var importColor=s65[0]; var setImportColor=s65[1];
   var s66=useState(""); var importTags=s66[0]; var setImportTags=s66[1];
   var s67=useState(null); var importPreview=s67[0]; var setImportPreview=s67[1];
+  var sImportPrivacy=useState("public"); var importPrivacy=sImportPrivacy[0]; var setImportPrivacy=sImportPrivacy[1];
+  var sGpxImportData=useState(null); var gpxImportData=sGpxImportData[0]; var setGpxImportData=sGpxImportData[1];
+  var sGpxImportName=useState(""); var gpxImportName=sGpxImportName[0]; var setGpxImportName=sGpxImportName[1];
+  var sGpxImportDesc=useState(""); var gpxImportDesc=sGpxImportDesc[0]; var setGpxImportDesc=sGpxImportDesc[1];
+  var sGpxImportColor=useState("#2a5d3c"); var gpxImportColor=sGpxImportColor[0]; var setGpxImportColor=sGpxImportColor[1];
+  var sGpxImportPrivacy=useState("public"); var gpxImportPrivacy=sGpxImportPrivacy[0]; var setGpxImportPrivacy=sGpxImportPrivacy[1];
   var sFocusedUser=useState(null); var focusedUser=sFocusedUser[0]; var setFocusedUser=sFocusedUser[1];
   var s90=useState([]); var checkins=s90[0]; var setCheckins=s90[1];
   var s91=useState(0); var selPinCheckinsCount=s91[0]; var setSelPinCheckinsCount=s91[1];
@@ -377,7 +383,7 @@ function App() {
     var tags = importTags.split(/[,\s]+/).filter(Boolean).map(function(t){return t.replace(/^#/,"");});
     var toSave = importPreview.map(function(p) {
       return { id: uid(), name: p.name, description: p.description, lat: p.lat, lng: p.lng,
-               tags: tags, color: importColor, privacy: "public", owner: uname,
+               tags: tags, color: importColor, privacy: importPrivacy, owner: uname,
                created_at: new Date().toISOString() };
     });
     var saved = 0;
@@ -387,6 +393,7 @@ function App() {
         setShowImport(false);
         setImportPreview(null);
         setImportTags("");
+        setImportPrivacy("public");
         flash(t("toast_import_success", {count: saved}));
         api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });
         return;
@@ -1306,27 +1313,15 @@ function App() {
         var descNode = doc.querySelector("metadata > desc") || doc.querySelector("trk > desc");
         var desc = descNode ? descNode.textContent.trim() : "Imported GPX route";
 
-        var importedTrail = {
+        setGpxImportName(name || "Imported Trail");
+        setGpxImportDesc(desc || "");
+        setGpxImportColor("#2a5d3c");
+        setGpxImportPrivacy("public");
+        setGpxImportData({
           id: uid(),
-          name: name || "Imported Trail",
-          description: desc,
-          color: "#2a5d3c",
           coordinates: coordinates,
-          distance_km: totalDist,
-          duration_seconds: 0,
-          owner: uname,
-          is_public: true
-        };
-
-        api.createTrail(importedTrail)
-          .then(function() {
-            flash("📥 GPX Trail imported successfully!");
-            api.getTrails(uname).then(function(data) { setTrails(data || []); });
-          })
-          .catch(function(err) {
-            console.error("Error saving imported trail:", err);
-            flash("❌ Error saving imported trail");
-          });
+          distance_km: totalDist
+        });
 
       } catch (err) {
         console.error("GPX parsing error:", err);
@@ -1334,6 +1329,32 @@ function App() {
       }
     };
     reader.readAsText(file);
+  }
+
+  function confirmGpxImport() {
+    if (!gpxImportData) return;
+    var newTrail = {
+      id: gpxImportData.id,
+      name: gpxImportName.trim() || "Imported Trail",
+      description: gpxImportDesc.trim(),
+      color: gpxImportColor,
+      coordinates: gpxImportData.coordinates,
+      distance_km: gpxImportData.distance_km,
+      duration_seconds: 0,
+      owner: uname,
+      is_public: gpxImportPrivacy === "public"
+    };
+
+    api.createTrail(newTrail)
+      .then(function() {
+        flash("📥 GPX Trail imported successfully!");
+        api.getTrails(uname).then(function(data) { setTrails(data || []); });
+        setGpxImportData(null);
+      })
+      .catch(function(err) {
+        console.error("Error saving imported trail:", err);
+        flash("❌ Error saving imported trail");
+      });
   }
 
   useEffect(function(){
@@ -4042,7 +4063,7 @@ function App() {
       e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 22px 16px",borderBottom:"1px solid "+T.borderSoft,flexShrink:0}},
         e("div",{style:{fontSize:19,fontWeight:700,color:T.ink}},"Import Pins"),
         e("button",{style:{width:34,height:34,borderRadius:"50%",background:"rgba(26,32,28,0.08)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"},
-          onClick:function(){setShowImport(false);setImportPreview(null);setImportTags("");setImportColor("#2a5d3c");}},
+          onClick:function(){setShowImport(false);setImportPreview(null);setImportTags("");setImportColor("#2a5d3c");setImportPrivacy("public");}},
           e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},e("path",{d:"M18 6L6 18M6 6l12 12",stroke:T.ink,strokeWidth:2.5,strokeLinecap:"round"}))
         )
       ),
@@ -4067,9 +4088,28 @@ function App() {
             })
           )
         ),
-        // Step 3: File
+        // Step 3: Privacy
+        e("div",{style:{marginBottom:20}},
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}},"Step 3 — Privacy"),
+          e("div",{style:{display:"flex",gap:6}},
+            ["public","private","insider"].map(function(p){
+              return e("button",{key:p,
+                style:{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+(importPrivacy===p?T.forest:T.border),
+                  background:importPrivacy===p?T.forestPale:"transparent",color:importPrivacy===p?T.forest:T.ink2,
+                  fontSize:12,cursor:"pointer",fontWeight:importPrivacy===p?600:400,textTransform:"capitalize"},
+                onClick:function(){
+                  setImportPrivacy(p);
+                  if(p==="insider" && !localStorage.getItem("pm-seen-insider-explainer")){
+                    setShowInsiderExplainer(true);
+                    localStorage.setItem("pm-seen-insider-explainer","1");
+                  }
+                }},t("form_privacy_" + p));
+            })
+          )
+        ),
+        // Step 4: File
         e("div",{style:{marginBottom:24}},
-          e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}},"Step 3 — Choose file"),
+          e("div",{style:{fontSize:10.5,letterSpacing:"0.14em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600,marginBottom:10}},"Step 4 — Choose file"),
           e("label",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,padding:"28px 20px",border:"2px dashed "+T.border,borderRadius:14,background:T.paper2,cursor:"pointer",textAlign:"center"}},
             e("svg",{width:32,height:32,viewBox:"0 0 24 24",fill:"none"},
               e("path",{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",stroke:T.ink3,strokeWidth:1.8,strokeLinecap:"round"}),
@@ -4115,6 +4155,75 @@ function App() {
           onClick:doImport,
           disabled:importLoading
         },importLoading?"Importing…":"Import "+importPreview.length+" Pin"+(importPreview.length!==1?"s":""))
+      )
+    ),
+
+    gpxImportData&&e("div",{style:{
+      position:"fixed",inset:0,background:"rgba(26,32,28,0.5)",backdropFilter:"blur(4px)",
+      display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:2500,
+      padding:"32px 16px 80px",overflowY:"auto",boxSizing:"border-box"
+    }},
+      e("div",{style:{
+        background:T.paper,border:"1px solid "+T.border,borderRadius:18,
+        width:"100%",maxWidth:400,padding:20,boxShadow:T.shadowLg,
+        animation:"slideUp 0.25s ease-out",boxSizing:"border-box"
+      }},
+        e("h3",{style:{marginTop:0,marginBottom:14,color:T.ink,fontFamily:T.font,fontSize:18}},t("import_trail_title")),
+        e("form",{onSubmit:function(ev){ev.preventDefault(); confirmGpxImport();}},
+          // Name
+          e("div",{style:{marginBottom:12}},
+            e("label",{style:{fontSize:11,fontFamily:T.mono,color:T.ink3,textTransform:"uppercase",display:"block",marginBottom:4}},t("trail_name")),
+            e("input",{type:"text",required:true,style:S.input,value:gpxImportName,
+              placeholder:t("trail_name_placeholder"),
+              onChange:function(e){setGpxImportName(e.target.value);}})
+          ),
+          // Description
+          e("div",{style:{marginBottom:12}},
+            e("label",{style:{fontSize:11,fontFamily:T.mono,color:T.ink3,textTransform:"uppercase",display:"block",marginBottom:4}},t("form_label_desc")),
+            e("textarea",{rows:3,style:S.textarea,value:gpxImportDesc,
+              placeholder:t("trail_desc_placeholder"),
+              onChange:function(e){setGpxImportDesc(e.target.value);}})
+          ),
+          // Color
+          e("div",{style:{marginBottom:16}},
+            e("label",{style:{fontSize:11,fontFamily:T.mono,color:T.ink3,textTransform:"uppercase",display:"block",marginBottom:6}},t("trail_color")),
+            e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+              ["#2a5d3c","#1565c0","#b85c2a","#c62828","#6a1b9a","#00695c","#e65100","#4e342e","#37474f","#f57f17"].map(function(c){
+                var isSelected = gpxImportColor === c;
+                return e("button",{key:c,type:"button",
+                  onClick:function(){setGpxImportColor(c);},
+                  style:{width:28,height:28,borderRadius:"50%",backgroundColor:c,
+                    border:isSelected?"3px solid "+T.ink:"1px solid rgba(0,0,0,0.15)",
+                    transform:isSelected?"scale(1.15)":"none",cursor:"pointer",transition:"all 0.1s ease"}});
+              })
+            )
+          ),
+          // Privacy
+          e("div",{style:{marginBottom:20}},
+            e("label",{style:{fontSize:11,fontFamily:T.mono,color:T.ink3,textTransform:"uppercase",display:"block",marginBottom:6}},t("form_label_visibility")),
+            e("div",{style:{display:"flex",gap:6}},
+              ["public","private","insider"].map(function(p){
+                return e("button",{key:p,type:"button",
+                  style:{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+(gpxImportPrivacy===p?T.forest:T.border),
+                    background:gpxImportPrivacy===p?T.forestPale:"transparent",color:gpxImportPrivacy===p?T.forest:T.ink2,
+                    fontSize:12,cursor:"pointer",fontWeight:gpxImportPrivacy===p?600:400,textTransform:"capitalize"},
+                  onClick:function(){
+                    setGpxImportPrivacy(p);
+                    if(p==="insider" && !localStorage.getItem("pm-seen-insider-explainer")){
+                      setShowInsiderExplainer(true);
+                      localStorage.setItem("pm-seen-insider-explainer","1");
+                    }
+                  }},t("form_privacy_" + p));
+              })
+            )
+          ),
+          // Actions
+          e("div",{style:{display:"flex",gap:10}},
+            e("button",{type:"button",style:Object.assign({},S.btnOutline,{flex:1}),
+              onClick:function(){setGpxImportData(null);}},t("back")),
+            e("button",{type:"submit",style:Object.assign({},S.btn,{flex:2})},t("confirm_import"))
+          )
+        )
       )
     ),
 

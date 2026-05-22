@@ -381,13 +381,44 @@ export function MineTab(props) {
                         <div style={{display:"flex",alignItems:"center",gap:10,fontSize:12,color:T.ink4}}>
                           <span>{"↑ "+upvoteCount+(pinHasUpvoteNew?" 🆕":"")}</span>
                           {commentCount>0 && <span style={{color:pinHasUnread?"#b85c2a":T.ink4,fontWeight:pinHasUnread?600:400}}>{"💬 "+commentCount+(pinHasUnread?" " + t('new_tag').toLowerCase():"")}</span>}
-                          <span style={{marginLeft:"auto",fontSize:10,letterSpacing:"0.08em",textTransform:"uppercase"}}>
+                          <span style={(function() {
+                            var prv = (p.privacy || "").toLowerCase();
+                            var base = {
+                              marginLeft: "auto",
+                              fontSize: 9,
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              padding: "2px 8px",
+                              borderRadius: 12,
+                              border: "1px solid"
+                            };
+                            if (prv === 'private') {
+                              return Object.assign(base, {
+                                color: "#37474f",
+                                backgroundColor: "#eceff1",
+                                borderColor: "#cfd8dc"
+                              });
+                            } else if (prv === 'insider') {
+                              return Object.assign(base, {
+                                color: "#b85c2a",
+                                backgroundColor: "#fdf3eb",
+                                borderColor: "#f8d7c4"
+                              });
+                            } else {
+                              return Object.assign(base, {
+                                color: T.forest,
+                                backgroundColor: T.forestPale,
+                                borderColor: "#c7d8c5"
+                              });
+                            }
+                          })()}>
                             {(function() {
                               var prv = (p.privacy || "").toLowerCase();
                               if (prv === 'public') return t('form_privacy_public');
                               if (prv === 'private') return t('form_privacy_private');
                               if (prv === 'insider') return t('form_privacy_insider');
-                              return p.privacy;
+                              return p.privacy || t('form_privacy_public');
                             })()}
                           </span>
                         </div>
