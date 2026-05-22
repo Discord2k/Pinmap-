@@ -58,14 +58,17 @@ function App() {
   var s35=useState("");      var addrSearch=s35[0];    var setAddrSearch=s35[1];
   var s36=useState([]);      var addrResults=s36[0];   var setAddrResults=s36[1];
   var s37=useState(false);   var addrLoading=s37[0];   var setAddrLoading=s37[1];
-  var s38=useState("");      var questSearch=s38[0];   var setQuestSearch=s38[1];
+  var s106=useState("");     var questSearch=s106[0];  var setQuestSearch=s106[1];
+  var s103=useState("");      var trailSearch=s103[0];   var setTrailSearch=s103[1];
+  var s104=useState([]);      var trailSearchResults=s104[0]; var setTrailSearchResults=s104[1];
+  var s105=useState(false);   var trailSearchLoading=s105[0]; var setTrailSearchLoading=s105[1];
   var s10=useState(null);    var searchResults=s10[0]; var setSearchResults=s10[1];
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
-  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c"}); var form=s12[0]; var setForm=s12[1];
+  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",trail_id:""}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
   var s14=useState(null);    var selPin=s14[0];        var setSelPin=s14[1];
   var s21=useState(null);    var editPin=s21[0];       var setEditPin=s21[1];
-  var s22=useState({name:"",description:"",tags:"",color:"#2a5d3c",photo:null}); var editForm=s22[0]; var setEditForm=s22[1];
+  var s22=useState({name:"",description:"",tags:"",color:"#2a5d3c",photo:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
   var s16=useState(null);    var userLL=s16[0];        var setUserLL=s16[1];
   var s17=useState(false);   var locating=s17[0];      var setLocating=s17[1];
@@ -109,6 +112,8 @@ function App() {
   var s67=useState(null); var importPreview=s67[0]; var setImportPreview=s67[1];
   var s90=useState([]); var checkins=s90[0]; var setCheckins=s90[1];
   var s91=useState(0); var selPinCheckinsCount=s91[0]; var setSelPinCheckinsCount=s91[1];
+  var s92=useState(null); var selPinTrail=s92[0]; var setSelPinTrail=s92[1];
+  var s93=useState([]); var savedTrailIds=s93[0]; var setSavedTrailIds=s93[1];
   var s95=useState(false); var showInsiderExplainer=s95[0]; var setShowInsiderExplainer=s95[1];
   var s68=useState(false); var importLoading=s68[0]; var setImportLoading=s68[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
@@ -158,6 +163,57 @@ function App() {
   var [myActivity, setMyActivity] = useState([]);
   var activityCache = useRef({data: null, ts: 0}); // {data:[], ts: ms epoch}
 
+  var wakeLockRef = useRef(null);
+  var appResumedTimeRef = useRef(0);
+
+  async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        console.log("Wake Lock acquired successfully");
+      } catch (err) {
+        console.error("Failed to acquire wake lock:", err);
+      }
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release()
+        .then(function() {
+          wakeLockRef.current = null;
+          console.log("Wake Lock released successfully");
+        })
+        .catch(function(err) {
+          console.error("Failed to release wake lock:", err);
+        });
+    }
+  }
+
+  useEffect(function() {
+    function handleVisibilityChange() {
+      var now = Date.now();
+      if (document.visibilityState === 'visible') {
+        appResumedTimeRef.current = now;
+        if (recordingTrail && !isRecordingPaused) {
+          requestWakeLock();
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return function() {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [recordingTrail, isRecordingPaused]);
+
+  useEffect(function() {
+    return function() {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(function(){});
+      }
+    };
+  }, []);
+
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
@@ -172,7 +228,7 @@ function App() {
     };
     setDrafts(function(d){return [draft].concat(d);});
     flash(t("toast_save_draft"));
-    setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:""});
+    setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:"",trail_id:""});
     setPendingLL(null);
   }
 
@@ -789,6 +845,7 @@ function App() {
     api.getCheckins(uname).then(function(data){setCheckins(data||[]);});
     api.getMapPacks(uname).then(function(data){setMapPacks(data||[]);});
     api.getTrails(uname).then(function(data){setTrails(data||[]);});
+    api.getSavedTrailIds(uname).then(function(data){setSavedTrailIds(data||[]);});
     api.getProfile(uname).then(function(data){
       if(data) setMyProfile(data);
     });
@@ -811,6 +868,18 @@ function App() {
       setSelPinCheckinsCount(count);
     }).catch(function(){
       setSelPinCheckinsCount(0);
+    });
+  }, [selPin]);
+
+  useEffect(function(){
+    if(!selPin) {
+      setSelPinTrail(null);
+      return;
+    }
+    api.getTrailForPin(selPin.id).then(function(trail){
+      setSelPinTrail(trail || null);
+    }).catch(function(){
+      setSelPinTrail(null);
     });
   }, [selPin]);
 
@@ -948,6 +1017,7 @@ function App() {
     setIsRecordingPaused(false);
     
     flash("⏺️ Trail recording started");
+    requestWakeLock();
 
     if (recordingTimerId.current) clearInterval(recordingTimerId.current);
     recordingTimerId.current = setInterval(function() {
@@ -962,7 +1032,16 @@ function App() {
       function(pos) {
         var lat = pos.coords.latitude;
         var lng = pos.coords.longitude;
+        var accuracy = pos.coords.accuracy;
         var now = Date.now();
+
+        // 1. Accuracy Filter
+        var isRecentlyResumed = (now - appResumedTimeRef.current) < 3000;
+        var maxAllowedAccuracy = isRecentlyResumed ? 15 : 30;
+        if (accuracy > maxAllowedAccuracy) {
+          console.log("Discarded point due to poor accuracy:", accuracy, "meters (recently resumed:", isRecentlyResumed, ")");
+          return;
+        }
 
         setUserLL({lat: lat, lng: lng});
         updateUserLocationMarker(lat, lng);
@@ -978,6 +1057,15 @@ function App() {
           var timeElapsed = (now - lastTime) / 1000;
           var distance = distKm(lastPoint[0], lastPoint[1], lat, lng);
           
+          // 2. Speed Filter
+          if (timeElapsed > 0) {
+            var speedKmh = (distance * 3600) / timeElapsed;
+            if (speedKmh > 100) {
+              console.log("Discarded point due to high speed:", speedKmh, "km/h");
+              return;
+            }
+          }
+
           if (timeElapsed >= 5 && distance >= 0.005) {
             setRecordedPoints(function(prev) {
               return prev.concat([[lat, lng]]);
@@ -1005,6 +1093,7 @@ function App() {
 
   function handlePauseTrailRecording() {
     setIsRecordingPaused(true);
+    releaseWakeLock();
     
     if (recordingTimerId.current) {
       clearInterval(recordingTimerId.current);
@@ -1022,6 +1111,7 @@ function App() {
   function handleResumeTrailRecording() {
     setIsRecordingPaused(false);
     flash("▶️ Recording resumed");
+    requestWakeLock();
 
     recordingTimerId.current = setInterval(function() {
       setRecordedDurationSec(function(prev) { return prev + 1; });
@@ -1035,7 +1125,16 @@ function App() {
       function(pos) {
         var lat = pos.coords.latitude;
         var lng = pos.coords.longitude;
+        var accuracy = pos.coords.accuracy;
         var now = Date.now();
+
+        // 1. Accuracy Filter
+        var isRecentlyResumed = (now - appResumedTimeRef.current) < 3000;
+        var maxAllowedAccuracy = isRecentlyResumed ? 15 : 30;
+        if (accuracy > maxAllowedAccuracy) {
+          console.log("Discarded point due to poor accuracy:", accuracy, "meters (recently resumed:", isRecentlyResumed, ")");
+          return;
+        }
 
         setUserLL({lat: lat, lng: lng});
         updateUserLocationMarker(lat, lng);
@@ -1051,6 +1150,15 @@ function App() {
           var timeElapsed = (now - lastTime) / 1000;
           var distance = distKm(lastPoint[0], lastPoint[1], lat, lng);
           
+          // 2. Speed Filter
+          if (timeElapsed > 0) {
+            var speedKmh = (distance * 3600) / timeElapsed;
+            if (speedKmh > 100) {
+              console.log("Discarded point due to high speed:", speedKmh, "km/h");
+              return;
+            }
+          }
+
           if (timeElapsed >= 5 && distance >= 0.005) {
             setRecordedPoints(function(prev) { return prev.concat([[lat, lng]]); });
             setRecordedDistanceKm(function(prev) { return prev + distance; });
@@ -1080,6 +1188,7 @@ function App() {
     setRecordedPoints([]);
     setRecordedDistanceKm(0);
     setRecordedDurationSec(0);
+    releaseWakeLock();
 
     if (recordingTimerId.current) {
       clearInterval(recordingTimerId.current);
@@ -1629,8 +1738,15 @@ function App() {
 
   function openEdit(pin){
     setEditPin(pin);
-    setEditForm({name:pin.name,description:pin.description||"",tags:(pin.tags||[]).join(" "),color:pin.color||"#2a5d3c",photo:pin.photo||null});
+    setEditForm({name:pin.name,description:pin.description||"",tags:(pin.tags||[]).join(" "),color:pin.color||"#2a5d3c",photo:pin.photo||null,trail_id:""});
     setSelPin(null);
+    api.getTrailForPin(pin.id).then(function(t) {
+      if (t) {
+        setEditForm(function(f) { return Object.assign({}, f, {trail_id: t.id}); });
+      }
+    }).catch(function(err) {
+      console.error("Error fetching linked trail:", err);
+    });
   }
 
   function saveEdit(){
@@ -1642,6 +1758,18 @@ function App() {
       var patch={name:editForm.name.trim(),description:editForm.description.trim(),tags:tags,color:editForm.color,photo:photoUrl};
       api.update(editPin.id,patch,uname).then(function(){
         setPins(function(prev){return prev.map(function(p){return p.id===editPin.id?Object.assign({},p,patch):p;});});
+        
+        // Handle updating linked trail
+        api.unlinkTrailFromPin(editPin.id).then(function() {
+          if (editForm.trail_id) {
+            return api.linkTrailToPin(editForm.trail_id, editPin.id);
+          }
+        }).then(function() {
+          api.getTrails(uname).then(function(data) { setTrails(data || []); });
+        }).catch(function(err) {
+          console.error("Error updating trail link:", err);
+        });
+
         setEditPin(null);
         flash("Pin updated!");
       }).catch(function(){flash("Update failed");});
@@ -1675,7 +1803,7 @@ function App() {
           dbPut("pins", Object.assign({}, pinToSave, {_offline:true})).then(function(){
             setPins(function(p){return [Object.assign({},pinToSave,{_offline:true})].concat(p);});
             setQueueCount(function(c){return c+1;});
-            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:""});
+            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:"",trail_id:""});
             setPendingLL(null);setTab("mine");
             flash("📡 Offline — pin saved locally, will sync when online");
           });
@@ -1687,7 +1815,19 @@ function App() {
               if(isFirst) setTimeout(function(){setShowFirstPin(true);},600);
               return [pinToSave].concat(p);
             });
-            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:""});
+            
+            // Link trail if selected
+            if (form.trail_id) {
+              api.linkTrailToPin(form.trail_id, pinToSave.id)
+                .then(function() {
+                  api.getTrails(uname).then(function(data) { setTrails(data || []); });
+                })
+                .catch(function(err) {
+                  console.error("Error linking trail to pin:", err);
+                });
+            }
+
+            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:"",trail_id:""});
             setPendingLL(null);setTab("mine");flash("Pin saved!");
             if(pinToSave.privacy==="public") {
               callEdgeFunction("new_pin", {pinOwner:uname, pinName:pinToSave.name, pinId:pinToSave.id});
@@ -1865,6 +2005,18 @@ function App() {
         flash("No pins found for #"+tag);
       }
     }).catch(function(){flash("Search failed");});
+  }
+
+  function doTrailSearch(){
+    setTrailSearchLoading(true);
+    setTrailSearchResults([]);
+    api.searchTrails(trailSearch).then(function(data){
+      setTrailSearchResults(data || []);
+      setTrailSearchLoading(false);
+    }).catch(function(){
+      setTrailSearchLoading(false);
+      flash("Search failed");
+    });
   }
 
   function findNearby(){
@@ -2803,14 +2955,14 @@ function App() {
           e("input",{
             style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
               borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:10},
-            placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):t("search_placeholder_places_detail"),
-            value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:addrSearch,
-            onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else setAddrSearch(ev.target.value);},
-            onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
+            placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):t("search_placeholder_places_detail"),
+            value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:addrSearch,
+            onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else setAddrSearch(ev.target.value);},
+            onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
           }),
           searchMode!=="quests" && e("button",{
             style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:12},
-            onClick:function(){if(searchMode==="tags")doSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
+            onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
           },t("search_btn")),
           e("div",{style:{display:"flex",borderBottom:"1px solid "+T.borderSoft}},
             e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="tags"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
@@ -2818,7 +2970,9 @@ function App() {
             e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="places"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("places");}
             },"📍 " + t("search_mode_places")),
             e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="quests"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("quests");}
-            },"🏆 " + t("search_mode_quests"))
+            },"🏆 " + t("search_mode_quests")),
+            e("button",{style:{flex:1,padding:"8px 0",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="trails"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("trails");}
+            },"🥾 " + t("search_mode_trails"))
           )
         ),
 
@@ -3063,6 +3217,123 @@ function App() {
                     })
                   );
                 })()
+              )
+            : searchMode==="trails"
+            ? e("div",null,
+                trailSearchLoading&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},t("searching_loading")),
+                !trailSearchLoading&&trailSearchResults.length>0&&e("div",{style:{padding:"10px 0"}},
+                  trailSearchResults.map(function(trail){
+                    return e("div", {
+                      key: trail.id,
+                      style: {
+                        padding: "14px 12px",
+                        background: T.paper2,
+                        border: "1px solid " + T.borderSoft,
+                        borderRadius: 10,
+                        marginBottom: 10,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8
+                      }
+                    },
+                      e("div", {style: {display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8}},
+                        e("div", {style: {flex: 1, minWidth: 0}},
+                          e("div", {style: {fontWeight: 700, fontSize: 15, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, trail.name || "Untitled Trail"),
+                          e("div", {style: {fontSize: 12, color: T.ink3, marginTop: 2}},
+                            "by ",
+                            e("span", {
+                              style: {cursor: "pointer", textDecoration: "underline", color: T.forest, fontWeight: 500},
+                              onClick: function() { loadUserProfile(trail.owner); }
+                            }, "@" + trail.owner),
+                            " · " + Number(trail.distance_km || 0).toFixed(2) + " km" +
+                            (trail.duration_seconds ? " · " + (function(sec){
+                              var h = Math.floor(sec / 3600);
+                              var m = Math.floor((sec % 3600) / 60);
+                              return (h > 0 ? h + "h " : "") + m + "m";
+                            })(trail.duration_seconds) : "")
+                          )
+                        ),
+                        e("span", {
+                          style: {
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            backgroundColor: trail.color || T.forest,
+                            flexShrink: 0,
+                            marginTop: 5
+                          }
+                        })
+                      ),
+                      trail.description && e("div", {
+                        style: {
+                          fontSize: 12.5,
+                          color: T.ink2,
+                          lineHeight: 1.4,
+                          maxHeight: 40,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical"
+                        }
+                      }, trail.description),
+                      e("div", {style: {display: "flex", gap: 8, marginTop: 4}},
+                        e("button", {
+                          style: {
+                            flex: 1,
+                            fontSize: 12,
+                            padding: "6px 12px",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            background: activeTrail && activeTrail.id === trail.id ? T.forest : "transparent",
+                            color: activeTrail && activeTrail.id === trail.id ? "#fff" : T.forest,
+                            border: "1px solid " + T.forest,
+                            fontWeight: 600
+                          },
+                          onClick: function() {
+                            if (activeTrail && activeTrail.id === trail.id) {
+                              setActiveTrail(null);
+                            } else {
+                              setActiveTrail(trail);
+                            }
+                          }
+                        }, activeTrail && activeTrail.id === trail.id ? "Showing" : t("view_trail")),
+                        (uname && uname !== "guest") && (function() {
+                          var isSaved = savedTrailIds.indexOf(trail.id) >= 0;
+                          return e("button", {
+                            style: {
+                              flex: 1,
+                              fontSize: 12,
+                              padding: "6px 12px",
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              background: isSaved ? T.forestPale : "transparent",
+                              color: isSaved ? T.forest : T.ink3,
+                              border: "1px solid " + (isSaved ? T.forest : T.border),
+                              fontWeight: 600
+                            },
+                            onClick: function() {
+                              if (isSaved) {
+                                api.unsaveTrail(trail.id, uname).then(function() {
+                                  setSavedTrailIds(function(prev) { return prev.filter(function(id) { return id !== trail.id; }); });
+                                  api.getTrails(uname).then(function(data) { setTrails(data || []); });
+                                  flash("Trail removed from saves");
+                                }).catch(function() { flash("Unsave failed"); });
+                              } else {
+                                api.saveTrail(trail.id, uname).then(function() {
+                                  setSavedTrailIds(function(prev) { return prev.concat([trail.id]); });
+                                  api.getTrails(uname).then(function(data) { setTrails(data || []); });
+                                  flash("Trail saved to profile!");
+                                }).catch(function() { flash("Save failed"); });
+                              }
+                            }
+                          }, isSaved ? "★ " + t("unsave_trail") : "☆ " + t("save_trail"));
+                        })()
+                      )
+                    );
+                  })
+                ),
+                !trailSearchLoading&&trailSearchResults.length===0&&trailSearch&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},t("no_trails_found"))
               )
             : e("div",null,
                 activeFilter&&e("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft}},
@@ -3348,6 +3619,19 @@ function App() {
           e("input",{type:"datetime-local",style:S.input,value:form.expires_at,
             onChange:function(ev){setForm(function(f){return Object.assign({},f,{expires_at:ev.target.value});});}})
         ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}},t("link_trail")),
+          e("select",{
+            style:S.input,
+            value:form.trail_id || "",
+            onChange:function(ev){setForm(function(f){return Object.assign({},f,{trail_id:ev.target.value});});}
+          },
+            e("option",{value:""},t("none_option")),
+            trails.filter(function(t){return t.owner===uname;}).map(function(trail){
+              return e("option",{key:trail.id,value:trail.id},trail.name||"Untitled Trail");
+            })
+          )
+        ),
         e("div",{style:{display:"flex",gap:8}},
           e("button",{style:Object.assign({},S.btn,{flex:1,background:"transparent",color:T.ink2,border:"1px solid "+T.border}),onClick:saveDraft},t("form_save_draft_btn")),
           e("button",{style:Object.assign({},S.btn,{flex:2}),onClick:savePin},t("publish_pin"))
@@ -3550,6 +3834,83 @@ function App() {
               }, (isInPack ? "✓ " : "＋ ") + g.name);
             });
           })()
+        )
+      ),
+
+      selPinTrail && e("div", {
+        style: {
+          marginTop: 6,
+          marginBottom: 10,
+          background: "rgba(42, 93, 60, 0.04)",
+          border: "1px solid " + T.borderSoft,
+          borderRadius: 10,
+          padding: "10px 12px"
+        }
+      },
+        e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, t("linked_trail_title")),
+        e("div", {style: {display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8}},
+          e("div", {style: {flex: 1, minWidth: 0}},
+            e("div", {style: {fontWeight: 600, fontSize: 13, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, selPinTrail.name || "Untitled Trail"),
+            e("div", {style: {fontSize: 11, color: T.ink3, marginTop: 2}},
+              Number(selPinTrail.distance_km || 0).toFixed(2) + " km" +
+              (selPinTrail.duration_seconds ? " · " + (function(sec){
+                var h = Math.floor(sec / 3600);
+                var m = Math.floor((sec % 3600) / 60);
+                return (h > 0 ? h + "h " : "") + m + "m";
+              })(selPinTrail.duration_seconds) : "")
+            )
+          ),
+          e("div", {style: {display: "flex", gap: 6, flexShrink: 0}},
+            e("button", {
+              style: {
+                fontSize: 11,
+                padding: "5px 10px",
+                borderRadius: 6,
+                cursor: "pointer",
+                background: activeTrail && activeTrail.id === selPinTrail.id ? T.forest : "transparent",
+                color: activeTrail && activeTrail.id === selPinTrail.id ? "#fff" : T.forest,
+                border: "1px solid " + T.forest,
+                fontWeight: 600
+              },
+              onClick: function() {
+                if (activeTrail && activeTrail.id === selPinTrail.id) {
+                  setActiveTrail(null);
+                } else {
+                  setActiveTrail(selPinTrail);
+                }
+              }
+            }, activeTrail && activeTrail.id === selPinTrail.id ? "Showing" : t("view_trail")),
+            (uname && uname !== "guest") && (function() {
+              var isSaved = savedTrailIds.indexOf(selPinTrail.id) >= 0;
+              return e("button", {
+                style: {
+                  fontSize: 11,
+                  padding: "5px 10px",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  background: isSaved ? T.forestPale : "transparent",
+                  color: isSaved ? T.forest : T.ink3,
+                  border: "1px solid " + (isSaved ? T.forest : T.border),
+                  fontWeight: 600
+                },
+                onClick: function() {
+                  if (isSaved) {
+                    api.unsaveTrail(selPinTrail.id, uname).then(function() {
+                      setSavedTrailIds(function(prev) { return prev.filter(function(id) { return id !== selPinTrail.id; }); });
+                      api.getTrails(uname).then(function(data) { setTrails(data || []); });
+                      flash("Trail removed from saves");
+                    }).catch(function() { flash("Unsave failed"); });
+                  } else {
+                    api.saveTrail(selPinTrail.id, uname).then(function() {
+                      setSavedTrailIds(function(prev) { return prev.concat([selPinTrail.id]); });
+                      api.getTrails(uname).then(function(data) { setTrails(data || []); });
+                      flash("Trail saved to profile!");
+                    }).catch(function() { flash("Save failed"); });
+                  }
+                }
+              }, isSaved ? "★ " + t("unsave_trail") : "☆ " + t("save_trail"));
+            })()
+          )
         )
       ),
 
@@ -3923,6 +4284,19 @@ function App() {
               e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
             ),
             editForm.photo?t("replace_photo"):t("add_photo")
+          )
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},t("link_trail")),
+          e("select",{
+            style:Object.assign({},S.input),
+            value:editForm.trail_id || "",
+            onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{trail_id:ev.target.value});});}
+          },
+            e("option",{value:""},t("none_option")),
+            trails.filter(function(t){return t.owner===uname;}).map(function(trail){
+              return e("option",{key:trail.id,value:trail.id},trail.name||"Untitled Trail");
+            })
           )
         ),
         e("div",{style:{display:"flex",gap:8}},

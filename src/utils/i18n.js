@@ -328,7 +328,16 @@ export const translations = {
     toast_location_unavailable: "Location unavailable — check permissions",
     update_available: "Update Available",
     update_ready_msg: "A new version of PINMAP is ready",
-    reload_btn: "Reload"
+    reload_btn: "Reload",
+    search_mode_trails: "Trails",
+    search_placeholder_trails: "Search public trails...",
+    no_trails_found: "No public trails found.",
+    link_trail: "Link Trail",
+    none_option: "None",
+    save_trail: "Save Trail",
+    unsave_trail: "Saved",
+    linked_trail_title: "Linked Trail",
+    show_on_map_btn: "Show on Map"
   },
   es: {
     // Splash Screen
@@ -654,6 +663,15 @@ export const translations = {
     toast_location_unavailable: "Ubicación no disponible — verifica los permisos",
     update_available: "Actualización disponible",
     update_ready_msg: "Una nueva versión de PINMAP está lista",
-    reload_btn: "Recargar"
+    reload_btn: "Recargar",
+    search_mode_trails: "Senderos",
+    search_placeholder_trails: "Buscar senderos públicos...",
+    no_trails_found: "No se encontraron senderos públicos.",
+    link_trail: "Vincular Sendero",
+    none_option: "Ninguno",
+    save_trail: "Guardar Sendero",
+    unsave_trail: "Guardado",
+    linked_trail_title: "Sendero Vinculado",
+    show_on_map_btn: "Ver en Mapa"
   }
 };

@@ -362,6 +362,10 @@ CREATE TABLE IF NOT EXISTS public.trails (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+GRANT SELECT ON public.trails TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.trails TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.trails TO service_role;
+
 -- Enable RLS
 ALTER TABLE public.trails ENABLE ROW LEVEL SECURITY;
 
@@ -388,4 +392,39 @@ CREATE POLICY "Users can delete their own trails" ON public.trails
 -- Optimize queries
 CREATE INDEX IF NOT EXISTS idx_trails_owner ON public.trails(owner);
 CREATE INDEX IF NOT EXISTS idx_trails_pin_id ON public.trails(pin_id);
+
+
+-- =========================================================================
+-- SAVED TRAILS / BOOKMARKS SYSTEM
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.saved_trails (
+  owner TEXT NOT NULL,
+  trail_id TEXT REFERENCES public.trails(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (owner, trail_id)
+);
+
+-- Grants
+GRANT SELECT ON public.saved_trails TO anon;
+GRANT SELECT, INSERT, DELETE ON public.saved_trails TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.saved_trails TO service_role;
+
+-- Enable RLS
+ALTER TABLE public.saved_trails ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DROP POLICY IF EXISTS "Anyone can view saved trails" ON public.saved_trails;
+CREATE POLICY "Anyone can view saved trails" ON public.saved_trails FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can insert their own saved trails" ON public.saved_trails;
+CREATE POLICY "Users can insert their own saved trails" ON public.saved_trails FOR INSERT WITH CHECK (owner = public.current_username());
+
+DROP POLICY IF EXISTS "Users can delete their own saved trails" ON public.saved_trails;
+CREATE POLICY "Users can delete their own saved trails" ON public.saved_trails FOR DELETE USING (owner = public.current_username());
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_saved_trails_owner ON public.saved_trails(owner);
+CREATE INDEX IF NOT EXISTS idx_saved_trails_trail_id ON public.saved_trails(trail_id);
+
 

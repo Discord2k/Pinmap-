@@ -132,11 +132,34 @@ export const api = {
       return r.data;
     });
   },
-  getTrails: function(uname) {
-    return sb.from("trails").select("*").or("is_public.eq.true,owner.eq." + uname).order("created_at", {ascending: false}).then(function(r){
-      if (r.error) throw r.error;
-      return r.data||[];
-    });
+  getTrails: async function(uname) {
+    if (!uname || uname === 'guest') {
+      return sb.from("trails").select("*").eq("owner", "guest").order("created_at", {ascending: false}).then(function(r){
+        if (r.error) throw r.error;
+        return r.data||[];
+      });
+    }
+    try {
+      var savedRes = await sb.from("saved_trails").select("trail_id").eq("owner", uname);
+      var savedIds = (savedRes.data || []).map(function(d) { return d.trail_id; });
+      var query = sb.from("trails").select("*");
+      if (savedIds.length > 0) {
+        var idList = savedIds.map(function(id) { return `"${id}"`; }).join(",");
+        query = query.or(`owner.eq.${uname},id.in.(${idList})`);
+      } else {
+        query = query.eq("owner", uname);
+      }
+      return query.order("created_at", {ascending: false}).then(function(r) {
+        if (r.error) throw r.error;
+        return r.data || [];
+      });
+    } catch (e) {
+      console.error("Error in getTrails:", e);
+      return sb.from("trails").select("*").eq("owner", uname).order("created_at", {ascending: false}).then(function(r) {
+        if (r.error) return [];
+        return r.data || [];
+      });
+    }
   },
   createTrail: function(trail) {
     return sb.from("trails").insert(trail).select().then(function(r){
@@ -154,6 +177,50 @@ export const api = {
     return sb.from("trails").update({pin_id: pinId}).eq("id", trailId).then(function(r){
       if (r.error) throw r.error;
       return r.data;
+    });
+  },
+  saveTrail: function(trailId, uname) {
+    return sb.from("saved_trails").insert({trail_id: trailId, owner: uname}).then(function(r){
+      if (r.error) throw r.error;
+      return r.data;
+    });
+  },
+  unsaveTrail: function(trailId, uname) {
+    return sb.from("saved_trails").delete().eq("trail_id", trailId).eq("owner", uname).then(function(r){
+      if (r.error) throw r.error;
+      return r.data;
+    });
+  },
+  getSavedTrailIds: function(uname) {
+    if (!uname || uname === 'guest') return Promise.resolve([]);
+    return sb.from("saved_trails").select("trail_id").eq("owner", uname).then(function(r){
+      if (r.error) throw r.error;
+      return (r.data || []).map(function(item) { return item.trail_id; });
+    });
+  },
+  getTrailForPin: function(pinId) {
+    return sb.from("trails").select("*").eq("pin_id", pinId).then(function(r) {
+      if (r.error) throw r.error;
+      return r.data && r.data.length > 0 ? r.data[0] : null;
+    });
+  },
+  unlinkTrailFromPin: function(pinId) {
+    return sb.from("trails").update({pin_id: null}).eq("pin_id", pinId).then(function(r) {
+      if (r.error) throw r.error;
+      return r.data;
+    });
+  },
+  searchTrails: function(query) {
+    var baseQuery = sb.from("trails").select("*").eq("is_public", true);
+    if (!query) {
+      return baseQuery.limit(50).then(function(r) {
+        if (r.error) throw r.error;
+        return r.data || [];
+      });
+    }
+    return baseQuery.or(`name.ilike.%${query}%,description.ilike.%${query}%`).limit(50).then(function(r) {
+      if (r.error) throw r.error;
+      return r.data || [];
     });
   },
   getMyActivity: function(myPinIds) {

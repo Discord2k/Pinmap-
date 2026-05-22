@@ -4,7 +4,7 @@ export const WHATSNEW_KEY = "pm-whatsnew-v15";
 export const APP_VERSION = "2.4.5";
 
 export const WHATSNEW_EN = [
-  {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files directly! View active paths drawn beautifully on the map with distance & duration tracking, and export your routes anytime."},
+  {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files! Features include automatic screen wake-lock while recording, advanced GPS drift and app-resumption spike filtering, and a public trail search and bookmarking system so trails don't automatically appear for others unless saved."},
   {emoji:"🧭", title:"Guides & Map Packs", body:"Curate and publish custom map packs! Group your favorite spots into custom guides (e.g. 'Coffee Shops' or 'Weekend Hikes') from your profile. Select a map pack to filter the map view to just those spots."},
   {emoji:"🏆", title:"Explorer Quests", body:"Embark on location-based challenges! Design custom quests with target tags (e.g. check in to 3 #waterfalls) and see progress update in real time as you and other explorers check in to matching spots."},
   {emoji:"📷", title:"Field Journals (Logbooks)", body:"Turn pin log entries into a travel scrapbook! Attach photos to comments (taken live on camera or chosen from gallery). Logs are styled as vintage cards with fullscreen lightbox zooms. Full offline caching supported."},
@@ -20,7 +20,7 @@ export const WHATSNEW_EN = [
 ];
 
 export const WHATSNEW_ES = [
-  {emoji:"⏺️", title:"Senderos GPX Interactivos", body:"¡Graba tus rutas al aire libre en tiempo real o importa archivos de senderos GPX directamente! Visualiza rutas activas dibujadas hermosamente en el mapa con seguimiento de distancia y duración, y exporta tus rutas cuando quieras."},
+  {emoji:"⏺️", title:"Senderos GPX Interactivos", body:"¡Graba tus rutas en tiempo real o importa archivos GPX! Incluye bloqueo automático de pantalla encendida, filtrado de deriva GPS y picos al reanudar la app, y un sistema de búsqueda y guardado de senderos públicos para que no aparezcan automáticamente a otros a menos que decidan agregarlos."},
   {emoji:"🧭", title:"Guías y Paquetes de Mapas", body:"¡Crea y publica paquetes de mapas personalizados! Agrupa tus lugares favoritos en guías personalizadas (ej. 'Cafeterías' o 'Caminatas de Fin de Semana') desde tu perfil. Selecciona un paquete de mapas para filtrar la vista del mapa a solo esos puntos."},
   {emoji:"🏆", title:"Búsquedas de Explorador", body:"¡Embárcate en desafíos basados en la ubicación! Diseña búsquedas personalizadas con etiquetas objetivo (ej. registrar visita en 3 #cascadas) y mira el progreso actualizarse en tiempo real a medida que tú y otros exploradores registran visitas en lugares coincidentes."},
   {emoji:"📷", title:"Bitácoras de Campo (Diarios)", body:"¡Convierte las entradas de registro de pines en un álbum de recortes de viaje! Adjunta fotos a los comentarios (tomadas en vivo con la cámara o elegidas de la galería). Los registros tienen el estilo de tarjetas vintage con zoom de caja de luz a pantalla completa. Soporte completo de caché sin conexión."},
@@ -36,7 +36,7 @@ export const WHATSNEW_ES = [
 ];
 
 export const ALL_FEATURES_EN = [
-  {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files directly! View active paths drawn beautifully on the map with distance & duration tracking, and export your routes anytime."},
+  {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files! Features include automatic screen wake-lock while recording, advanced GPS drift and app-resumption spike filtering, and a public trail search and bookmarking system so trails don't automatically appear for others unless saved."},
   {emoji:"🧭", title:"Collections", body:"Design, publish, and view custom collections! Group your favorite pins into collections in your Profile, filter the map to see only those spots, and share collections with fellow explorers."},
   {emoji:"🏆", title:"Explorer Quests", body:"Create and join custom location challenges! Challenge yourself or other users by setting requirements like checking in to 3 spots tagged #viewpoint. Track quest completion status dynamically."},
   {emoji:"📍", title:"Drop pins", body:"Tap anywhere on the map to place a pin. Add a name, description, hashtags, colour, photo and optional expiry date."},
@@ -67,7 +67,7 @@ export const ALL_FEATURES_EN = [
 ];
 
 export const ALL_FEATURES_ES = [
-  {emoji:"⏺️", title:"Senderos GPX Interactivos", body:"¡Graba tus rutas al aire libre en tiempo real o importa archivos de senderos GPX directamente! Visualiza rutas activas dibujadas hermosamente en el mapa con seguimiento de distancia y duración, y exporta tus rutas cuando quieras."},
+  {emoji:"⏺️", title:"Senderos GPX Interactivos", body:"¡Graba tus rutas en tiempo real o importa archivos GPX! Incluye bloqueo automático de pantalla encendida, filtrado de deriva GPS y picos al reanudar la app, y un sistema de búsqueda y guardado de senderos públicos para que no aparezcan automáticamente a otros a menos que decidan agregarlos."},
   {emoji:"🧭", title:"Colecciones", body:"¡Diseña, publica y visualiza colecciones personalizadas! Agrupa tus pines favoritos en colecciones en tu Perfil, filtra el mapa para ver solo esos puntos y comparte colecciones con otros exploradores."},
   {emoji:"🏆", title:"Búsquedas de Explorador", body:"¡Crea y únete a desafíos de ubicación personalizados! Desafíate a ti mismo o a otros usuarios configurando requisitos como registrar visitas en 3 lugares con la etiqueta #mirador. Realiza el seguimiento del estado de finalización de forma dinámica."},
   {emoji:"📍", title:"Colocar pines", body:"Toca en cualquier lugar del mapa para colocar un pin. Añade un nombre, descripción, hashtags, color, foto y fecha de expiración opcional."},
