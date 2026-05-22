@@ -317,8 +317,13 @@ export function ProfilePanel(props) {
             onClick={function(){ setTrailsCollapsed(function(v){ return !v; }); }}
           >
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={S.secHead}>
-                {t('trails_routes')+(trails.length>0?" \u00b7 "+trails.length:"")}
+              <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                  <circle cx="6" cy="19" r="3" />
+                  <circle cx="18" cy="5" r="3" />
+                  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+                </svg>
+                <span>{t('trails_routes')+(trails.length>0?" \u00b7 "+trails.length:"")}</span>
               </div>
               <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.06em",background:T.forest,color:T.paper,padding:"2.5px 6.5px",borderRadius:6,textTransform:"uppercase",lineHeight:1,fontFamily:T.font}}>GPS</span>
             </div>
@@ -491,7 +496,13 @@ export function ProfilePanel(props) {
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
             onClick={function(){ setBadgesCollapsed(function(v){ return !v; }); }}
           >
-            <div style={S.secHead}>{t('achievements')}</div>
+            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                <circle cx="12" cy="8" r="7" />
+                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+              </svg>
+              <span>{t('achievements')}</span>
+            </div>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:badgesCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -520,7 +531,13 @@ export function ProfilePanel(props) {
               onClick={function(){ setQuestsCollapsed(function(prev){ return !prev; }); }}
             >
               <span style={{fontSize: 10, color: T.ink3, display: "inline-block", transition: "transform 0.2s", transform: questsCollapsed ? "rotate(0deg)" : "rotate(90deg)"}}>▶</span>
-              <span style={S.secHead}>{t('explorer_quests')}</span>
+              <span style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                </svg>
+                <span>{t('explorer_quests')}</span>
+              </span>
               <span 
                 className="pm-info-btn"
                 style={{
@@ -822,7 +839,12 @@ export function ProfilePanel(props) {
                   transform: collectionsCollapsed ? "rotate(0deg)" : "rotate(90deg)"
                 }}>▶</span>
               )}
-              <span style={S.secHead}>{t('collections')}</span>
+              <span style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{t('collections')}</span>
+              </span>
               <span 
                 className="pm-info-btn"
                 style={{
@@ -958,7 +980,14 @@ export function ProfilePanel(props) {
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
             onClick={function(){ setFollowingCollapsed(function(v){ return !v; }); }}
           >
-            <div style={S.secHead}>{(lang === 'es' ? "Siguiendo" : "Following") + " · " + userFollows.length}</div>
+            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <polyline points="17 11 19 13 23 9" />
+              </svg>
+              <span>{(lang === 'es' ? "Siguiendo" : "Following") + " · " + userFollows.length}</span>
+            </div>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:followingCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -1038,7 +1067,15 @@ export function ProfilePanel(props) {
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
             onClick={function(){ setFollowersCollapsed(function(v){ return !v; }); }}
           >
-            <div style={S.secHead}>{(lang === 'es' ? "Seguidores" : "Followers") + " · " + followers.length}</div>
+            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>{(lang === 'es' ? "Seguidores" : "Followers") + " · " + followers.length}</span>
+            </div>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:followersCollapsed?"rotate(0deg)":"rotate(180deg)"}}>
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -1077,10 +1114,21 @@ export function ProfilePanel(props) {
       {/* ── Settings ───────────────────────────────────────────────────────────── */}
       {!editingProfile && (
         <div style={{padding:"0 22px",borderBottom:"1px solid "+T.borderSoft}}>
-          <div style={Object.assign({}, S.secHead, {padding:"20px 0 8px"})}>{t('settings')}</div>
+          <div style={Object.assign({}, S.secHead, {padding:"20px 0 8px", display:"flex", alignItems:"center", gap:8})}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            <span>{t('settings')}</span>
+          </div>
           
           {/* Language Setting Dropdown */}
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
             <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Idioma" : "Language"}</div>
             <select
               style={{
@@ -1106,6 +1154,10 @@ export function ProfilePanel(props) {
           </div>
 
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
             <div style={{flex:1,fontSize:15,color:T.ink}}>{t('push_notifications')}</div>
             {pushEnabled ? (
               <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -1127,16 +1179,28 @@ export function ProfilePanel(props) {
           </div>
           
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>{localStorage.removeItem("pm-onboarded-v5");setOnboardStep(0);setOpen(false);}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="10 8 16 12 10 16 10 8" />
+            </svg>
             <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Tutorial interactivo" : "Interactive Tutorial"}</div>
             <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>{lang === 'es' ? "Repetir" : "Replay"} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
           </div>
           
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>{setShowFeatures(true);setOpen(false);}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z" />
+            </svg>
             <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Todas las funciones" : "All features"}</div>
             <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>{lang === 'es' ? "Ver" : "View"} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
           </div>
           
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>setShowImport(true)}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
             <div style={{flex:1}}>
               <div style={{fontSize:15,color:T.ink}}>{lang === 'es' ? "Importar Pines" : "Import Pins"}</div>
               <div style={{fontSize:12,color:T.ink3,marginTop:2}}>KML · GPX · GeoJSON · CSV</div>
@@ -1146,7 +1210,14 @@ export function ProfilePanel(props) {
  
           {/* Offline Maps */}
           <div style={{padding:"16px 0"}}>
-            <div style={Object.assign({}, S.secHead, {marginBottom:10})}>{lang === 'es' ? "Mapas sin conexión" : "Offline Maps"}</div>
+            <div style={Object.assign({}, S.secHead, {marginBottom:10, display:"flex", alignItems:"center", gap:8})}>
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3}}>
+                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+                <line x1="9" y1="3" x2="9" y2="18" />
+                <line x1="15" y1="6" x2="15" y2="21" />
+              </svg>
+              <span>{lang === 'es' ? "Mapas sin conexión" : "Offline Maps"}</span>
+            </div>
             <div style={{fontSize:12,color:T.ink3,marginBottom:12,lineHeight:1.5}}>{lang === 'es' ? "Guarda imágenes del mapa para usarlas sin señal. Navega a tu destino y luego descarga." : "Cache map tiles for use without a signal. Navigate to your destination, then download."}</div>
             <div style={{display:"flex",gap:8}}>
               <button
@@ -1167,22 +1238,41 @@ export function ProfilePanel(props) {
           </div>
           
           <div style={{display:"flex",alignItems:"center",padding:"14px 0"}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
             <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Acerca de" : "About"}</div>
             <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>v {APP_VERSION} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
           </div>
  
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={function(){window.open("https://pin-map.com/privacy","_blank");}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
             <div style={{flex:1,fontSize:15,color:T.ink}}>{t('privacy_policy')}</div>
             <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
           </div>
  
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={function(){window.open("https://pin-map.com/terms","_blank");}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
             <div style={{flex:1,fontSize:15,color:T.ink}}>{t('terms_service')}</div>
             <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
           </div>
  
           {user && (
             <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={props.onDeleteAccount}>
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: "#c05050"}}>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
               <div style={{flex:1,fontSize:15,color:"#c05050",fontWeight:600}}>{t('delete_account')}</div>
               <div style={{color:"#c05050",fontSize:16}}>{">"}</div>
             </div>
@@ -1194,8 +1284,22 @@ export function ProfilePanel(props) {
       {!editingProfile && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           {user 
-            ? <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:14,color:T.ink2,cursor:"pointer"}} onClick={props.onSignOut}>{lang === 'es' ? "Cerrar sesión" : "Sign out"}</button>
-            : <button style={Object.assign({},S.btn,{width:"100%"})} onClick={api.signInGoogle}>{lang === 'es' ? "Iniciar sesión con Google" : "Sign in with Google"}</button>
+            ? <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:14,color:T.ink2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={props.onSignOut}>
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                {lang === 'es' ? "Cerrar sesión" : "Sign out"}
+              </button>
+            : <button style={Object.assign({},S.btn,{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8})} onClick={api.signInGoogle}>
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+                {lang === 'es' ? "Iniciar sesión con Google" : "Sign in with Google"}
+              </button>
           }
         </div>
       )}
