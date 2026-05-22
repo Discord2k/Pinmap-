@@ -11,6 +11,7 @@ import { MineTab } from './components/MineTab';
 import { WhatsNew } from './components/WhatsNew';
 import { CompassModal } from './components/CompassModal';
 import { TrailRecorder } from './components/TrailRecorder';
+import { WelcomeScreen, WELCOME_KEY } from './components/WelcomeScreen';
 import { LANGUAGES, translations } from './utils/i18n';
 import JSZip from 'jszip';
 
@@ -76,6 +77,7 @@ function App() {
   var s18=useState(10);      var nearbyKm=s18[0];      var setNearbyKm=s18[1];
   var s19=useState(null);    var nearbyRes=s19[0];     var setNearbyRes=s19[1];
   var s20=useState(localStorage.getItem(ONBOARD_KEY)?-1:0); var onboardStep=s20[0]; var setOnboardStep=s20[1];
+  var sWelcome=useState(!localStorage.getItem(WELCOME_KEY)); var showWelcome=sWelcome[0]; var setShowWelcome=sWelcome[1];
   var s38=useState(
     localStorage.getItem(ONBOARD_KEY) && !localStorage.getItem(WHATSNEW_KEY)
   ); var showWhatsNew=s38[0]; var setShowWhatsNew=s38[1];
@@ -4436,7 +4438,8 @@ function App() {
         },t('got_it'))
       )
     ),
-    !showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
+    showWelcome && e(WelcomeScreen, { onDone: function() { setShowWelcome(false); } }),
+    !showWelcome&&!showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
 
     showInsiderExplainer && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",borderRadius:16,padding:"24px 22px",maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",display:"flex",flexDirection:"column"}},
