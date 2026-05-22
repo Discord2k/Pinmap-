@@ -79,7 +79,7 @@ export const api = {
     return sb.rpc("delete_own_account");
   },
   getMapPacks: function(uname) {
-    return sb.from("mappacks").select("*").or("is_public.eq.true,owner.eq." + uname).order("created_at", {ascending: false}).then(function(r){
+    return sb.from("mappacks").select("*").or(`is_public.eq.true,owner.eq."${uname}"`).order("created_at", {ascending: false}).then(function(r){
       if (r.error) throw r.error;
       return r.data||[];
     });
@@ -145,7 +145,7 @@ export const api = {
       var query = sb.from("trails").select("*");
       if (savedIds.length > 0) {
         var idList = savedIds.map(function(id) { return `"${id}"`; }).join(",");
-        query = query.or(`owner.eq.${uname},id.in.(${idList})`);
+        query = query.or(`owner.eq."${uname}",id.in.(${idList})`);
       } else {
         query = query.eq("owner", uname);
       }
@@ -218,7 +218,7 @@ export const api = {
         return r.data || [];
       });
     }
-    return baseQuery.or(`name.ilike.%${query}%,description.ilike.%${query}%`).limit(50).then(function(r) {
+    return baseQuery.or(`name.ilike."%${query}%",description.ilike."%${query}%"`).limit(50).then(function(r) {
       if (r.error) throw r.error;
       return r.data || [];
     });
