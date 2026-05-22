@@ -901,10 +901,18 @@ function App() {
   }, [showWhatsNew]);
 
   function nextOnboard() {
-    if(onboardStep>=getOnboardSteps(lang).length-1){ localStorage.setItem(ONBOARD_KEY,"1"); setOnboardStep(-1); }
+    if(onboardStep>=getOnboardSteps(lang).length-1){ 
+      localStorage.setItem(ONBOARD_KEY,"1"); 
+      setOnboardStep(-1); 
+      setShowFeatures(true);
+    }
     else { setOnboardStep(function(s){return s+1;}); }
   }
-  function skipOnboard() { localStorage.setItem(ONBOARD_KEY,"1"); setOnboardStep(-1); }
+  function skipOnboard() { 
+    localStorage.setItem(ONBOARD_KEY,"1"); 
+    setOnboardStep(-1); 
+    setShowFeatures(true);
+  }
 
   useEffect(function(){
     api.getSession().then(function(res){

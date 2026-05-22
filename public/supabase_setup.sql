@@ -472,4 +472,47 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 
+-- RPC function to allow the admin (Seth Gray) to fetch all registered users from auth.users
+CREATE OR REPLACE FUNCTION public.get_auth_users()
+RETURNS TABLE (
+  id TEXT,
+  email TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ,
+  last_sign_in_at TIMESTAMPTZ,
+  bio TEXT,
+  location TEXT,
+  website TEXT,
+  twitter TEXT,
+  instagram TEXT,
+  youtube TEXT
+) AS $$
+BEGIN
+  IF public.current_username() = 'Seth Gray' THEN
+    RETURN QUERY 
+    SELECT 
+      coalesce(u.raw_user_meta_data->>'full_name', split_part(u.email, '@', 1))::TEXT AS id,
+      u.email::TEXT AS email,
+      coalesce(p.avatar_url, u.raw_user_meta_data->>'avatar_url')::TEXT AS avatar_url,
+      u.created_at,
+      u.last_sign_in_at,
+      p.bio::TEXT AS bio,
+      p.location::TEXT AS location,
+      p.website::TEXT AS website,
+      p.twitter::TEXT AS twitter,
+      p.instagram::TEXT AS instagram,
+      p.youtube::TEXT AS youtube
+    FROM auth.users u
+    LEFT JOIN public.profiles p ON p.id = coalesce(u.raw_user_meta_data->>'full_name', split_part(u.email, '@', 1))
+    ORDER BY u.created_at DESC;
+  ELSE
+    RAISE EXCEPTION 'Access Denied: Only Administrator can view auth users.';
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.get_auth_users() TO authenticated;
+
+
+
 

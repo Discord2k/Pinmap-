@@ -78,7 +78,16 @@ export function AdminPanel(props) {
         resPresence,
         resMappacks,
       ] = await Promise.all([
-        sb.from("profiles").select("*"),
+        sb.rpc("get_auth_users").then(r => {
+          if (r.error) {
+            console.warn("get_auth_users RPC failed, falling back to profiles table:", r.error);
+            return sb.from("profiles").select("*");
+          }
+          return r;
+        }).catch(err => {
+          console.warn("get_auth_users RPC failed, falling back to profiles table:", err);
+          return sb.from("profiles").select("*");
+        }),
         sb.from("pins").select("*").order("created_at", { ascending: false }),
         sb.from("comments").select("*").order("created_at", { ascending: false }),
         sb.from("checkins").select("*").order("created_at", { ascending: false }),
@@ -237,7 +246,8 @@ export function AdminPanel(props) {
       const nameMatch = (u.id || "").toLowerCase().includes(searchQuery.toLowerCase());
       const bioMatch = (u.bio || "").toLowerCase().includes(searchQuery.toLowerCase());
       const locMatch = (u.location || "").toLowerCase().includes(searchQuery.toLowerCase());
-      return nameMatch || bioMatch || locMatch;
+      const emailMatch = (u.email || "").toLowerCase().includes(searchQuery.toLowerCase());
+      return nameMatch || bioMatch || locMatch || emailMatch;
     })
     .sort((a, b) => {
       if (userSortOrder === "alpha") {
@@ -525,6 +535,9 @@ export function AdminPanel(props) {
                             <div style={{flex:1, minWidth:0}}>
                               <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap"}}>
                                 <span style={{fontWeight:700, fontSize:15, color:T.ink}}>@{user.id}</span>
+                                {user.email && (
+                                  <span style={{fontSize:11.5, color:T.ink3, fontFamily:T.mono}}>({user.email})</span>
+                                )}
                                 <span style={{
                                   display:"inline-flex", alignItems:"center", gap:3.5, 
                                   fontSize:10, background: isOnline ? "rgba(76,175,80,0.12)" : is24h ? "rgba(255,152,0,0.12)" : "rgba(0,0,0,0.05)",
