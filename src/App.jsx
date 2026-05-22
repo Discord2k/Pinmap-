@@ -12,6 +12,7 @@ import { WhatsNew } from './components/WhatsNew';
 import { CompassModal } from './components/CompassModal';
 import { TrailRecorder } from './components/TrailRecorder';
 import { LANGUAGES, translations } from './utils/i18n';
+import JSZip from 'jszip';
 
 var e = React.createElement;
 
@@ -444,8 +445,46 @@ function App() {
     });
   }
 
+  function parseKmlText(text, pins) {
+    var parser2 = new DOMParser();
+    var doc2 = parser2.parseFromString(text, "text/xml");
+    Array.from(doc2.querySelectorAll("Placemark")).forEach(function(pm) {
+      var coords = pm.querySelector("Point coordinates, coordinates");
+      var n2 = pm.querySelector("name"); var d2 = pm.querySelector("description");
+      if (coords) {
+        var parts = coords.textContent.trim().split(/[,\s]+/);
+        var lng2 = parseFloat(parts[0]), lat2 = parseFloat(parts[1]);
+        if (!isNaN(lat2) && !isNaN(lng2))
+          pins.push({ name: (n2 && n2.textContent.trim()) || "KML Placemark", description: (d2 && d2.textContent.trim()) || "", lat: lat2, lng: lng2 });
+      }
+    });
+  }
+
   function parseImportFile(file, onDone) {
     var name = file.name.toLowerCase();
+
+    // KMZ: unzip first, then parse the embedded doc.kml
+    if (name.endsWith(".kmz")) {
+      JSZip.loadAsync(file).then(function(zip) {
+        var kmlFile = null;
+        zip.forEach(function(relativePath, zipEntry) {
+          if (!kmlFile && relativePath.toLowerCase().endsWith(".kml")) {
+            kmlFile = zipEntry;
+          }
+        });
+        if (!kmlFile) { flash("No KML found inside KMZ file"); onDone([]); return; }
+        return kmlFile.async("string").then(function(kmlText) {
+          var pins = [];
+          try { parseKmlText(kmlText, pins); } catch(e) { flash(t("toast_import_error") + e.message); }
+          onDone(pins);
+        });
+      }).catch(function(err) {
+        flash(t("toast_import_error") + err.message);
+        onDone([]);
+      });
+      return; // async path — exit early
+    }
+
     var reader = new FileReader();
     reader.onload = function(ev) {
       var text = ev.target.result;
@@ -474,18 +513,7 @@ function App() {
             }
           });
         } else if (name.endsWith(".kml")) {
-          var parser2 = new DOMParser();
-          var doc2 = parser2.parseFromString(text, "text/xml");
-          Array.from(doc2.querySelectorAll("Placemark")).forEach(function(pm) {
-            var coords = pm.querySelector("coordinates");
-            var n2 = pm.querySelector("name"); var d2 = pm.querySelector("description");
-            if (coords) {
-              var parts = coords.textContent.trim().split(/[,\s]+/);
-              var lng2 = parseFloat(parts[0]), lat2 = parseFloat(parts[1]);
-              if (!isNaN(lat2) && !isNaN(lng2))
-                pins.push({ name: (n2 && n2.textContent) || "KML Placemark", description: (d2 && d2.textContent) || "", lat: lat2, lng: lng2 });
-            }
-          });
+          parseKmlText(text, pins);
         } else if (name.endsWith(".csv")) {
           var lines = text.split("\n").filter(Boolean);
           var headers = lines[0].split(",").map(function(h){return h.trim().toLowerCase().replace(/"/g,"");});
@@ -4250,8 +4278,8 @@ function App() {
               e("line",{x1:"12",y1:"3",x2:"12",y2:"15",stroke:T.ink3,strokeWidth:1.8,strokeLinecap:"round"})
             ),
             e("div",{style:{fontSize:14,color:T.ink2,fontWeight:500}},"Tap to choose file"),
-            e("div",{style:{fontSize:12,color:T.ink3}},"KML · GPX · GeoJSON · CSV"),
-            e("input",{type:"file",accept:".kml,.gpx,.geojson,.json,.csv",style:{display:"none"},
+            e("div",{style:{fontSize:12,color:T.ink3}},"KML · KMZ · GPX · GeoJSON · CSV"),
+            e("input",{type:"file",accept:".kml,.kmz,.gpx,.geojson,.json,.csv",style:{display:"none"},
               onChange:function(ev){
                 var file=ev.target.files&&ev.target.files[0];
                 if(!file) return;
