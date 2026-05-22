@@ -221,6 +221,135 @@ function App() {
     };
   }, []);
 
+  var lastBackPressRef = useRef(0);
+  var openViewsRef = useRef({
+    showWhatsNew: false,
+    onboardStep: -1,
+    showFeatures: false,
+    showInstall: false,
+    editPin: null,
+    gpxImportData: null,
+    showImport: false,
+    editingProfile: false,
+    pendingLL: null,
+    selPin: null,
+    activeMapPack: null,
+    viewUser: null,
+    showTrailQuestPanel: false,
+    layerMenuOpen: false,
+    open: false
+  });
+
+  useEffect(function() {
+    openViewsRef.current = {
+      showWhatsNew: showWhatsNew,
+      onboardStep: onboardStep,
+      showFeatures: showFeatures,
+      showInstall: showInstall,
+      editPin: editPin,
+      gpxImportData: gpxImportData,
+      showImport: showImport,
+      editingProfile: editingProfile,
+      pendingLL: pendingLL,
+      selPin: selPin,
+      activeMapPack: activeMapPack,
+      viewUser: viewUser,
+      showTrailQuestPanel: showTrailQuestPanel,
+      layerMenuOpen: layerMenuOpen,
+      open: open
+    };
+  }, [
+    showWhatsNew, onboardStep, showFeatures, showInstall, editPin,
+    gpxImportData, showImport, editingProfile, pendingLL, selPin,
+    activeMapPack, viewUser, showTrailQuestPanel, layerMenuOpen, open
+  ]);
+
+  var langRef = useRef(lang);
+  useEffect(function() {
+    langRef.current = lang;
+  }, [lang]);
+
+  useEffect(function() {
+    // Push initial guard state to history
+    window.history.pushState({ noExit: true }, '');
+
+    function handlePopState() {
+      var views = openViewsRef.current;
+      var hasOpenSubview = 
+        views.showWhatsNew || 
+        (views.onboardStep >= 0) || 
+        views.showFeatures || 
+        views.showInstall || 
+        views.editPin || 
+        views.gpxImportData || 
+        views.showImport || 
+        views.editingProfile || 
+        views.pendingLL || 
+        views.selPin || 
+        views.activeMapPack || 
+        views.viewUser || 
+        views.showTrailQuestPanel || 
+        views.layerMenuOpen || 
+        views.open;
+
+      if (hasOpenSubview) {
+        if (views.showWhatsNew) {
+          setShowWhatsNew(false);
+        } else if (views.onboardStep >= 0) {
+          setOnboardStep(-1);
+        } else if (views.showFeatures) {
+          setShowFeatures(false);
+        } else if (views.showInstall) {
+          setShowInstall(false);
+        } else if (views.editPin) {
+          setEditPin(null);
+        } else if (views.gpxImportData) {
+          setGpxImportData(null);
+        } else if (views.showImport) {
+          setShowImport(false);
+        } else if (views.editingProfile) {
+          setEditingProfile(false);
+        } else if (views.pendingLL) {
+          setPendingLL(null);
+        } else if (views.selPin) {
+          setSelPin(null);
+        } else if (views.activeMapPack) {
+          setActiveMapPack(null);
+        } else if (views.viewUser) {
+          setViewUser(null);
+        } else if (views.showTrailQuestPanel) {
+          setShowTrailQuestPanel(false);
+        } else if (views.layerMenuOpen) {
+          setLayerMenuOpen(false);
+        } else if (views.open) {
+          setOpen(false);
+        }
+        
+        // Re-push the guard state to keep intercepting
+        window.history.pushState({ noExit: true }, '');
+      } else {
+        var now = Date.now();
+        if (now - lastBackPressRef.current < 2000) {
+          // Allow exit
+          window.history.back();
+        } else {
+          lastBackPressRef.current = now;
+          var currentLang = langRef.current || 'en';
+          var dict = translations[currentLang] || translations.en;
+          var msg = dict.toast_press_back_again || "Press back again to exit";
+          flash(msg);
+          // Re-push the guard state
+          window.history.pushState({ noExit: true }, '');
+        }
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return function() {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }

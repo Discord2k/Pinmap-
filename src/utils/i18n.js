@@ -78,6 +78,7 @@ export const translations = {
     show_pins: "Show Pins",
     toast_trail_download_progress: "Downloading: {progress}%",
     link_trail_help: "To link a trail, record a trail under the Trails tab first (or import a GPX file). Once saved, select it from this dropdown. The trail will be shown on the map when users view this pin.",
+    toast_press_back_again: "Press back again to exit",
 
     // Pin Drop Form
     form_title_add: "Drop Pin",
@@ -419,6 +420,7 @@ export const translations = {
     show_pins: "Ver Pines",
     toast_trail_download_progress: "Descargando: {progress}%",
     link_trail_help: "Para vincular un sendero, primero grábalo en la pestaña de Senderos (o importa un archivo GPX). Una vez guardado, selecciónalo en este menú desplegable. El sendero se mostrará en el mapa cuando los usuarios vean este pin.",
+    toast_press_back_again: "Presiona atrás otra vez para salir",
 
     // Pin Drop Form
     form_title_add: "Colocar Pin",

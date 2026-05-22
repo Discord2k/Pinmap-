@@ -1,7 +1,7 @@
 export const COLORS = ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 export const ONBOARD_KEY = "pm-onboarded-v8";
 export const WHATSNEW_KEY = "pm-whatsnew-v15";
-export const APP_VERSION = "2.4.7";
+export const APP_VERSION = "2.4.8";
 
 export const WHATSNEW_EN = [
   {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files! Features include automatic screen wake-lock while recording, advanced GPS drift and app-resumption spike filtering, and a public trail search and bookmarking system so trails don't automatically appear for others unless saved."},
