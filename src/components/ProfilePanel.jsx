@@ -1,5 +1,5 @@
 import React from 'react';
-import { userAvatar, APP_VERSION } from '../utils/helpers';
+import { userAvatar, APP_VERSION, ONBOARD_KEY } from '../utils/helpers';
 import { api, subscribeToPush, sb } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { UserBadges } from './UserBadges';
@@ -1178,7 +1178,7 @@ export function ProfilePanel(props) {
             )}
           </div>
           
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>{localStorage.removeItem("pm-onboarded-v5");setOnboardStep(0);setOpen(false);}}>
+          <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>{localStorage.removeItem(ONBOARD_KEY);setOnboardStep(0);setOpen(false);}}>
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
               <circle cx="12" cy="12" r="10" />
               <polygon points="10 8 16 12 10 16 10 8" />

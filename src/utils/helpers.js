@@ -98,49 +98,69 @@ export const ALL_FEATURES_ES = [
 ];
 
 export const ONBOARD_STEPS_EN = [
-  {title:"Welcome to PINMAP!",body:"A social map for saving and sharing the places that matter to you. Drop pins, add hashtags, and discover locations shared by others. Let's show you around.",pos:"center"},
-  {title:"The Bottom Tab Bar",body:"Use the tab bar at the bottom to navigate — Map, Search, Drop, Mine, Profile. The Mine tab shows a dot when you have new comments. Tap Map to return to the map at any time.",pos:"top"},
-  {title:"Dual Search Bar",body:"Tap '# Tags' to search public pins by hashtag — the map auto-switches to show results. Tap '📍 Places' to search any address worldwide.",pos:"bottom"},
-  {title:"Drop a Pin",body:"Touch anywhere on the map to place your pin — the Drop panel opens automatically. Give it a name, hashtags, colour, photo, and an optional expiry date for temporary spots. Hit Save to post it.",pos:"center"},
-  {title:"Pin Saves",body:"Tap 🔖 Save on any public pin to bookmark it to your collection. Saved pins appear in the Saved Pins section of your Profile tab — tap to jump straight to them.",pos:"center"},
-  {title:"Expiring Pins",body:"When adding a pin you can set an optional expiry date. The pin shows a countdown badge and is automatically deleted when it expires — perfect for events.",pos:"center"},
-  {title:"Pin Icons and Clustering",body:"Pins show an emoji based on their hashtag — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot. When zoomed out, nearby pins cluster — tap to zoom in.",pos:"center"},
-  {title:"Map Layers",body:"Use the Layers button on the right to switch between Standard, Topographic, Satellite, Hiking Trails, Nautical chart, and CycleOSM views.",pos:"center"},
-  {title:"Pin Visibility",body:"The middle right button controls what shows on the map — your pins only, all public pins, or a clean map. Searching a hashtag auto-switches to show all public pins.",pos:"center"},
-  {title:"GPS and Nearby",body:"Tap the GPS button to jump to your location. Use the Nearby tab to discover public pins within a radius of where you are.",pos:"bottom"},
-  {title:"Follow Users and Hashtags",body:"Tap any username to view their public profile and follow them — you'll get a push notification when they post a new pin. Follow hashtags in the Search tab.",pos:"center"},
-  {title:"Comments, Replies and Upvotes",body:"Tap any pin to leave a comment. Reply with ↩ Reply. Upvote comments with 👍. The Mine tab shows comment counts and highlights pins with new activity.",pos:"center"},
-  {title:"Field Journals (Logbooks)",body:"Attach photos to comment log entries! Comment logs are rendered as travel scrapbook cards with polaroid frame borders. Tap any photo to zoom in. Logs queue offline and sync automatically.",pos:"center"},
-  {title:"Off-Grid Compass Mode",body:"Tap 🧭 Compass on any pin detail view to open a sensor-based circular navigation dial. Keep your device flat to view live bearing and distance to the target pin, working 100% offline.",pos:"center"},
-  {title:"Push Notifications",body:"Enable push notifications in your Profile tab to get alerts when someone comments on your pin or a user you follow posts something new.",pos:"center"},
-  {title:"Check-ins & Badges",body:"Earn custom badges by active exploration! Place pins to unlock milestone badges, and check in to other users' pins when you are within 30m of their physical location. Track your achievements under the Profile tab.",pos:"center"},
-  {title:"Explorer Quests",body:"Design or track custom location-based challenges! Challenge yourself or others to visit and check in to spots with specific tags (e.g. visit 3 spots tagged #waterfalls). Progress is verified automatically via GPS.",pos:"center"},
-  {title:"Collections",body:"Group your favorite locations into custom themed lists. Toggle them on/off to filter the map view, or add pins to your collections directly from their details panel.",pos:"center"},
-  {title:"Interactive GPX Trails",body:"Record your hiking trails, walks, or cycling routes in real-time using your device's GPS. You can also import external GPX files to visualize paths and view distance & duration stats.",pos:"center"},
-  {title:"You are all set!",body:"Sign in with Google to save everything across your devices. Your pins, saves, follows and notifications are all stored securely. Happy exploring!",pos:"center"}
+  {
+    title: "Welcome to PINMAP!",
+    body: "PINMAP is a privacy-first mapping platform for saving, organizing, and sharing the places that matter. Drop pins, follow explorers, and map your adventures.",
+    target: "welcome"
+  },
+  {
+    title: "Explore & Search",
+    body: "Search pins worldwide by #hashtag, follow trending tags, or find any address globally. Tap here to open the search bar.",
+    target: "btn-tab-search"
+  },
+  {
+    title: "Place Your First Pin",
+    body: "Touch and hold (or tap) anywhere on the map to place a pin. Customize it with a name, description, tags, custom color, photos, or an optional expiry timer.",
+    target: "map-center"
+  },
+  {
+    title: "Record Your Routes",
+    body: "Click here to toggle the Trails & Quests panel. Start recording your path in real-time or import external GPX files.",
+    target: "btn-trail-quest"
+  },
+  {
+    title: "Quests, Collections & Badges",
+    body: "Manage your profile, view custom collections, track active quests, check your exploration badges, and export your data.",
+    target: "btn-tab-profile"
+  },
+  {
+    title: "Ready to Explore!",
+    body: "Look for (?) help icons across screens for quick tips. You can repeat this tour at any time from your Settings in the Profile tab.",
+    target: "wrap-up"
+  }
 ];
 
 export const ONBOARD_STEPS_ES = [
-  {title:"¡Bienvenido a PINMAP!",body:"Un mapa social para guardar y compartir los lugares que te importan a ti. Coloca pines, añade hashtags y descubre ubicaciones compartidas por otros. Te mostraremos el lugar.",pos:"center"},
-  {title:"La Barra de Pestañas Inferior",body:"Usa la barra de pestañas en la parte inferior para navegar: Mapa, Buscar, Colocar, Bitácora, Perfil. La pestaña Bitácora muestra un punto cuando tienes nuevos comentarios. Toca Mapa para volver al mapa en cualquier momento.",pos:"top"},
-  {title:"Barra de Búsqueda Dual",body:"Toca '# Hashtags' para buscar pines públicos por etiqueta — el mapa cambiará automáticamente para mostrar los resultados. Toca '📍 Lugares' para buscar cualquier dirección en todo el mundo.",pos:"bottom"},
-  {title:"Coloca un Pin",body:"Toca en cualquier lugar del mapa para colocar tu pin — el panel de Colocar se abrirá automáticamente. Dale un nombre, hashtags, color, foto y una fecha de expiración opcional para lugares temporales. Pulsa Guardar para publicarlo.",pos:"center"},
-  {title:"Guardar Pines",body:"Toca 🔖 Guardar en cualquier pin público para agregarlo a tu colección. Los pines guardados aparecen en la sección Pines Guardados de tu pestaña de Perfil; tócalos para saltar directamente a ellos.",pos:"center"},
-  {title:"Pines que Expiran",body:"Al añadir un pin puedes configurar una fecha de expiración opcional. El pin mostrará una insignia de cuenta regresiva y se eliminará automáticamente cuando expire — perfecto para eventos.",pos:"center"},
-  {title:"Iconos de Pin y Agrupamiento",body:"Los pines muestran un emoji basado en su hashtag: 🍺 para #bar, 🥾 para #senderismo, 🎣 para #pesca. Al alejar el zoom, los pines cercanos se agrupan — toca para acercar.",pos:"center"},
-  {title:"Capas de Mapa",body:"Usa el botón de Capas a la derecha para cambiar entre las vistas Estándar, Topográfica, Satélite, Senderos, Carta Náutica y CycleOSM.",pos:"center"},
-  {title:"Visibilidad del Pin",body:"El botón del medio a la derecha controla lo que se muestra en el mapa: solo tus pines, todos los pines públicos o un mapa limpio. Buscar un hashtag cambia automáticamente para mostrar todos los pines públicos.",pos:"center"},
-  {title:"GPS y Cercanos",body:"Toca el botón GPS para saltar a tu ubicación. Usa la pestaña Cercanos para descubrir pines públicos dentro de un radio de donde te encuentras.",pos:"bottom"},
-  {title:"Seguir Usuarios y Hashtags",body:"Toca cualquier nombre de usuario para ver su perfil público y seguirlo — recibirás una notificación push cuando publique un nuevo pin. Sigue hashtags en la pestaña Buscar.",pos:"center"},
-  {title:"Comentarios, Respuestas y Votos",body:"Toca cualquier pin para dejar un comentario. Responde con ↩ Responder. Vota comentarios con 👍. La pestaña Bitácora muestra los recuentos de comentarios y destaca los pines con nueva actividad.",pos:"center"},
-  {title:"Diarios de Campo (Bitácoras)",body:"¡Adjunta fotos a tus registros de comentarios! Los comentarios se renderizan como tarjetas de álbum de recortes de viajes con marcos polaroid. Toca cualquier foto para ampliarla. Se encolan sin conexión y se sincronizan automáticamente.",pos:"center"},
-  {title:"Modo Brújula Sin Red",body:"Toca 🧭 Brújula en la vista detallada de cualquier pin para abrir un dial de navegación circular basado en sensores. Mantén tu dispositivo plano para ver el rumbo y la distancia en vivo hacia el pin de destino, funcionando 100% sin conexión.",pos:"center"},
-  {title:"Notificaciones Push",body:"Activa las notificaciones push en tu pestaña de Perfil para recibir alertas cuando alguien comente en tu pin o cuando un usuario al que sigues publique algo nuevo.",pos:"center"},
-  {title:"Visitas e Insignias",body:"¡Gana insignias personalizadas mediante la exploración activa! Coloca pines para desbloquear insignias de hitos y registra visitas en los pines de otros usuarios cuando estés a menos de 30m de su ubicación física. Sigue tus logros en la pestaña Perfil.",pos:"center"},
-  {title:"Búsquedas de Explorador",body:"¡Diseña o sigue desafíos de ubicación personalizados! Desafíate a ti mismo o a otros a visitar y registrar visitas en lugares con etiquetas específicas (ej. visitar 3 lugares con la etiqueta #cascadas). El progreso se verifica automáticamente mediante GPS.",pos:"center"},
-  {title:"Colecciones",body:"Agrupa tus lugares favoritos en listas temáticas personalizadas. Actívalas/desactívalas para filtrar la vista del mapa, o añade pines a tus colecciones directamente desde su panel de detalles.",pos:"center"},
-  {title:"Senderos GPX Interactivos",body:"Graba tus senderos para caminatas, paseos o rutas en bicicleta en tiempo real usando el GPS de tu dispositivo. También puedes importar archivos GPX externos para visualizar rutas y ver estadísticas de distancia y duración.",pos:"center"},
-  {title:"¡Todo listo!",body:"Inicia sesión con Google para guardar todo en tus dispositivos. Tus pines, guardados, seguidos y notificaciones se almacenan de forma segura. ¡Feliz exploración!",pos:"center"}
+  {
+    title: "¡Bienvenido a PINMAP!",
+    body: "PINMAP es una plataforma cartográfica que prioriza la privacidad para guardar, organizar y compartir los lugares que te importan. Coloca pines, sigue exploradores y traza tus aventuras.",
+    target: "welcome"
+  },
+  {
+    title: "Explora y Busca",
+    body: "Busca pines globales por #hashtag, sigue tendencias o localiza direcciones en el mundo. Toca aquí para abrir la barra de búsqueda.",
+    target: "btn-tab-search"
+  },
+  {
+    title: "Coloca tu Primer Pin",
+    body: "Mantén presionado (o toca) en cualquier parte del mapa para añadir un pin. Ponle etiquetas, colores, fotos o un temporizador de expiración.",
+    target: "map-center"
+  },
+  {
+    title: "Graba tus Rutas",
+    body: "Toca aquí para abrir el panel de Rutas y Desafíos. Graba tu recorrido en tiempo real o importa archivos GPX.",
+    target: "btn-trail-quest"
+  },
+  {
+    title: "Desafíos, Colecciones e Insignias",
+    body: "Administra tu perfil, organiza colecciones, haz el seguimiento de tus desafíos, revisa tus insignias y exporta tus datos.",
+    target: "btn-tab-profile"
+  },
+  {
+    title: "¡Todo Listo!",
+    body: "Busca los iconos de ayuda (?) en la app para ver consejos rápidos. Puedes repetir este recorrido en la pestaña Perfil.",
+    target: "wrap-up"
+  }
 ];
 
 // Fallback arrays for backwards compatibility

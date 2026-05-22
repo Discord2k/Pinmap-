@@ -12,7 +12,6 @@ import { AdminPanel } from './components/AdminPanel';
 import { WhatsNew } from './components/WhatsNew';
 import { CompassModal } from './components/CompassModal';
 import { TrailRecorder } from './components/TrailRecorder';
-import { WelcomeScreen, WELCOME_KEY } from './components/WelcomeScreen';
 import { LANGUAGES, translations } from './utils/i18n';
 import JSZip from 'jszip';
 
@@ -78,7 +77,6 @@ function App() {
   var s18=useState(10);      var nearbyKm=s18[0];      var setNearbyKm=s18[1];
   var s19=useState(null);    var nearbyRes=s19[0];     var setNearbyRes=s19[1];
   var s20=useState(localStorage.getItem(ONBOARD_KEY)?-1:0); var onboardStep=s20[0]; var setOnboardStep=s20[1];
-  var sWelcome=useState(!localStorage.getItem(WELCOME_KEY)); var showWelcome=sWelcome[0]; var setShowWelcome=sWelcome[1];
   var s38=useState(
     localStorage.getItem(ONBOARD_KEY) && !localStorage.getItem(WHATSNEW_KEY)
   ); var showWhatsNew=s38[0]; var setShowWhatsNew=s38[1];
@@ -4351,8 +4349,7 @@ function App() {
         },t('got_it'))
       )
     ),
-    showWelcome && e(WelcomeScreen, { onDone: function() { setShowWelcome(false); } }),
-    !showWelcome&&!showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
+    !showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
 
     showInsiderExplainer && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",borderRadius:16,padding:"24px 22px",maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",display:"flex",flexDirection:"column"}},
@@ -4711,7 +4708,7 @@ function App() {
               profile: e("svg",{width:20,height:20,viewBox:"0 0 24 24",fill:"none"},e("path",{d:"M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round"}),e("circle",{cx:"12",cy:"7",r:"4",stroke:"currentColor",strokeWidth:1.8})),
               admin: e("svg",{width:20,height:20,viewBox:"0 0 24 24",fill:"none"},e("path",{d:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",stroke:"currentColor",strokeWidth:1.8,strokeLinejoin:"round"}))
             };
-            return e("button",{key:it.id,
+            return e("button",{key:it.id, id:"btn-tab-" + it.id,
             onClick:function(){
               if(isMap){ setOpen(false); return; }
               setTab(it.id); setOpen(true);
