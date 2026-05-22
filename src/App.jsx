@@ -3154,7 +3154,7 @@ function App() {
     loading && e("div",{style:{position:"absolute",top:70,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:20,padding:"5px 14px",fontSize:13,zIndex:999,color:"#6f786f"}},"Loading..."),
 
     open && e("div",{className:"bubble",style:{position:"fixed",left:0,right:0,top:0,bottom:60,zIndex:1000,background:T.paper,overflow:"hidden",display:"flex",flexDirection:"column",animation:"fadeIn 0.18s ease both"}},
-      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"calc(54px + env(safe-area-inset-top,0px)) 22px 14px",borderBottom:"1px solid #e6dfca",background:"#f6f1e4",flexShrink:0}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"calc(16px + env(safe-area-inset-top,0px)) 22px 12px",borderBottom:"1px solid #e6dfca",background:"#f6f1e4",flexShrink:0}},
         e("div",{style:{display:"flex",flexDirection:"column",gap:1}},
           e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2a5d3c"}},"📍 PINMAP"),
           e("span",{style:{fontSize:10,color:"#9a8f74",letterSpacing:0.3}},"(c) Seth Gray")
@@ -3203,14 +3203,14 @@ function App() {
         e("div",{className:"pm-search-input-wrap",style:{background:T.paper,flexShrink:0}},
           e("input",{
             style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
-              borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:10},
+              borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:6},
             placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):t("search_placeholder_places_detail"),
             value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:addrSearch,
             onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else setAddrSearch(ev.target.value);},
             onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
           }),
           searchMode!=="quests" && e("button",{
-            style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:12},
+            style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:8},
             onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
           },t("search_btn")),
           e("div",{style:{display:"flex",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}},
@@ -3736,8 +3736,8 @@ function App() {
         )
       ),
 
-      tab==="admin" && uname==="Seth Gray" && e("div",{style:{padding:"22px",overflowY:"auto",height:"100%",background:T.paper}},
-        e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:16}},"Admin · Seth Gray"),
+      tab==="admin" && uname==="Seth Gray" && e("div",{style:{padding:"16px",overflowY:"auto",height:"100%",background:T.paper}},
+        e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:10}},"Admin · Seth Gray"),
         adminLoading&&e("div",{style:{color:T.ink3,fontSize:13,padding:"20px 0"}},"Loading stats…"),
         adminStats&&e("div",null,
           e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}},
@@ -3782,8 +3782,8 @@ function App() {
         })
       ),
 
-      tab==="add" && e("div",{style:{padding:"22px",overflowY:"auto"}},
-        e("div",{style:{padding:"0 0 16px"}},
+      tab==="add" && e("div",{style:{padding:"16px",overflowY:"auto"}},
+        e("div",{style:{padding:"0 0 10px"}},
           e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:6}},t("form_title_add")),
           pendingLL && e("div",{style:{fontSize:12,color:T.forest,fontFamily:T.mono,marginTop:4}},
             formatLL(pendingLL.lat, pendingLL.lng, 4)
@@ -3902,9 +3902,9 @@ function App() {
         )
       ),
 
-      tab==="nearby" && e("div",{style:{padding:"22px",overflowY:"auto"}},
-        e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:16}},"Nearby Pins"),
-        e("div",{style:{fontSize:13,color:T.ink3,marginBottom:16}},
+      tab==="nearby" && e("div",{style:{padding:"16px",overflowY:"auto"}},
+        e("div",{style:{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono,marginBottom:10}},"Nearby Pins"),
+        e("div",{style:{fontSize:13,color:T.ink3,marginBottom:10}},
           userLL ? "Showing pins closest to your location" : "Tap the GPS button on the map to find your location"
         ),
         (function(){

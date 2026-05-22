@@ -146,7 +146,7 @@ button:active { transform:scale(0.97); }
   }
 }
 .pm-search-input-wrap {
-  padding: 20px 22px 0;
+  padding: 12px 22px 0;
 }
 .pm-search-results-wrap {
   padding: 0 22px;
@@ -168,7 +168,7 @@ button:active { transform:scale(0.97); }
 
 @media (max-width: 480px) {
   .pm-search-input-wrap {
-    padding: 16px 12px 0;
+    padding: 10px 12px 0;
   }
   .pm-search-results-wrap {
     padding: 0 12px;

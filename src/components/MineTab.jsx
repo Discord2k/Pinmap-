@@ -407,11 +407,11 @@ export function MineTab(props) {
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* ── Editorial header ───────────────────────────────────────────────────── */}
-      <div style={{padding:"28px 22px 20px",borderBottom:"1px solid "+T.borderSoft,flexShrink:0}}>
-        <div style={{fontSize:10.5,letterSpacing:"0.18em",color:T.ink3,textTransform:"uppercase",fontWeight:600,fontFamily:T.mono,marginBottom:8}}>
+      <div style={{padding:"16px 22px 12px",borderBottom:"1px solid "+T.borderSoft,flexShrink:0}}>
+        <div style={{fontSize:10.5,letterSpacing:"0.18em",color:T.ink3,textTransform:"uppercase",fontWeight:600,fontFamily:T.mono,marginBottom:4}}>
           {t('vol_ii')}
         </div>
-        <div style={{fontSize:38,fontWeight:700,letterSpacing:"-0.02em",color:T.ink,lineHeight:1,marginBottom:10}}>{t('my_pins')}</div>
+        <div style={{fontSize:28,fontWeight:700,letterSpacing:"-0.02em",color:T.ink,lineHeight:1.1,marginBottom:6}}>{t('my_pins')}</div>
         {myPins.length>0 && (
           <div style={{fontSize:14,color:T.ink3}}>
             {myPins.length + " " + (myPins.length === 1 ? t('entry_noun') : t('entries_noun')) + " · " + totalUpvotes + " " + (totalUpvotes === 1 ? t('upvote_noun') : t('upvotes_noun')) + " " + t('received')}
@@ -420,12 +420,12 @@ export function MineTab(props) {
       </div>
 
       {/* Topo divider */}
-      <div style={{height:28,position:"relative",overflow:"hidden",flexShrink:0,borderBottom:"1px solid "+T.borderSoft}}>
-        <svg width="100%" height="100%" viewBox="0 0 400 28" preserveAspectRatio="none" style={{position:"absolute",inset:0}}>
+      <div style={{height:16,position:"relative",overflow:"hidden",flexShrink:0,borderBottom:"1px solid "+T.borderSoft}}>
+        <svg width="100%" height="100%" viewBox="0 0 400 16" preserveAspectRatio="none" style={{position:"absolute",inset:0}}>
           <g fill="none" stroke={T.border} strokeWidth="0.7">
-            <path d="M-10 22 Q 60 12 120 18 T 260 10 T 420 16"></path>
-            <path d="M-10 16 Q 60 6 120 12 T 260 4 T 420 10"></path>
-            <path d="M-10 10 Q 60 0 120 6 T 260 -2 T 420 4"></path>
+            <path d="M-10 12 Q 60 6 120 10 T 260 5 T 420 9"></path>
+            <path d="M-10 9 Q 60 3 120 7 T 260 2 T 420 6"></path>
+            <path d="M-10 6 Q 60 0 120 4 T 260 -1 T 420 3"></path>
           </g>
         </svg>
       </div>

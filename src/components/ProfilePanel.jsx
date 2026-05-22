@@ -124,7 +124,7 @@ export function ProfilePanel(props) {
   return (
     <div style={{height:"100%",overflowY:"auto",background:T.paper}}>
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 22px 16px",borderBottom:"1px solid "+T.borderSoft}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px 10px",borderBottom:"1px solid "+T.borderSoft}}>
         <div style={{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono}}>{t('profile')}</div>
         {user && !editingProfile && (
           <button 
@@ -148,20 +148,20 @@ export function ProfilePanel(props) {
       </div>
 
       {/* ── Identity ──────────────────────────────────────────────────────────── */}
-      <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
-        <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:16}}>
+      <div style={{padding:"14px 22px 12px",borderBottom:"1px solid "+T.borderSoft}}>
+        <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:12}}>
           {/* Avatar */}
-          <div style={{width:72,height:72,borderRadius:36,background:avatar?"transparent":T.forest,
+          <div style={{width:56,height:56,borderRadius:28,background:avatar?"transparent":T.forest,
             color:T.paper,display:"flex",alignItems:"center",justifyContent:"center",
-            fontSize:30,fontWeight:700,flexShrink:0,overflow:"hidden",
-            border:"3px solid "+T.borderSoft,boxShadow:"0 2px 8px rgba(0,0,0,0.10)"}}>
+            fontSize:24,fontWeight:700,flexShrink:0,overflow:"hidden",
+            border:"2px solid "+T.borderSoft,boxShadow:"0 2px 8px rgba(0,0,0,0.10)"}}>
             {avatar 
               ? <img src={avatar} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(ev)=>{ev.target.style.display="none";}} />
               : (uname&&uname!=="guest"?uname[0].toUpperCase():"?")
             }
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:22,fontWeight:700,color:T.ink,lineHeight:1.1,marginBottom:4}}>
+            <div style={{fontSize:18,fontWeight:700,color:T.ink,lineHeight:1.1,marginBottom:4}}>
               {uname&&uname!=="guest"?uname:(lang === 'es' ? "Invitado" : "Guest")}
             </div>
             {user && <div style={{fontSize:13,color:T.ink3}}>{"@"+(uname||"").toLowerCase().replace(/ /g,".")}</div>}
@@ -299,7 +299,7 @@ export function ProfilePanel(props) {
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",borderBottom:"1px solid "+T.borderSoft}}>
           {myStats.map(function(s,i){
             return (
-              <div key={i} style={{textAlign:"center",padding:"18px 8px",borderRight:i<3?"1px solid "+T.borderSoft:"none"}}>
+              <div key={i} style={{textAlign:"center",padding:"12px 8px",borderRight:i<3?"1px solid "+T.borderSoft:"none"}}>
                 <div style={{fontSize:24,fontWeight:700,color:T.ink,lineHeight:1}}>{s.v}</div>
                 <div style={{fontSize:9.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,marginTop:4}}>{s.l}</div>
               </div>
