@@ -50,6 +50,7 @@ export function AdminPanel(props) {
   const [activeTab, setActiveTab] = React.useState("overview"); // overview, users, feed
   const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [userSortOrder, setUserSortOrder] = React.useState("recent"); // recent, alpha
   
   // Data State
   const [users, setUsers] = React.useState([]);
@@ -230,13 +231,21 @@ export function AdminPanel(props) {
     };
   }, [fetchData]);
 
-  // Filter users list based on search query
-  const filteredUsers = users.filter(u => {
-    const nameMatch = (u.id || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const bioMatch = (u.bio || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const locMatch = (u.location || "").toLowerCase().includes(searchQuery.toLowerCase());
-    return nameMatch || bioMatch || locMatch;
-  });
+  // Filter and sort users list
+  const filteredUsers = users
+    .filter(u => {
+      const nameMatch = (u.id || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const bioMatch = (u.bio || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const locMatch = (u.location || "").toLowerCase().includes(searchQuery.toLowerCase());
+      return nameMatch || bioMatch || locMatch;
+    })
+    .sort((a, b) => {
+      if (userSortOrder === "alpha") {
+        return (a.id || "").localeCompare(b.id || "");
+      } else {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+    });
 
   // Filter feed items based on feed filters
   const filteredFeed = feedItems.filter(item => {
@@ -441,6 +450,33 @@ export function AdminPanel(props) {
                       ×
                     </button>
                   )}
+                </div>
+
+                {/* Sort controls */}
+                <div style={{display:"flex", gap:8, alignItems:"center", marginBottom:14, flexWrap:"wrap"}}>
+                  <span style={{fontSize:12.5, color:T.ink2, fontWeight:600}}>{lang === 'es' ? "Ordenar por:" : "Sort by:"}</span>
+                  <button
+                    onClick={() => setUserSortOrder("recent")}
+                    style={{
+                      padding:"5px 10px", borderRadius:8, fontSize:12, fontWeight:600, border:"none",
+                      background: userSortOrder === "recent" ? T.forest : T.paper3,
+                      color: userSortOrder === "recent" ? T.paper : T.ink2,
+                      cursor:"pointer"
+                    }}
+                  >
+                    ⏱️ {lang === 'es' ? "Recientes" : "Recent"}
+                  </button>
+                  <button
+                    onClick={() => setUserSortOrder("alpha")}
+                    style={{
+                      padding:"5px 10px", borderRadius:8, fontSize:12, fontWeight:600, border:"none",
+                      background: userSortOrder === "alpha" ? T.forest : T.paper3,
+                      color: userSortOrder === "alpha" ? T.paper : T.ink2,
+                      cursor:"pointer"
+                    }}
+                  >
+                    🔤 {lang === 'es' ? "Alfabético (A-Z)" : "Alphabetical (A-Z)"}
+                  </button>
                 </div>
 
                 <div style={{fontSize:11, color:T.ink3, fontFamily:T.mono, marginBottom:12, textTransform:"uppercase", letterSpacing:"0.06em"}}>

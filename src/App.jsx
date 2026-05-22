@@ -1011,7 +1011,25 @@ function App() {
     api.getTrails(uname).then(function(data){setTrails(data||[]);});
     api.getSavedTrailIds(uname).then(function(data){setSavedTrailIds(data||[]);});
     api.getProfile(uname).then(function(data){
-      if(data) setMyProfile(data);
+      if(data) {
+        setMyProfile(data);
+      } else {
+        // Auto-create profile row if it doesn't exist yet
+        var defaultProfile = {
+          id: uname,
+          full_name: user.user_metadata && user.user_metadata.full_name ? user.user_metadata.full_name : uname,
+          avatar_url: user.user_metadata && user.user_metadata.avatar_url ? user.user_metadata.avatar_url : null,
+          updated_at: new Date().toISOString()
+        };
+        api.upsertProfile(defaultProfile).then(function(r) {
+          if (r && !r.error) {
+            setMyProfile(defaultProfile);
+          }
+        });
+        // Reset onboarding state so they see the tutorial
+        localStorage.removeItem(ONBOARD_KEY);
+        setOnboardStep(0);
+      }
     });
     // Clean up old seen notifications (older than 7 days)
     api.deleteOldNotifs(uname);
@@ -3963,7 +3981,7 @@ function App() {
                         id: Math.random().toString(36).slice(2, 10),
                         name: name.trim(),
                         description: "",
-                        is_public: true,
+                        is_public: false,
                         owner: uname
                       });
                     }

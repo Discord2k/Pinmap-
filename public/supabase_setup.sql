@@ -428,3 +428,48 @@ CREATE INDEX IF NOT EXISTS idx_saved_trails_owner ON public.saved_trails(owner);
 CREATE INDEX IF NOT EXISTS idx_saved_trails_trail_id ON public.saved_trails(trail_id);
 
 
+-- =========================================================================
+-- ADDITIONAL UPDATES & AUTOMATIONS
+-- =========================================================================
+
+-- Add is_public column to challenges if it doesn't exist
+ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT true;
+
+-- Update SELECT policy for challenges to restrict non-public ones
+DROP POLICY IF EXISTS "Anyone can view challenges" ON public.challenges;
+CREATE POLICY "Anyone can view challenges" ON public.challenges
+  FOR SELECT USING (is_public = true OR owner = public.current_username() OR owner = 'system');
+
+-- Restrict SELECT policy for mappack_pins for privacy
+DROP POLICY IF EXISTS "Anyone can view mappack pins" ON public.mappack_pins;
+CREATE POLICY "Anyone can view mappack pins" ON public.mappack_pins
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.mappacks 
+      WHERE mappacks.id = mappack_pins.mappack_id
+    )
+  );
+
+-- Trigger to automatically create a profile when a new user signs up in auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, avatar_url)
+  VALUES (
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data->>'avatar_url'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create the trigger if it doesn't exist (re-runnable)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+

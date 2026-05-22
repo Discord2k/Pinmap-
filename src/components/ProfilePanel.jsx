@@ -37,7 +37,6 @@ export function ProfilePanel(props) {
   var [showCreatePackModal, setShowCreatePackModal] = React.useState(false);
   var [packName, setPackName] = React.useState("");
   var [packDesc, setPackDesc] = React.useState("");
-  var [packPublic, setPackPublic] = React.useState(true);
 
   var [showCreateChallengeModal, setShowCreateChallengeModal] = React.useState(false);
   var [chalTitle, setChalTitle] = React.useState("");
@@ -45,6 +44,7 @@ export function ProfilePanel(props) {
   var [chalIcon, setChalIcon] = React.useState("🏆");
   var [chalTag, setChalTag] = React.useState("");
   var [chalCount, setChalCount] = React.useState(3);
+  var [chalPublic, setChalPublic] = React.useState(true);
 
   var [questTab, setQuestTab] = React.useState("active");
   var [questsCollapsed, setQuestsCollapsed] = React.useState(true);
@@ -606,11 +606,15 @@ export function ProfilePanel(props) {
                 });
 
                 var activeCount = sortedChallenges.filter(function(ch) { return ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0; }).length;
-                var discoverCount = sortedChallenges.filter(function(ch) { return ch.owner !== "system" && ch.owner !== uname && trackedQuestIds.indexOf(ch.id) < 0; }).length;
+                var discoverCount = sortedChallenges.filter(function(ch) { return ch.owner !== "system" && ch.owner !== uname && trackedQuestIds.indexOf(ch.id) < 0 && ch.is_public !== false; }).length;
 
                 var filtered = sortedChallenges.filter(function(ch) {
                   var isMineOrSystem = ch.owner === "system" || ch.owner === uname || trackedQuestIds.indexOf(ch.id) >= 0;
-                  return questTab === "active" ? isMineOrSystem : !isMineOrSystem;
+                  if (questTab === "active") {
+                    return isMineOrSystem;
+                  } else {
+                    return !isMineOrSystem && ch.is_public !== false;
+                  }
                 });
 
                 return (
@@ -691,6 +695,11 @@ export function ProfilePanel(props) {
                                   )}
                                   {ch.owner && ch.owner !== "system" && (
                                     <span style={{color:T.ink3,fontSize:11}}>{t('by_author')} @{ch.owner}</span>
+                                  )}
+                                  {ch.is_public === false && (
+                                    <span style={{background:"rgba(220,53,69,0.1)",color:"#dc3545",fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>
+                                      {lang === 'es' ? "Privado" : "Private"}
+                                    </span>
                                   )}
                                 </div>
                                 <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{ch.description}</div>
@@ -1337,17 +1346,6 @@ export function ProfilePanel(props) {
               />
             </div>
  
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-              <input 
-                type="checkbox" 
-                id="isPublicPack"
-                checked={packPublic}
-                onChange={function(e){ setPackPublic(e.target.checked); }}
-                style={{width:16,height:16,accentColor:T.forest}}
-              />
-              <label htmlFor="isPublicPack" style={{fontSize:13.5,color:T.ink,cursor:"pointer"}}>{lang === 'es' ? "Hacer colección pública para que cualquiera la vea" : "Make collection public for anyone to view"}</label>
-            </div>
- 
             <div style={{display:"flex",gap:8}}>
               <button 
                 style={Object.assign({}, S.btn, {flex:1})}
@@ -1357,12 +1355,11 @@ export function ProfilePanel(props) {
                     id: Math.random().toString(36).slice(2, 10),
                     name: packName.trim(),
                     description: packDesc.trim(),
-                    is_public: packPublic,
+                    is_public: false,
                     owner: uname
                   });
                   setPackName("");
                   setPackDesc("");
-                  setPackPublic(true);
                   setShowCreatePackModal(false);
                 }}
               >
@@ -1446,6 +1443,17 @@ export function ProfilePanel(props) {
               />
             </div>
  
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <input 
+                type="checkbox" 
+                id="isPublicChal"
+                checked={chalPublic}
+                onChange={function(e){ setChalPublic(e.target.checked); }}
+                style={{width:16,height:16,accentColor:T.forest}}
+              />
+              <label htmlFor="isPublicChal" style={{fontSize:13.5,color:T.ink,cursor:"pointer"}}>{lang === 'es' ? "Hacer búsqueda pública para la comunidad" : "Make quest public for the community"}</label>
+            </div>
+ 
             <div style={{display:"flex",gap:8}}>
               <button 
                 style={Object.assign({}, S.btn, {flex:1})}
@@ -1463,13 +1471,15 @@ export function ProfilePanel(props) {
                     icon: chalIcon.trim() || "🏆",
                     tags: parsedTags,
                     required_count: chalCount,
-                    owner: uname
+                    owner: uname,
+                    is_public: chalPublic
                   });
                   setChalTitle("");
                   setChalDesc("");
                   setChalIcon("🏆");
                   setChalTag("");
                   setChalCount(3);
+                  setChalPublic(true);
                   setShowCreateChallengeModal(false);
                 }}
               >
@@ -1477,7 +1487,7 @@ export function ProfilePanel(props) {
               </button>
               <button 
                 style={Object.assign({}, S.btnOutline, {flex:1})}
-                onClick={function(){ setShowCreateChallengeModal(false); }}
+                onClick={function(){ setShowCreateChallengeModal(false); setChalPublic(true); }}
               >
                 {t('quest_cancel')}
               </button>
