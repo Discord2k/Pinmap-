@@ -129,3 +129,53 @@ button:active { transform:scale(0.97); }
   pointer-events: none;
 }
 
+/* ── Search Tab Responsive Polish ────────────────────────────────────────── */
+.pm-drawer-content {
+  padding: 11px;
+}
+.pm-drawer-content.pm-search-tab-content {
+  padding: 11px 0px;
+}
+.pm-unread-banner {
+  margin-bottom: 10px;
+}
+@media (max-width: 480px) {
+  .pm-search-tab-content .pm-unread-banner {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+}
+.pm-search-input-wrap {
+  padding: 20px 22px 0;
+}
+.pm-search-results-wrap {
+  padding: 0 22px;
+}
+.pm-search-tab {
+  flex: 1;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+@media (max-width: 480px) {
+  .pm-search-input-wrap {
+    padding: 16px 12px 0;
+  }
+  .pm-search-results-wrap {
+    padding: 0 12px;
+  }
+  .pm-search-tab {
+    padding: 8px 5px;
+    letter-spacing: 0.08em;
+  }
+}
+

@@ -3152,10 +3152,14 @@ function App() {
         })
       ),
 
-      e("div",{style:{padding:11,flex:1,overflowY:"auto"}},
+      e("div",{
+        className: "pm-drawer-content" + (tab === "search" ? " pm-search-tab-content" : ""),
+        style: (unreadCount === 0 && tab !== "search") ? {display: "none"} : {flex:1,overflowY:"auto"}
+      },
         unreadCount>0 && e("div",{
+          className: "pm-unread-banner",
           onClick:function(){setTab("mine");},
-          style:{background:"#fffbf0",border:"1px solid #ffc107",borderRadius:8,padding:"10px 12px",marginBottom:10,cursor:"pointer",display:"flex",alignItems:"center",gap:8}
+          style:{background:"#fffbf0",border:"1px solid #ffc107",borderRadius:8,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:8}
         },
           e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#c62828",flexShrink:0}}),
           e("div",null,
@@ -3166,7 +3170,7 @@ function App() {
 
         tab==="search" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
 
-        e("div",{style:{padding:"20px 22px 0",background:T.paper,flexShrink:0}},
+        e("div",{className:"pm-search-input-wrap",style:{background:T.paper,flexShrink:0}},
           e("input",{
             style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
               borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:10},
@@ -3180,18 +3184,18 @@ function App() {
             onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
           },t("search_btn")),
           e("div",{style:{display:"flex",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}},
-            e("button",{style:{flex:1,flexShrink:0,whiteSpace:"nowrap",padding:"8px 12px",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="tags"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.forest:T.ink3,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
             },"# " + t("search_mode_tags")),
-            e("button",{style:{flex:1,flexShrink:0,whiteSpace:"nowrap",padding:"8px 12px",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="places"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("places");}
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="places"?T.forest:T.ink3,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("places");}
             },"📍 " + t("search_mode_places")),
-            e("button",{style:{flex:1,flexShrink:0,whiteSpace:"nowrap",padding:"8px 12px",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="quests"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("quests");}
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.forest:T.ink3,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("quests");}
             },"🏆 " + t("search_mode_quests")),
-            e("button",{style:{flex:1,flexShrink:0,whiteSpace:"nowrap",padding:"8px 12px",background:"none",border:"none",cursor:"pointer",fontSize:11,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:600,color:searchMode==="trails"?T.forest:T.ink3,fontFamily:T.mono,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("trails");}
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("trails");}
             },"🥾 " + t("search_mode_trails"))
           )
         ),
 
-        e("div",{style:{flex:1,overflowY:"auto",padding:"0 22px"}},
+        e("div",{className:"pm-search-results-wrap",style:{flex:1,overflowY:"auto"}},
           searchMode==="places"
             ? e("div",null,
                 addrLoading&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},t("searching_loading")),
