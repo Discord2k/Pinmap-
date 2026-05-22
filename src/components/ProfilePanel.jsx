@@ -89,6 +89,7 @@ export function ProfilePanel(props) {
   
   var toggleUserFollow = props.toggleUserFollow || function(){};
   var loadUserProfile = props.loadUserProfile || function(){};
+  var focusUserPins = props.focusUserPins || function(){};
   var pushEnabled = props.pushEnabled || false;
   var setPushEnabled = props.setPushEnabled || function(){};
   var flash = props.flash || function(){};
@@ -981,6 +982,18 @@ export function ProfilePanel(props) {
                         }
                       </div>
                     </div>
+                    <button
+                      title={lang === 'es' ? "Ver pines en el mapa" : "View pins on map"}
+                      style={{width:34,height:34,borderRadius:8,border:"1px solid "+T.border,
+                        background:"transparent",
+                        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,color:T.forest}}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        focusUserPins(f.following);
+                      }}
+                    >
+                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z" fill="currentColor"/></svg>
+                    </button>
                     <button
                       title={bellOn ? (lang === 'es' ? "Silenciar notificaciones de nuevos pines" : "Mute new pin notifications") : (lang === 'es' ? "Recibir notificaciones de nuevos pines" : "Get notified of new pins")}
                       style={{width:34,height:34,borderRadius:8,border:"1px solid "+(bellOn?T.forest:T.border),

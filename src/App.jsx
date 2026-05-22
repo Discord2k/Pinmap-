@@ -110,6 +110,7 @@ function App() {
   var s65=useState("#2a5d3c"); var importColor=s65[0]; var setImportColor=s65[1];
   var s66=useState(""); var importTags=s66[0]; var setImportTags=s66[1];
   var s67=useState(null); var importPreview=s67[0]; var setImportPreview=s67[1];
+  var sFocusedUser=useState(null); var focusedUser=sFocusedUser[0]; var setFocusedUser=sFocusedUser[1];
   var s90=useState([]); var checkins=s90[0]; var setCheckins=s90[1];
   var s91=useState(0); var selPinCheckinsCount=s91[0]; var setSelPinCheckinsCount=s91[1];
   var s92=useState(null); var selPinTrail=s92[0]; var setSelPinTrail=s92[1];
@@ -1339,7 +1340,11 @@ function App() {
     if(!mapObj.current||!window.L) return;
     
     var displayedPins = pins;
-    if(activeMapPack) {
+    if(focusedUser) {
+      displayedPins = pins.filter(function(p){
+        return p.owner === focusedUser && (p.privacy === "public" || p.owner === uname);
+      });
+    } else if(activeMapPack) {
       displayedPins = pins.filter(function(p){
         return activeMapPackPinIds.indexOf(p.id) >= 0;
       });
@@ -1355,6 +1360,7 @@ function App() {
 
     if(zoom<=12){
       var clPins=displayedPins.filter(function(p){
+        if(focusedUser) return true;
         if(activeMapPack) return true;
         if(mapLayerRef.current==="mine") return p.owner===uname;
         if(mapLayerRef.current==="public") {
@@ -1413,6 +1419,7 @@ function App() {
       if(p.expires_at && new Date(p.expires_at) < now && p.owner!==uname) return false;
       // Expiring filter
       if(showExpiringOnly) return p.expires_at && new Date(p.expires_at)>now && new Date(p.expires_at)<soon && p.privacy==="public";
+      if(focusedUser) return true;
       if(activeMapPack) return true;
       if(mapLayer==="mine")   return p.owner===uname;
       if(mapLayer==="public") {
@@ -1457,7 +1464,7 @@ function App() {
         }
       }, 200);
     }
-  },[pins,activeFilter,mapLayer,uname,mapZoom,showExpiringOnly,activeMapPack,activeMapPackPinIds]);
+  },[pins,activeFilter,mapLayer,uname,mapZoom,showExpiringOnly,activeMapPack,activeMapPackPinIds,focusedUser]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
@@ -1560,6 +1567,26 @@ function App() {
         setTimeout(function(){if(m._icon)m._icon.classList.remove("pin-focused");},2200);
       }
     }, 600);
+  }
+
+  function focusUserPins(username) {
+    setFocusedUser(username);
+    setOpen(false);
+    setViewUser(null);
+    var userPinsToFit = pins.filter(function(p){
+      return p.owner === username && (p.privacy === "public" || p.owner === uname);
+    });
+    if(userPinsToFit.length > 0 && mapObj.current && window.L){
+      var lats = userPinsToFit.map(function(p){return p.lat;});
+      var lngs = userPinsToFit.map(function(p){return p.lng;});
+      var bounds = window.L.latLngBounds(
+        [Math.min.apply(null,lats), Math.min.apply(null,lngs)],
+        [Math.max.apply(null,lats), Math.max.apply(null,lngs)]
+      );
+      mapObj.current.fitBounds(bounds,{padding:[60,60]});
+    } else {
+      flash(t("toast_no_pins_for_user", {user: username}));
+    }
   }
 
   function loadUserProfile(owner) {
@@ -2494,41 +2521,79 @@ function App() {
         !open&&unreadCount>0&&e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#b85c2a",flexShrink:0}})
       )
     ),
-    // Active filter chip on map
-    activeFilter && !open && e("div",{style:{
+    // Active filter chips on map
+    !open && (activeFilter || focusedUser) && e("div",{style:{
       position:"absolute",
       top:"calc(68px + env(safe-area-inset-top,0px))",
       left:"50%",
       transform:"translateX(-50%)",
       zIndex:999,
       display:"flex",
+      flexDirection:"column",
       alignItems:"center",
       gap:6,
-      background:T.forest,
-      color:T.paper,
-      borderRadius:20,
-      padding:"5px 8px 5px 14px",
-      fontSize:13,
-      fontWeight:600,
-      boxShadow:T.shadowLg,
-      whiteSpace:"nowrap",
-      cursor:"default"
+      pointerEvents:"none"
     }},
-      e("span",null,"#"+activeFilter),
-      e("button",{
-        style:{
-          width:22,height:22,borderRadius:"50%",
-          background:"rgba(246,241,228,0.25)",
-          border:"none",color:T.paper,cursor:"pointer",
-          display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:13,lineHeight:1,flexShrink:0
-        },
-        onClick:function(){
-          setActiveFilter(null);
-          setSearchResults(null);
-          setSearchTag("");
-        }
-      },"×")
+      focusedUser && e("div",{style:{
+        display:"flex",
+        alignItems:"center",
+        gap:6,
+        background:T.forest,
+        color:T.paper,
+        borderRadius:20,
+        padding:"5px 8px 5px 14px",
+        fontSize:13,
+        fontWeight:600,
+        boxShadow:T.shadowLg,
+        whiteSpace:"nowrap",
+        cursor:"default",
+        pointerEvents:"auto"
+      }},
+        e("span",null,t("filtered_by_user", {user: focusedUser})),
+        e("button",{
+          style:{
+            width:22,height:22,borderRadius:"50%",
+            background:"rgba(246,241,228,0.25)",
+            border:"none",color:T.paper,cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:13,lineHeight:1,flexShrink:0
+          },
+          onClick:function(){
+            setFocusedUser(null);
+          }
+        },"×")
+      ),
+      activeFilter && e("div",{style:{
+        display:"flex",
+        alignItems:"center",
+        gap:6,
+        background:T.forest,
+        color:T.paper,
+        borderRadius:20,
+        padding:"5px 8px 5px 14px",
+        fontSize:13,
+        fontWeight:600,
+        boxShadow:T.shadowLg,
+        whiteSpace:"nowrap",
+        cursor:"default",
+        pointerEvents:"auto"
+      }},
+        e("span",null,"#"+activeFilter),
+        e("button",{
+          style:{
+            width:22,height:22,borderRadius:"50%",
+            background:"rgba(246,241,228,0.25)",
+            border:"none",color:T.paper,cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:13,lineHeight:1,flexShrink:0
+          },
+          onClick:function(){
+            setActiveFilter(null);
+            setSearchResults(null);
+            setSearchTag("");
+          }
+        },"×")
+      )
     ),
 
     // Right-side map controls
@@ -3675,6 +3740,7 @@ function App() {
           user:user,uname:uname,myPins:myPins,checkinsCount:checkins.length,
           userFollows:userFollows,followers:followers,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
+          focusUserPins:focusUserPins,
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           mapPacks:mapPacks,
           challenges:challenges,
@@ -4190,7 +4256,20 @@ function App() {
           /* Avatar + Follow row — content area, top padding makes room for the overlapping avatar */
           e("div",{style:{padding:"44px 18px 14px",background:"#f6f1e4"}},
             /* Follow button — floats top-right of content area */
-            viewUser!==uname&&e("div",{style:{display:"flex",justifyContent:"flex-end",marginTop:-36,marginBottom:6}},
+            viewUser!==uname&&e("div",{style:{display:"flex",justifyContent:"flex-end",marginTop:-36,marginBottom:6,gap:8}},
+              userFollows.some(function(f){return f.following===viewUser;})&&e("button",{
+                style:{
+                  fontSize:13,padding:"7px 14px",borderRadius:20,
+                  cursor:"pointer",fontWeight:600,
+                  fontFamily:"Inter, system-ui, sans-serif",
+                  transition:"all 0.15s",
+                  background:"transparent",
+                  color:"#2a5d3c",
+                  border:"1.5px solid #2e7d32",
+                  display:"flex",alignItems:"center",gap:4
+                },
+                onClick:function(){focusUserPins(viewUser);}
+              }, e("span",null,"🗺️"), t("show_pins")),
               e("button",{
                 style:{
                   fontSize:13,padding:"7px 18px",borderRadius:20,

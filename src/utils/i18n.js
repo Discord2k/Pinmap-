@@ -73,6 +73,9 @@ export const translations = {
     toast_trail_recording_saved: "💾 Trail saved successfully!",
     toast_trail_recording_cancelled: "❌ Trail recording cancelled.",
     toast_trail_too_large: "Region too large ({count} tiles). Zoom in first.",
+    toast_no_pins_for_user: "No pins to display for @{user}",
+    filtered_by_user: "Filtered by @{user}",
+    show_pins: "Show Pins",
     toast_trail_download_progress: "Downloading: {progress}%",
 
     // Pin Drop Form
@@ -408,6 +411,9 @@ export const translations = {
     toast_trail_recording_saved: "💾 ¡Ruta guardada con éxito!",
     toast_trail_recording_cancelled: "❌ Grabación de ruta cancelada.",
     toast_trail_too_large: "Área demasiado grande ({count} imágenes). Haz zoom primero.",
+    toast_no_pins_for_user: "No hay pines para mostrar para @{user}",
+    filtered_by_user: "Filtrado por @{user}",
+    show_pins: "Ver Pines",
     toast_trail_download_progress: "Descargando: {progress}%",
 
     // Pin Drop Form
