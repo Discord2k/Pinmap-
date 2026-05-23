@@ -934,7 +934,14 @@ function App() {
     function tryInit(){
       if(!mapDiv.current||!window.L){setTimeout(tryInit,100);return;}
       if(mapObj.current) return;
-      var map=window.L.map(mapDiv.current,{zoomControl:false,scrollWheelZoom:true}).setView([39,-98],4);
+      var map=window.L.map(mapDiv.current,{
+        zoomControl:false,
+        scrollWheelZoom:true,
+        minZoom:2,
+        maxBounds:[[-85,-180],[85,180]],
+        maxBoundsViscosity:1.0,
+        worldCopyJump:true
+      }).setView([39,-98],4);
       var initTile = window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19});
       initTile.addTo(map);
       currentBase.current = [initTile];
