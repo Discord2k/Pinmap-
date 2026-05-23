@@ -65,6 +65,9 @@ function App() {
   var s104=useState([]);      var trailSearchResults=s104[0]; var setTrailSearchResults=s104[1];
   var s105=useState(false);   var trailSearchLoading=s105[0]; var setTrailSearchLoading=s105[1];
   var s10=useState(null);    var searchResults=s10[0]; var setSearchResults=s10[1];
+  var [mapPackSearch, setMapPackSearch] = useState("");
+  var [activitySearch, setActivitySearch] = useState("");
+  var [activityFeedFilter, setActivityFeedFilter] = useState(null);
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
   var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",trail_id:""}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
@@ -131,7 +134,7 @@ function App() {
   var s51=useState(null); var myProfile=s51[0]; var setMyProfile=s51[1];
   var s52=useState(null); var viewProfile=s52[0]; var setViewProfile=s52[1];
   var s53=useState(false); var editingProfile=s53[0]; var setEditingProfile=s53[1];
-  var s54=useState({bio:"",location:"",website:"",twitter:"",instagram:"",youtube:"",avatar_url:""}); var profileForm=s54[0]; var setProfileForm=s54[1];
+  var s54=useState({full_name:"",bio:"",location:"",website:"",twitter:"",instagram:"",youtube:"",avatar_url:""}); var profileForm=s54[0]; var setProfileForm=s54[1];
   var s40=useState({}); var commentCounts=s40[0]; var setCommentCounts=s40[1];
   var s72=useState([]); var newUpvotePinIds=s72[0]; var setNewUpvotePinIds=s72[1];
   var s69=useState(function(){try{return JSON.parse(localStorage.getItem("pm-drafts")||"[]");}catch(e){return [];}}); var drafts=s69[0]; var setDrafts=s69[1];
@@ -3166,24 +3169,46 @@ function App() {
           e("input",{
             style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
               borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:6},
-            placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):t("search_placeholder_places_detail"),
-            value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:addrSearch,
-            onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else setAddrSearch(ev.target.value);},
+            placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar guías...":"Search guides..."):searchMode==="activity"?(lang==="es"?"Filtrar actividad...":"Filter activity..."):t("search_placeholder_places_detail"),
+            value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch,
+            onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else if(searchMode==="mappacks")setMapPackSearch(ev.target.value);else if(searchMode==="activity")setActivitySearch(ev.target.value);else setAddrSearch(ev.target.value);},
             onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
           }),
-          searchMode!=="quests" && e("button",{
+          (searchMode!=="quests" && searchMode!=="activity" && searchMode!=="mappacks") && e("button",{
             style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:8},
             onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
           },t("search_btn")),
           e("div",{style:{display:"flex",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}},
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.forest:T.ink3,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
-            },"# " + t("search_mode_tags")),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="places"?T.forest:T.ink3,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("places");}
-            },"📍 " + t("search_mode_places")),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.forest:T.ink3,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("quests");}
-            },"🏆 " + t("search_mode_quests")),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent"},onClick:function(){setSearchMode("trails");}
-            },"🥾 " + t("search_mode_trails"))
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.forest:T.ink3,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
+            },
+              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"}),e("circle",{cx:"7",cy:"7",r:"0.5",fill:"currentColor"})),
+              t("search_mode_tags")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="places"?T.forest:T.ink3,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("places");}
+            },
+              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),e("circle",{cx:"12",cy:"10",r:"3"})),
+              t("search_mode_places")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.forest:T.ink3,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("quests");}
+            },
+              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2a4 4 0 0 0-4 4v5c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V6a4 4 0 0 0-4-4z"})),
+              t("search_mode_quests")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("trails");}
+            },
+              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M3 17l4-8 4 4 4-6 4 10"})),
+              t("search_mode_trails")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="mappacks"?T.forest:T.ink3,borderBottom:searchMode==="mappacks"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("mappacks");}
+            },
+              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"})),
+              t("search_mode_mappacks")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="activity"?T.forest:T.ink3,borderBottom:searchMode==="activity"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("activity");}
+            },
+              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"}),e("circle",{cx:"5",cy:"19",r:"1",fill:"currentColor"})),
+              t("search_mode_activity")
+            )
           )
         ),
 
@@ -4515,7 +4540,7 @@ function App() {
             ),
 
             /* Name & meta */
-            e("div",{style:{fontWeight:700,fontSize:18,color:"#1a201c",letterSpacing:"-0.01em"}},viewUser),
+            e("div",{style:{fontWeight:700,fontSize:18,color:"#1a201c",letterSpacing:"-0.01em"}},(viewProfile && viewProfile.full_name) || viewUser),
             e("div",{style:{fontSize:12,color:"#6f786f",marginTop:1,fontFamily:"monospace"}},
               "@"+viewUser.toLowerCase().replace(/ /g,".")
             ),

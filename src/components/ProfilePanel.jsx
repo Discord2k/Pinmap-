@@ -37,6 +37,24 @@ export function ProfilePanel(props) {
   var [showCreatePackModal, setShowCreatePackModal] = React.useState(false);
   var [packName, setPackName] = React.useState("");
   var [packDesc, setPackDesc] = React.useState("");
+  var [packSharing, setPackSharing] = React.useState("private");
+  var [collabTab, setCollabTab] = React.useState("owned");
+  var [collabMapPacks, setCollabMapPacks] = React.useState({});
+  var [showCollabModal, setShowCollabModal] = React.useState(null);
+  var [collabInput, setCollabInput] = React.useState("");
+
+  React.useEffect(function(){
+    if (!uname || uname === 'guest') return;
+    mapPacks.forEach(function(pack) {
+      api.getMapPackCollaborators(pack.id).then(function(data) {
+        setCollabMapPacks(function(prev) {
+          return Object.assign({}, prev, {[pack.id]: data.map(function(d){ return d.username; })});
+        });
+      }).catch(function(e) {
+        console.error("Error loading collaborators for " + pack.id, e);
+      });
+    });
+  }, [mapPacks, uname]);
 
   var [showCreateChallengeModal, setShowCreateChallengeModal] = React.useState(false);
   var [chalTitle, setChalTitle] = React.useState("");
@@ -134,6 +152,7 @@ export function ProfilePanel(props) {
               api.getProfile(uname).then(function(data){
                 setMyProfile(data);
                 setProfileForm({
+                  full_name:(data&&data.full_name)||uname||"",
                   bio:(data&&data.bio)||"",location:(data&&data.location)||"",
                   website:(data&&data.website)||"",twitter:(data&&data.twitter)||"",
                   instagram:(data&&data.instagram)||"",youtube:(data&&data.youtube)||"",
@@ -162,7 +181,7 @@ export function ProfilePanel(props) {
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:18,fontWeight:700,color:T.ink,lineHeight:1.1,marginBottom:4}}>
-              {uname&&uname!=="guest"?uname:(lang === 'es' ? "Invitado" : "Guest")}
+              {myProfile&&myProfile.full_name?myProfile.full_name:(uname&&uname!=="guest"?uname:(lang === 'es' ? "Invitado" : "Guest"))}
             </div>
             {user && <div style={{fontSize:13,color:T.ink3}}>{"@"+(uname||"").toLowerCase().replace(/ /g,".")}</div>}
             <div style={{fontSize:10,color:T.ink3,marginTop:4,fontFamily:T.mono,letterSpacing:"0.1em",textTransform:"uppercase"}}>
@@ -254,7 +273,8 @@ export function ProfilePanel(props) {
             </div>
           </div>
           
-          {[[ "bio", t('bio'), t('bio_placeholder'), "textarea" ],
+          {[[ "full_name", lang === 'es' ? 'Nombre en Pantalla' : 'Display Name', lang === 'es' ? 'Tu nombre de explorador...' : 'Your explorer name...', "text" ],
+            [ "bio", t('bio'), t('bio_placeholder'), "textarea" ],
             [ "location", t('location'), t('location_placeholder'), "text" ],
             [ "website", t('website'), "yoursite.com", "text" ],
             [ "twitter", t('twitter'), "username", "text" ],
@@ -1345,6 +1365,20 @@ export function ProfilePanel(props) {
                 onChange={function(e){ setPackDesc(e.target.value); }}
               />
             </div>
+
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>{lang === 'es' ? "Privacidad y Colaboración" : "Privacy & Collaboration"}</label>
+              <select 
+                style={Object.assign({}, S.input, {background: T.paper2, cursor: "pointer", marginBottom:0})} 
+                value={packSharing}
+                onChange={function(e){ setPackSharing(e.target.value); }}
+              >
+                <option value="private">🔒 {lang === 'es' ? "Privado (Solo tú)" : "Private (Only you)"}</option>
+                <option value="public_read">📖 {lang === 'es' ? "Público (Lectura)" : "Public (Read-Only)"}</option>
+                <option value="invite_collab">👥 {lang === 'es' ? "Colaboración por Invitación" : "Invite-Only"}</option>
+                <option value="public_collab">🌐 {lang === 'es' ? "Colaboración Abierta (Público)" : "Open Collaboration (Public)"}</option>
+              </select>
+            </div>
  
             <div style={{display:"flex",gap:8}}>
               <button 
@@ -1355,11 +1389,13 @@ export function ProfilePanel(props) {
                     id: Math.random().toString(36).slice(2, 10),
                     name: packName.trim(),
                     description: packDesc.trim(),
-                    is_public: false,
+                    is_public: packSharing === "public_read" || packSharing === "public_collab",
+                    allow_public_collab: packSharing === "public_collab",
                     owner: uname
                   });
                   setPackName("");
                   setPackDesc("");
+                  setPackSharing("private");
                   setShowCreatePackModal(false);
                 }}
               >

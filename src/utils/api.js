@@ -78,11 +78,34 @@ export const api = {
   deleteAccount: function() {
     return sb.rpc("delete_own_account");
   },
-  getMapPacks: function(uname) {
-    return sb.from("mappacks").select("*").or(`is_public.eq.true,owner.eq."${uname}"`).order("created_at", {ascending: false}).then(function(r){
-      if (r.error) throw r.error;
-      return r.data||[];
-    });
+  getMapPacks: async function(uname) {
+    if (!uname || uname === 'guest') {
+      return sb.from("mappacks").select("*").eq("is_public", true).order("created_at", {ascending: false}).then(function(r){
+        if (r.error) throw r.error;
+        return r.data||[];
+      });
+    }
+    try {
+      var colRes = await sb.from("mappack_collaborators").select("mappack_id").eq("username", uname);
+      var colIds = (colRes.data || []).map(function(d) { return d.mappack_id; });
+      var query = sb.from("mappacks").select("*");
+      if (colIds.length > 0) {
+        var idList = colIds.map(function(id) { return `"${id}"`; }).join(",");
+        query = query.or(`is_public.eq.true,owner.eq."${uname}",id.in.(${idList})`);
+      } else {
+        query = query.or(`is_public.eq.true,owner.eq."${uname}"`);
+      }
+      return query.order("created_at", {ascending: false}).then(function(r){
+        if (r.error) throw r.error;
+        return r.data||[];
+      });
+    } catch(e) {
+      console.error("Error in getMapPacks:", e);
+      return sb.from("mappacks").select("*").or(`is_public.eq.true,owner.eq."${uname}"`).order("created_at", {ascending: false}).then(function(r){
+        if (r.error) throw r.error;
+        return r.data||[];
+      });
+    }
   },
   createMapPack: function(pack) {
     return sb.from("mappacks").insert(pack).select().then(function(r){
@@ -222,6 +245,100 @@ export const api = {
       if (r.error) throw r.error;
       return r.data || [];
     });
+  },
+  getMapPackCollaborators: function(packId) {
+    return sb.from("mappack_collaborators").select("*").eq("mappack_id", packId).then(function(r){
+      if (r.error) throw r.error;
+      return r.data || [];
+    });
+  },
+  addMapPackCollaborator: function(packId, username) {
+    return sb.from("mappack_collaborators").insert({mappack_id: packId, username: username, role: 'editor'}).select().then(function(r){
+      if (r.error) throw r.error;
+      return r.data;
+    });
+  },
+  removeMapPackCollaborator: function(packId, username) {
+    return sb.from("mappack_collaborators").delete().eq("mappack_id", packId).eq("username", username).then(function(r){
+      if (r.error) throw r.error;
+      return r.data;
+    });
+  },
+  getExpeditionLog: async function(followedUsers, followedTags) {
+    followedUsers = followedUsers || [];
+    followedTags = followedTags || [];
+    if (followedUsers.length === 0 && followedTags.length === 0) {
+      return [];
+    }
+    
+    var queries = [];
+    
+    // 1. Fetch pins from followed users
+    if (followedUsers.length > 0) {
+      queries.push(
+        sb.from("pins").select("*").in("owner", followedUsers).eq("privacy", "public").order("created_at", {ascending: false}).limit(20)
+          .then(function(r) {
+            return (r.data || []).map(function(item) {
+              return Object.assign({}, item, {type: "pin"});
+            });
+          })
+      );
+    }
+    
+    // 2. Fetch pins with followed tags
+    if (followedTags.length > 0) {
+      queries.push(
+        sb.from("pins").select("*").contains("tags", followedTags).eq("privacy", "public").order("created_at", {ascending: false}).limit(20)
+          .then(function(r) {
+            return (r.data || []).map(function(item) {
+              return Object.assign({}, item, {type: "pin"});
+            });
+          })
+      );
+    }
+    
+    // 3. Fetch public trails from followed users
+    if (followedUsers.length > 0) {
+      queries.push(
+        sb.from("trails").select("*").in("owner", followedUsers).eq("is_public", true).order("created_at", {ascending: false}).limit(20)
+          .then(function(r) {
+            return (r.data || []).map(function(item) {
+              return Object.assign({}, item, {type: "trail"});
+            });
+          })
+      );
+    }
+    
+    // 4. Fetch comments (journals) from followed users
+    if (followedUsers.length > 0) {
+      queries.push(
+        sb.from("comments").select("*, pins(name)").in("owner", followedUsers).order("created_at", {ascending: false}).limit(20)
+          .then(function(r) {
+            return (r.data || []).map(function(item) {
+              return Object.assign({}, item, {type: "comment"});
+            });
+          })
+      );
+    }
+    
+    try {
+      var results = await Promise.all(queries);
+      var merged = [].concat.apply([], results);
+      var seen = {};
+      var filtered = merged.filter(function(item) {
+        var key = item.type + "_" + item.id;
+        if (seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
+      filtered.sort(function(a, b) {
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      return filtered.slice(0, 30);
+    } catch(e) {
+      console.error("Error fetching expedition log:", e);
+      return [];
+    }
   },
   getMyActivity: function(myPinIds) {
     if (!myPinIds || !myPinIds.length) return Promise.resolve([]);

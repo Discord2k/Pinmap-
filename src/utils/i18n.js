@@ -26,6 +26,8 @@ export const translations = {
     // Search panel
     search_mode_tags: "Tags",
     search_mode_places: "Places",
+    search_mode_mappacks: "Guides",
+    search_mode_activity: "Activity",
     search_placeholder_tags: "Search public pins by hashtag...",
     search_placeholder_places: "Search any address...",
     quick_search_placeholder: "Quick search...",
@@ -368,6 +370,8 @@ export const translations = {
     // Search panel
     search_mode_tags: "Hashtags",
     search_mode_places: "Lugares",
+    search_mode_mappacks: "Guías",
+    search_mode_activity: "Actividad",
     search_placeholder_tags: "Buscar pines públicos por hashtag...",
     search_placeholder_places: "Buscar cualquier dirección...",
     quick_search_placeholder: "Búsqueda rápida...",
