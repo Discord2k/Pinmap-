@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v269";
+var CACHE_NAME = "pinmap-v270";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -39,13 +39,38 @@ self.addEventListener("fetch", function(event) {
     return;
   }
 
-  // App shell - cache first
+  // App shell - Network-First for HTML/dev files, Cache-First for static assets
   if (url.includes("pin-map.com") || url.includes("localhost")) {
+    var isHtml = event.request.mode === "navigate" || 
+                 url.endsWith("/") || 
+                 url.endsWith("/index.html") ||
+                 url.includes("index.html");
+
+    var isDevSource = url.includes("localhost") && 
+                      (url.includes("/src/") || url.includes("@vite") || url.includes("node_modules"));
+
+    if (isHtml || isDevSource) {
+      event.respondWith(
+        fetch(event.request).then(function(response) {
+          if (response.status === 200) {
+            var clone = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+          }
+          return response;
+        }).catch(function() {
+          return caches.match(event.request);
+        })
+      );
+      return;
+    }
+
     event.respondWith(
       caches.match(event.request).then(function(cached) {
         return cached || fetch(event.request).then(function(response) {
-          var clone = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+          if (response.status === 200) {
+            var clone = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+          }
           return response;
         });
       })
