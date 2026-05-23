@@ -5,6 +5,7 @@ import { COLORS } from '../utils/helpers';
 export function TrailRecorder(props) {
   var isRecording = props.isRecording;
   var distanceKm = props.distanceKm || 0;
+  var distanceMi = distanceKm * 0.621371;
   var durationSec = props.durationSec || 0;
   var onStart = props.onStart;
   var onPause = props.onPause;
@@ -87,7 +88,7 @@ export function TrailRecorder(props) {
           </div>
           <div style={{ flex: 1, textAlign: "right" }}>
             <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: "uppercase", color: T.ink3, letterSpacing: "0.1em" }}>{t('distance_metric')}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: T.mono, color: T.ink }}>{distanceKm.toFixed(2)} <span style={{ fontSize: 14, fontWeight: 500, color: T.ink2 }}>km</span></div>
+            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: T.mono, color: T.ink }}>{distanceMi.toFixed(2)} <span style={{ fontSize: 14, fontWeight: 500, color: T.ink2 }}>mi</span></div>
           </div>
         </div>
 

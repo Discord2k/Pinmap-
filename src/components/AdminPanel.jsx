@@ -241,7 +241,7 @@ export function AdminPanel(props) {
           date: new Date(tr.created_at),
           user: tr.owner,
           text: lang === 'es' ? `Grabó sendero: "${tr.name}"` : `Recorded trail: "${tr.name}"`,
-          subtitle: `${Number(tr.distance_km || 0).toFixed(2)} km · ${tr.duration_seconds ? Math.round(tr.duration_seconds / 60) + 'm' : ''}`,
+          subtitle: `${Number((tr.distance_km || 0) * 0.621371).toFixed(2)} mi · ${tr.duration_seconds ? Math.round(tr.duration_seconds / 60) + 'm' : ''}`,
           lat: firstCoord ? firstCoord[0] : null,
           lng: firstCoord ? firstCoord[1] : null
         });

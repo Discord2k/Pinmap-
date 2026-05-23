@@ -94,6 +94,7 @@ export function CompassModal({ pin, onClose, flash, lang, t }) {
 
   // Compute stats
   var distance = userLoc ? distKm(userLoc.lat, userLoc.lng, pin.lat, pin.lng) : null;
+  var distanceMi = distance !== null ? distance * 0.621371 : null;
   var bearing = userLoc ? getBearing(userLoc.lat, userLoc.lng, pin.lat, pin.lng) : 0;
   
   // Angle of the pin relative to the top of the phone screen
@@ -269,7 +270,7 @@ export function CompassModal({ pin, onClose, flash, lang, t }) {
           <div>
             <div style={{fontSize:11,textTransform:"uppercase",color:"#9a8f74",letterSpacing:"0.05em",marginBottom:4}}>{translate('distance')}</div>
             <div style={{fontSize:28,fontWeight:900,color:"#1a201c"}}>
-              {distance !== null ? (distance < 1 ? Math.round(distance * 1000) + " " + translate('m') : distance.toFixed(2) + " " + translate('km')) : translate('waiting')}
+              {distanceMi !== null ? (distanceMi < 0.1 ? Math.round(distanceMi * 5280) + " ft" : distanceMi.toFixed(2) + " mi") : translate('waiting')}
             </div>
           </div>
           <div>

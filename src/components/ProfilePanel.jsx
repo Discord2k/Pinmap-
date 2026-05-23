@@ -450,7 +450,7 @@ export function ProfilePanel(props) {
 
                       <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
                         <span style={{fontSize:11,fontFamily:T.mono,background:T.paper3,color:T.ink2,padding:"2px 6px",borderRadius:6}}>
-                          🥾 {Number(trail.distance_km || 0).toFixed(2)} km
+                           🥾 {Number((trail.distance_km || 0) * 0.621371).toFixed(2)} mi
                         </span>
                         {trail.duration_seconds > 0 && (
                           <span style={{fontSize:11,fontFamily:T.mono,background:T.paper3,color:T.ink2,padding:"2px 6px",borderRadius:6}}>

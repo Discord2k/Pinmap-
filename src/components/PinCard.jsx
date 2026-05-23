@@ -67,7 +67,7 @@ export function PinCard(props) {
         </span>
         {pin.saved_from && <span>{" - " + t('saved_from') + " @" + pin.saved_from}</span>}
         {" - " + localizedPrivacy}
-        {props.dist !== undefined && <span style={{color:"#2a5d3c",marginLeft:4}}>{props.dist.toFixed(1)}km</span>}
+        {props.dist !== undefined && <span style={{color:"#2a5d3c",marginLeft:4}}>{(props.dist * 0.621371).toFixed(1)} mi</span>}
       </div>
       <div style={{fontSize:13,marginBottom:4}}>
         {(pin.tags||[]).map(function(t){

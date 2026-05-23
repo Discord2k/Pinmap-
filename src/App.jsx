@@ -2099,8 +2099,9 @@ function App() {
           var userLatLng = window.L.latLng(lat, lng);
           var distanceMeters = pinLatLng.distanceTo(userLatLng);
           
-          if(distanceMeters > 30){
-            flash("❌ Too far! You must be within 30 meters. You are " + Math.round(distanceMeters) + "m away.");
+          var distanceFeet = distanceMeters * 3.28084;
+          if(distanceFeet > 100){
+            flash("❌ Too far! You must be within 100 feet. You are " + Math.round(distanceFeet) + " ft away.");
             return;
           }
           
@@ -2223,11 +2224,11 @@ function App() {
   function findNearby(){
     if(!userLL){flash("Use GPS button first");return;}
     var results=pins.filter(function(p){return p.privacy==="public"||p.owner===uname;})
-      .map(function(p){return Object.assign({},p,{dist:distKm(userLL.lat,userLL.lng,p.lat,p.lng)});})
+      .map(function(p){return Object.assign({},p,{dist:distKm(userLL.lat,userLL.lng,p.lat,p.lng) * 0.621371});})
       .filter(function(p){return p.dist<=nearbyKm;})
       .sort(function(a,b){return a.dist-b.dist;});
     setNearbyRes(results);
-    if(!results.length) flash("No pins within "+nearbyKm+"km");
+    if(!results.length) flash("No pins within "+nearbyKm+" miles");
   }
 
   function updateUserLocationMarker(lat, lng) {
@@ -2945,7 +2946,7 @@ function App() {
                     e("div",{style:{width:7,height:7,borderRadius:"50%",background:trail.color||T.forest,flexShrink:0}}),
                     e("div",{style:{flex:1,minWidth:0}},
                       e("div",{style:{fontSize:12,fontWeight:600,color:T.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},trail.name),
-                      e("div",{style:{fontSize:10,color:T.ink4,fontFamily:T.mono}},Number(trail.distance_km||0).toFixed(2)+" "+t("km"))
+                      e("div",{style:{fontSize:10,color:T.ink4,fontFamily:T.mono}},Number((trail.distance_km||0)*0.621371).toFixed(2)+" mi")
                     ),
                     e("div",{style:{fontSize:10,fontWeight:700,color:isActive?T.forest:T.ink4,flexShrink:0}},isActive?t("active_badge_on"):t("view_label"))
                   );
@@ -3514,7 +3515,7 @@ function App() {
                               style: {cursor: "pointer", textDecoration: "underline", color: T.forest, fontWeight: 500},
                               onClick: function() { loadUserProfile(trail.owner); }
                             }, "@" + trail.owner),
-                            " · " + Number(trail.distance_km || 0).toFixed(2) + " km" +
+                            " · " + Number((trail.distance_km || 0) * 0.621371).toFixed(2) + " mi" +
                             (trail.duration_seconds ? " · " + (function(sec){
                               var h = Math.floor(sec / 3600);
                               var m = Math.floor((sec % 3600) / 60);
@@ -3690,7 +3691,7 @@ function App() {
                             e("span",{style:{fontSize:10,color:T.ink3}},timeLabel)
                           ),
                           e("div",{style:{fontWeight:700,fontSize:15,color:T.ink}},item.name),
-                          e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4}},Number(item.distance_km || 0).toFixed(2)+" km trail"),
+                          e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4}},Number((item.distance_km || 0) * 0.621371).toFixed(2)+" mi trail"),
                           e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
                             "by ",
                             e("span",{style:{cursor:"pointer",textDecoration:"underline"},onClick:function(){loadUserProfile(item.owner);}},"@"+item.owner)
@@ -3850,8 +3851,9 @@ function App() {
                           var sorted=userLL?pub.slice().sort(function(a,b){return distKm(userLL.lat,userLL.lng,a.lat,a.lng)-distKm(userLL.lat,userLL.lng,b.lat,b.lng);}):pub;
                           return sorted.slice(0,5).map(function(p){
                             var dist=userLL?distKm(userLL.lat,userLL.lng,p.lat,p.lng):null;
-                            var isFar=dist!==null&&dist>16;
-                            var distLabel=dist===null?"":dist<1.6?"nearby":dist.toFixed(1)+" km";
+                            var distMi=dist!==null?dist*0.621371:null;
+                            var isFar=distMi!==null&&distMi>10;
+                            var distLabel=distMi===null?"":distMi<1.0?"nearby":distMi.toFixed(1)+" mi";
                             return e("div",{key:p.id,style:{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);}},
                               e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0}},e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})),
                               e("div",{style:{flex:1,minWidth:0}},
@@ -4027,6 +4029,7 @@ function App() {
             : pub;
           return sorted.slice(0,10).map(function(p){
             var dist=userLL?distKm(userLL.lat,userLL.lng,p.lat,p.lng):null;
+            var distMi=dist!==null?dist*0.621371:null;
             return e("div",{key:p.id,
               style:{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},
               onClick:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);}
@@ -4039,8 +4042,8 @@ function App() {
                 e("div",{style:{fontWeight:600,fontSize:15,color:T.ink,marginBottom:1}},p.name),
                 e("div",{style:{fontSize:12,color:T.ink3}},e("span",{style:{cursor:"pointer"},onClick:function(ev){ev.stopPropagation();loadUserProfile(p.owner);}},"@"+p.owner),(p.tags&&p.tags[0]?" · #"+p.tags[0]:""))
               ),
-              dist!==null && e("div",{style:{fontSize:11,color:dist>16?"#b85c2a":T.ink3,fontFamily:T.mono,flexShrink:0}},
-                dist<1.6?"nearby":dist.toFixed(1)+" km"
+              distMi!==null && e("div",{style:{fontSize:11,color:distMi>10?"#b85c2a":T.ink3,fontFamily:T.mono,flexShrink:0}},
+                distMi<1.0?"nearby":distMi.toFixed(1)+" mi"
               )
             );
           });
@@ -4233,7 +4236,7 @@ function App() {
           e("div", {style: {flex: 1, minWidth: 0}},
             e("div", {style: {fontWeight: 600, fontSize: 13, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, selPinTrail.name || "Untitled Trail"),
             e("div", {style: {fontSize: 11, color: T.ink3, marginTop: 2}},
-              Number(selPinTrail.distance_km || 0).toFixed(2) + " km" +
+              Number((selPinTrail.distance_km || 0) * 0.621371).toFixed(2) + " mi" +
               (selPinTrail.duration_seconds ? " · " + (function(sec){
                 var h = Math.floor(sec / 3600);
                 var m = Math.floor((sec % 3600) / 60);
@@ -4877,7 +4880,7 @@ function App() {
     },
       e("div", { style: { width: 8, height: 8, borderRadius: "50%", backgroundColor: activeTrail.color || T.forest } }),
       e("div", { style: { fontSize: 13, fontWeight: 600, color: T.ink } }, 
-        activeTrail.name + " (" + Number(activeTrail.distance_km || 0).toFixed(2) + " km)"
+        activeTrail.name + " (" + Number((activeTrail.distance_km || 0) * 0.621371).toFixed(2) + " mi)"
       ),
       e("button", {
         style: {

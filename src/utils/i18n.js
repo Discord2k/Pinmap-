@@ -36,7 +36,7 @@ export const translations = {
     trending_tags: "Trending Hashtags",
     expiring_soon: "Expiring Soon",
     show_on_map: "Show on map",
-    within_radius: "within {radius}km of your location",
+    within_radius: "within {radius} miles of your location",
 
     // Toast and Alerts
     toast_save_draft: "Saved to drafts",
@@ -134,7 +134,7 @@ export const translations = {
     compass_tip: "Keep your phone flat in front of you. The green arrow points directly to",
     waiting: "Waiting...",
     m: "m",
-    km: "km",
+    mi: "mi",
 
     // Trail Recorder Widget
     duration: "Duration",
@@ -380,7 +380,7 @@ export const translations = {
     trending_tags: "Hashtags en Tendencia",
     expiring_soon: "Próximos a Expirar",
     show_on_map: "Mostrar en el mapa",
-    within_radius: "dentro de {radius}km de tu ubicación",
+    within_radius: "dentro de {radius} millas de tu ubicación",
 
     // Toast and Alerts
     toast_save_draft: "Guardado en borradores",
@@ -478,7 +478,7 @@ export const translations = {
     compass_tip: "Sostén tu teléfono plano. La flecha verde apunta directamente a",
     waiting: "Esperando...",
     m: "m",
-    km: "km",
+    mi: "mi",
 
     // Trail Recorder Widget
     duration: "Duración",
