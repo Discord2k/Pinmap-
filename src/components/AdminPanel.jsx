@@ -80,13 +80,55 @@ export function AdminPanel(props) {
       ] = await Promise.all([
         sb.rpc("get_auth_users").then(r => {
           if (r.error) {
-            console.warn("get_auth_users RPC failed, falling back to profiles table:", r.error);
-            return sb.from("profiles").select("*");
+            console.warn("get_auth_users RPC failed, falling back to profiles & presence merge:", r.error);
+            return sb.from("profiles").select("*").then(profRes => {
+              return sb.from("presence").select("*").then(presRes => {
+                const profiles = profRes.data || [];
+                const presences = presRes.data || [];
+                const merged = [...profiles];
+                const profileIds = new Set(profiles.map(p => p.id));
+                presences.forEach(pres => {
+                  if (pres.owner && !profileIds.has(pres.owner) && pres.owner !== 'guest') {
+                    profileIds.add(pres.owner);
+                    merged.push({
+                      id: pres.owner,
+                      bio: "",
+                      location: "",
+                      avatar_url: "",
+                      created_at: pres.last_seen,
+                      updated_at: pres.last_seen
+                    });
+                  }
+                });
+                return { data: merged };
+              });
+            });
           }
           return r;
         }).catch(err => {
-          console.warn("get_auth_users RPC failed, falling back to profiles table:", err);
-          return sb.from("profiles").select("*");
+          console.warn("get_auth_users RPC failed, falling back to profiles & presence merge:", err);
+          return sb.from("profiles").select("*").then(profRes => {
+            return sb.from("presence").select("*").then(presRes => {
+              const profiles = profRes.data || [];
+              const presences = presRes.data || [];
+              const merged = [...profiles];
+              const profileIds = new Set(profiles.map(p => p.id));
+              presences.forEach(pres => {
+                if (pres.owner && !profileIds.has(pres.owner) && pres.owner !== 'guest') {
+                  profileIds.add(pres.owner);
+                  merged.push({
+                    id: pres.owner,
+                    bio: "",
+                    location: "",
+                    avatar_url: "",
+                    created_at: pres.last_seen,
+                    updated_at: pres.last_seen
+                  });
+                }
+              });
+              return { data: merged };
+            });
+          });
         }),
         sb.from("pins").select("*").order("created_at", { ascending: false }),
         sb.from("comments").select("*").order("created_at", { ascending: false }),
