@@ -233,6 +233,27 @@ CREATE POLICY "Allow authenticated users to upload journal photos"
     bucket_id = 'journal-photos' AND auth.role() = 'authenticated'
   );
 
+-- Storage bucket configurations for pin-images
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('pin-images', 'pin-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Allow public read access to pin-images" ON storage.objects;
+CREATE POLICY "Allow public read access to pin-images" 
+  ON storage.objects FOR SELECT USING (bucket_id = 'pin-images');
+
+DROP POLICY IF EXISTS "Allow authenticated insert to pin-images" ON storage.objects;
+CREATE POLICY "Allow authenticated insert to pin-images" 
+  ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'pin-images');
+
+DROP POLICY IF EXISTS "Allow authenticated update to pin-images" ON storage.objects;
+CREATE POLICY "Allow authenticated update to pin-images" 
+  ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'pin-images');
+
+DROP POLICY IF EXISTS "Allow authenticated delete to pin-images" ON storage.objects;
+CREATE POLICY "Allow authenticated delete to pin-images" 
+  ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'pin-images');
+
 
 -- =========================================================================
 -- 6. Phase 2 Expansion: Curated Map Packs & Challenges

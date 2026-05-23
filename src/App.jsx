@@ -72,6 +72,7 @@ function App() {
   var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",trail_id:""}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
   var s14=useState(null);    var selPin=s14[0];        var setSelPin=s14[1];
+  var [selPinOwnerProfile, setSelPinOwnerProfile] = useState(null);
   var s21=useState(null);    var editPin=s21[0];       var setEditPin=s21[1];
   var s22=useState({name:"",description:"",tags:"",color:"#2a5d3c",photo:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
@@ -1015,6 +1016,18 @@ function App() {
       setSelPinMapPackIds((r.data||[]).map(function(d){ return d.mappack_id; }));
     }).catch(function(err){
       console.error("Error loading pin guides:", err);
+    });
+  }, [selPin]);
+
+  useEffect(function(){
+    if(!selPin) {
+      setSelPinOwnerProfile(null);
+      return;
+    }
+    api.getProfile(selPin.owner).then(function(profile){
+      setSelPinOwnerProfile(profile);
+    }).catch(function(){
+      setSelPinOwnerProfile(null);
     });
   }, [selPin]);
 
@@ -3975,9 +3988,12 @@ function App() {
     ),
       e("div",{style:{fontSize:13,color:"#6f786f",marginBottom:6}},
         e("span",{
-          style:{color:"#2a5d3c",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"},
+          style:{color:"#2a5d3c",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted",display:"inline-flex",alignItems:"center",gap:4},
           onClick:function(){loadUserProfile(selPin.owner);}
-        },e("span",{style:{cursor:"pointer",fontWeight:500},onClick:function(){loadUserProfile(selPin.owner);}},"@"+selPin.owner)),
+        },
+          e("span",{style:{cursor:"pointer",fontWeight:700,color:T.ink}},(selPinOwnerProfile && selPinOwnerProfile.full_name) || selPin.owner),
+          e("span",{style:{cursor:"pointer",fontSize:11,color:T.ink3}},"@"+selPin.owner)
+        ),
         selPin.owner!==uname&&e("span",{
           style:{fontSize:10,marginLeft:6,padding:"1px 6px",borderRadius:6,cursor:"pointer",
             background:userFollows.some(function(f){return f.following===selPin.owner;})?"#dde6dc":"#f0e8d4",
