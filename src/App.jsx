@@ -68,6 +68,8 @@ function App() {
   var [mapPackSearch, setMapPackSearch] = useState("");
   var [activitySearch, setActivitySearch] = useState("");
   var [activityFeedFilter, setActivityFeedFilter] = useState(null);
+  var [expeditionLog, setExpeditionLog] = useState([]);
+  var [expeditionLogLoading, setExpeditionLogLoading] = useState(false);
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
   var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",trail_id:""}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
@@ -1030,6 +1032,20 @@ function App() {
       setSelPinOwnerProfile(null);
     });
   }, [selPin]);
+
+  useEffect(function(){
+    if (searchMode !== "activity") return;
+    setExpeditionLogLoading(true);
+    var followedUsers = userFollows.map(function(f){ return f.following; });
+    var followedTags = follows.map(function(f){ return f.tag; });
+    api.getExpeditionLog(followedUsers, followedTags).then(function(log){
+      setExpeditionLog(log || []);
+      setExpeditionLogLoading(false);
+    }).catch(function(err){
+      console.error("Error loading expedition log:", err);
+      setExpeditionLogLoading(false);
+    });
+  }, [searchMode, userFollows, follows]);
 
   useEffect(function(){
     if(!user||!uname||uname==="guest") return;
@@ -3583,6 +3599,118 @@ function App() {
                   })
                 ),
                 !trailSearchLoading&&trailSearchResults.length===0&&trailSearch&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},t("no_trails_found"))
+              )
+            : searchMode==="mappacks"
+            ? e("div",null,
+                (function(){
+                  var filtered = mapPacks.filter(function(g){
+                    return g.is_public && (
+                      (g.name || "").toLowerCase().includes(mapPackSearch.toLowerCase()) || 
+                      (g.description || "").toLowerCase().includes(mapPackSearch.toLowerCase())
+                    );
+                  });
+                  if (filtered.length === 0) {
+                    return e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, "No public guides found.");
+                  }
+                  return e("div",{style:{padding:"10px 0"}},
+                    filtered.map(function(pack){
+                      var isActive = activeMapPack && activeMapPack.id === pack.id;
+                      return e("div",{key:pack.id,style:{padding:14,background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:10}},
+                        e("div",{style:{fontWeight:700,fontSize:15,color:T.ink}},pack.name),
+                        pack.description && e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4,lineHeight:1.4}},pack.description),
+                        e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
+                          "by ",
+                          e("span",{style:{cursor:"pointer",textDecoration:"underline"},onClick:function(){loadUserProfile(pack.owner);}},"@"+pack.owner)
+                        ),
+                        e("div",{style:{display:"flex",gap:8,marginTop:8}},
+                          e("button",{
+                            style:{
+                              flex: 1,
+                              fontSize: 12,
+                              padding: "6px 12px",
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              background: isActive ? T.forest : "transparent",
+                              color: isActive ? "#fff" : T.forest,
+                              border: "1px solid " + T.forest,
+                              fontWeight: 600
+                            },
+                            onClick:function(){
+                              if (isActive) {
+                                handleSelectMapPack(null);
+                              } else {
+                                handleSelectMapPack(pack);
+                              }
+                            }
+                          }, isActive ? "Showing" : "View on Map")
+                        )
+                      );
+                    })
+                  );
+                })()
+              )
+            : searchMode==="activity"
+            ? e("div",null,
+                expeditionLogLoading && e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, "Loading activity feed..."),
+                !expeditionLogLoading && expeditionLog.length === 0 && e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, "No recent activity from users or tags you follow."),
+                !expeditionLogLoading && expeditionLog.length > 0 && e("div",{style:{padding:"10px 0"}},
+                  (function(){
+                    var query = activitySearch.toLowerCase();
+                    var filtered = expeditionLog.filter(function(item){
+                      var matchText = (item.name || item.body || "").toLowerCase();
+                      var matchOwner = (item.owner || "").toLowerCase();
+                      return matchText.includes(query) || matchOwner.includes(query);
+                    });
+                    if (filtered.length === 0) {
+                      return e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, "No activity matching filter.");
+                    }
+                    return filtered.map(function(item){
+                      var timeLabel = new Date(item.created_at).toLocaleDateString(undefined, {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+                      if (item.type === "pin") {
+                        return e("div",{key:item.type+"_"+item.id,style:{padding:12,background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:8}},
+                          e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
+                            e("span",{style:{fontSize:11,fontWeight:700,color:T.forest,fontFamily:T.mono}},"📍 PIN ADDED"),
+                            e("span",{style:{fontSize:10,color:T.ink3}},timeLabel)
+                          ),
+                          e("div",{style:{fontWeight:700,fontSize:15,color:T.ink,cursor:"pointer",textDecoration:"underline"},onClick:function(){if(mapObj.current)mapObj.current.setView([item.lat,item.lng],14);setSelPin(item);setOpen(false);}},item.name),
+                          item.description && e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4,lineHeight:1.4}},item.description),
+                          e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
+                            "by ",
+                            e("span",{style:{cursor:"pointer",textDecoration:"underline"},onClick:function(){loadUserProfile(item.owner);}},"@"+item.owner)
+                          )
+                        );
+                      } else if (item.type === "trail") {
+                        return e("div",{key:item.type+"_"+item.id,style:{padding:12,background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:8}},
+                          e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
+                            e("span",{style:{fontSize:11,fontWeight:700,color:T.forest,fontFamily:T.mono}},"🥾 NEW TRAIL"),
+                            e("span",{style:{fontSize:10,color:T.ink3}},timeLabel)
+                          ),
+                          e("div",{style:{fontWeight:700,fontSize:15,color:T.ink}},item.name),
+                          e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4}},Number(item.distance_km || 0).toFixed(2)+" km trail"),
+                          e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
+                            "by ",
+                            e("span",{style:{cursor:"pointer",textDecoration:"underline"},onClick:function(){loadUserProfile(item.owner);}},"@"+item.owner)
+                          )
+                        );
+                      } else {
+                        // comment / journal
+                        return e("div",{key:item.type+"_"+item.id,style:{padding:12,background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:8}},
+                          e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
+                            e("span",{style:{fontSize:11,fontWeight:700,color:T.forest,fontFamily:T.mono}},"📝 JOURNAL ENTRY"),
+                            e("span",{style:{fontSize:10,color:T.ink3}},timeLabel)
+                          ),
+                          e("div",{style:{fontSize:13,color:T.ink,fontStyle:"italic",marginTop:4,whiteSpace:"pre-wrap"}},'"'+item.body+'"'),
+                          e("div",{style:{fontSize:11.5,color:T.ink2,marginTop:6}},"on pin: ",e("span",{style:{fontWeight:600}},item.pins?item.pins.name:"Location")),
+                          item.photo_url && e("img",{src:item.photo_url,style:{width:"100%",maxHeight:140,objectFit:"cover",borderRadius:6,marginTop:8,cursor:"pointer"},onClick:function(){window.open(item.photo_url,"_blank");}}),
+                          e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
+                            "by ",
+                            e("span",{style:{cursor:"pointer",textDecoration:"underline"},onClick:function(){loadUserProfile(item.owner);}},"@"+item.owner)
+                          )
+                        );
+                      }
+                    });
+                  })()
+                )
               )
             : e("div",null,
                 activeFilter&&e("div",{style:{display:"flex",alignItems:"center",gap:8,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft}},
