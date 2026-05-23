@@ -2458,10 +2458,10 @@ function App() {
     },
       e("div", {style: {flex: 1}},
         e("div", {style: {display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}},
-          e("span", {style: {fontSize: 10, background: "#2a5d3c", color: "#f6f1e4", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Collection"),
+          e("span", {style: {fontSize: 10, background: "#2a5d3c", color: "#f6f1e4", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Guide"),
           e("span", {style: {fontWeight: 700, fontSize: 14, color: "#1a201c"}}, activeMapPack.name)
         ),
-        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3}}, activeMapPack.description || "Filtering map by this collection."),
+        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3}}, activeMapPack.description || "Filtering map by this guide."),
         e("div", {style: {fontSize: 10, color: "#6f786f", marginTop: 2}}, "Created by @" + activeMapPack.owner)
       ),
       e("button", {
@@ -3207,37 +3207,41 @@ function App() {
             style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:8},
             onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
           },t("search_btn")),
-          e("div",{style:{display:"flex",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch"}},
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.forest:T.ink3,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
-            },
-              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"}),e("circle",{cx:"7",cy:"7",r:"0.5",fill:"currentColor"})),
-              t("search_mode_tags")
+          e("div",{style:{position:"relative",display:"flex",alignItems:"center"}},
+            e("div",{style:{position:"absolute",left:0,top:0,bottom:0,width:20,background:"linear-gradient(to right, "+T.paper+" 50%, transparent)",display:"flex",alignItems:"center",paddingLeft:2,pointerEvents:"none",color:T.ink3,zIndex:2,fontSize:12,fontWeight:"bold"}},"⟨"),
+            e("div",{style:{display:"flex",width:"100%",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",padding:"0 16px"}},
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.forest:T.ink3,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
+              },
+                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"}),e("circle",{cx:"7",cy:"7",r:"0.5",fill:"currentColor"})),
+                t("search_mode_tags")
+              ),
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="places"?T.forest:T.ink3,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("places");}
+              },
+                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),e("circle",{cx:"12",cy:"10",r:"3"})),
+                t("search_mode_places")
+              ),
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.forest:T.ink3,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("quests");}
+              },
+                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2a4 4 0 0 0-4 4v5c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V6a4 4 0 0 0-4-4z"})),
+                t("search_mode_quests")
+              ),
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("trails");}
+              },
+                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M3 17l4-8 4 4 4-6 4 10"})),
+                t("search_mode_trails")
+              ),
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="mappacks"?T.forest:T.ink3,borderBottom:searchMode==="mappacks"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("mappacks");}
+              },
+                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"})),
+                t("search_mode_mappacks")
+              ),
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="activity"?T.forest:T.ink3,borderBottom:searchMode==="activity"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("activity");}
+              },
+                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"}),e("circle",{cx:"5",cy:"19",r:"1",fill:"currentColor"})),
+                t("search_mode_activity")
+              )
             ),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="places"?T.forest:T.ink3,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("places");}
-            },
-              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),e("circle",{cx:"12",cy:"10",r:"3"})),
-              t("search_mode_places")
-            ),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.forest:T.ink3,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("quests");}
-            },
-              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2a4 4 0 0 0-4 4v5c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V6a4 4 0 0 0-4-4z"})),
-              t("search_mode_quests")
-            ),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("trails");}
-            },
-              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M3 17l4-8 4 4 4-6 4 10"})),
-              t("search_mode_trails")
-            ),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="mappacks"?T.forest:T.ink3,borderBottom:searchMode==="mappacks"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("mappacks");}
-            },
-              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"})),
-              t("search_mode_mappacks")
-            ),
-            e("button",{className:"pm-search-tab",style:{color:searchMode==="activity"?T.forest:T.ink3,borderBottom:searchMode==="activity"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("activity");}
-            },
-              e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"}),e("circle",{cx:"5",cy:"19",r:"1",fill:"currentColor"})),
-              t("search_mode_activity")
-            )
+            e("div",{style:{position:"absolute",right:0,top:0,bottom:0,width:20,background:"linear-gradient(to left, "+T.paper+" 50%, transparent)",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:2,pointerEvents:"none",color:T.ink3,zIndex:2,fontSize:12,fontWeight:"bold"}},"⟩")
           )
         ),
 
@@ -4149,17 +4153,17 @@ function App() {
           padding: "8px 10px"
         }
       },
-        e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, "Add to Collections"),
+        e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, "Add to Guides"),
         e("div", {style: {display: "flex", gap: 6, flexWrap: "wrap"}},
           (function() {
             var myPacks = mapPacks.filter(function(g){ return g.owner === uname; });
             if (myPacks.length === 0) {
               return e("div", {style: {fontSize: 12, color: T.ink3}},
-                "No collections yet. ",
+                "No guides yet. ",
                 e("span", {
                   style: {color: T.forest, textDecoration: "underline", cursor: "pointer", fontWeight: 700},
                   onClick: function() {
-                    var name = prompt("Enter a name for your new collection:");
+                    var name = prompt("Enter a name for your new guide:");
                     if (name && name.trim()) {
                       handleCreateMapPack({
                         id: Math.random().toString(36).slice(2, 10),
