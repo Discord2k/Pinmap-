@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v270";
+var CACHE_NAME = "pinmap-v273";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -148,12 +148,14 @@ function syncQueue() {
 self.addEventListener("push", function(event) {
   var title = "PINMAP";
   var body = "You have a new notification - tap to view";
+  var notifData = { checkNotifications: true };
   
   if (event.data) {
     try {
       var data = event.data.json();
       if (data.title) title = data.title;
       if (data.body) body = data.body;
+      if (data.data) notifData = Object.assign({}, notifData, data.data);
     } catch(e) {
       var text = event.data.text();
       if (text) body = text;
@@ -165,7 +167,7 @@ self.addEventListener("push", function(event) {
       body: body,
       icon: "/icon-192.png",
       badge: "/icon-192.png",
-      data: { checkNotifications: true },
+      data: notifData,
       vibrate: [100, 50, 100],
       tag: "pinmap-notification",
       renotify: true
@@ -176,18 +178,24 @@ self.addEventListener("push", function(event) {
 self.addEventListener("notificationclick", function(event) {
   event.notification.close();
   console.log("notification clicked");
+  var targetUrl = self.registration.scope; // Fallback to PWA origin (works on localhost & production)
+  if (event.notification.data && event.notification.data.url) {
+    targetUrl = event.notification.data.url;
+  }
+  
   event.waitUntil(
     clients.matchAll({type:"window", includeUncontrolled:true}).then(function(clientList) {
+      var payload = Object.assign({type:"check-notifications"}, event.notification.data);
       try {
         var bc = new BroadcastChannel("pinmap-notifications");
-        bc.postMessage({type:"check-notifications"});
+        bc.postMessage(payload);
         bc.close();
       } catch(e) {}
       for(var i = 0; i < clientList.length; i++) {
-        try { clientList[i].postMessage({type:"check-notifications"}); } catch(e) {}
+        try { clientList[i].postMessage(payload); } catch(e) {}
       }
       if(clientList.length > 0) return clientList[0].focus();
-      return clients.openWindow("https://pin-map.com");
+      return clients.openWindow(targetUrl);
     })
   );
 });

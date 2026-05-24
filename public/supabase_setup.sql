@@ -132,6 +132,20 @@ CREATE POLICY "Users can update their own presence" ON presence FOR UPDATE USING
 CREATE POLICY "Users can delete their own presence" ON presence FOR DELETE USING (owner = public.current_username());
 
 -- NOTIFICATIONS
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  seen BOOLEAN DEFAULT false NOT NULL,
+  pin_id TEXT,
+  pin_name TEXT,
+  type TEXT,
+  message TEXT
+);
+
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS type TEXT;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS message TEXT;
+
 DROP POLICY IF EXISTS "Users can view their own notifications" ON notifications;
 DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
 DROP POLICY IF EXISTS "Users can delete their own notifications" ON notifications;
@@ -350,15 +364,7 @@ DROP POLICY IF EXISTS "Owners can delete their challenges" ON public.challenges;
 CREATE POLICY "Owners can delete their challenges" ON public.challenges
   FOR DELETE USING (owner = public.current_username());
 
--- Populate initial default system challenges
-INSERT INTO public.challenges (id, title, description, icon, tags, required_count, owner)
-VALUES 
-  ('summit_seeker', 'Summit Seeker', 'Check in to 3 pins tagged with #hiking or #summit', '🥾', ARRAY['hiking', 'summit'], 3, 'system'),
-  ('water_explorer', 'Water Explorer', 'Check in to 3 pins tagged with #waterfall, #lake, or #beach', '🌊', ARRAY['waterfall', 'lake', 'beach'], 3, 'system'),
-  ('caffeine_connoisseur', 'Caffeine Connoisseur', 'Check in to 3 pins tagged with #cafe or #coffee', '☕', ARRAY['cafe', 'coffee'], 3, 'system'),
-  ('foodie_explorer', 'Local Foodie', 'Check in to 3 pins tagged with #food, #restaurant, or #pub', '🍔', ARRAY['food', 'restaurant', 'pub'], 3, 'system'),
-  ('historic_wanderer', 'Historic Wanderer', 'Check in to 3 pins tagged with #history, #museum, or #monument', '🏛️', ARRAY['history', 'museum', 'monument'], 3, 'system')
-ON CONFLICT (id) DO NOTHING;
+-- System challenges are no longer seeded by default
 
 -- Optimize queries
 CREATE INDEX IF NOT EXISTS idx_mappacks_owner ON public.mappacks(owner);

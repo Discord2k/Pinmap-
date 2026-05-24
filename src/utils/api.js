@@ -138,7 +138,7 @@ export const api = {
     });
   },
   getChallenges: function() {
-    return sb.from("challenges").select("*").order("created_at", {ascending: true}).then(function(r){
+    return sb.from("challenges").select("*").not("owner", "eq", "system").order("created_at", {ascending: true}).then(function(r){
       if (r.error) throw r.error;
       return r.data||[];
     });
@@ -217,8 +217,14 @@ export const api = {
   getSavedTrailIds: function(uname) {
     if (!uname || uname === 'guest') return Promise.resolve([]);
     return sb.from("saved_trails").select("trail_id").eq("owner", uname).then(function(r){
-      if (r.error) throw r.error;
+      if (r.error) {
+        console.warn("Could not load saved trail IDs:", r.error.message);
+        return [];
+      }
       return (r.data || []).map(function(item) { return item.trail_id; });
+    }).catch(function(err){
+      console.warn("Error getting saved trail IDs:", err);
+      return [];
     });
   },
   getTrailForPin: function(pinId) {
@@ -388,6 +394,27 @@ export async function savePushSubscription(sub, uname) {
 }
 
 export async function subscribeToPush(uname) {
+  var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  if (isCapacitor) {
+    try {
+      var PushNotifications = window.Capacitor.Plugins.PushNotifications;
+      if (PushNotifications) {
+        var permStatus = await PushNotifications.checkPermissions();
+        if (permStatus.receive === 'prompt') {
+          permStatus = await PushNotifications.requestPermissions();
+        }
+        if (permStatus.receive !== 'granted') {
+          throw new Error("Permission denied");
+        }
+        await PushNotifications.register();
+        return;
+      }
+    } catch(e) {
+      console.warn("Capacitor Push registration failed", e);
+      throw e;
+    }
+  }
+
   if(!("serviceWorker" in navigator)){throw new Error("Service worker not supported");}
   if(!("PushManager" in window)){throw new Error("Push not supported on this browser");}
   var reg = await navigator.serviceWorker.ready;

@@ -126,11 +126,20 @@ export function Comments(props) {
   function toggleUpvote(comment){
     if(!uname){api.signInGoogle();return;}
     var ups=comment.upvotes||[];
-    var newUps=ups.indexOf(uname)>=0
+    var has=ups.indexOf(uname)>=0;
+    var newUps=has
       ?ups.filter(function(u){return u!==uname;})
       :[].concat(ups,[uname]);
     api.upvoteComment(comment.id,newUps).then(function(){
       setComments(function(prev){return prev.map(function(c){return c.id===comment.id?Object.assign({},c,{upvotes:newUps}):c;});});
+      if(!has && comment.owner !== uname) {
+        api.callEdgeFunction("comment_upvote", {
+          commentOwner: comment.owner,
+          upvoterName: uname,
+          commentBody: comment.body,
+          pinId: pinId
+        });
+      }
     });
   }
 
@@ -193,10 +202,27 @@ export function Comments(props) {
 
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
             <button 
-              style={{background:"none",border:"none",fontSize:12,color:myUpvote?"#2a5d3c":"#6f786f",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:3}}
+              style={{
+                background:"none",
+                border:"none",
+                fontSize:12,
+                color:myUpvote?"#ff4500":"#6f786f",
+                fontWeight:myUpvote?700:400,
+                cursor:"pointer",
+                padding:0,
+                display:"flex",
+                alignItems:"center",
+                gap:4
+              }}
               onClick={() => toggleUpvote(c)}
             >
-              {"👍 "+((c.upvotes||[]).length||"")}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill={myUpvote?"currentColor":"none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M12 3l-7 8h4v9h6v-9h4z" /></svg>
+              <span>
+                {myUpvote 
+                  ? (lang === 'es' ? "Votado " : "Upvoted ") 
+                  : (lang === 'es' ? "Votar " : "Upvote ")}
+                {((c.upvotes||[]).length||"")}
+              </span>
             </button>
             {!isReply && uname && (
               <button 

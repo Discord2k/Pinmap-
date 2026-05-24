@@ -78,10 +78,22 @@ export function PinCard(props) {
         {notOwner && (
           <React.Fragment>
             <button 
-              style={Object.assign({},miniBtnStyle,{color:pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?"#2a5d3c":"#6f786f",fontWeight:pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?700:400})}
+              style={Object.assign({},miniBtnStyle,{
+                color:pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?"#ff4500":"#6f786f",
+                fontWeight:pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?700:400,
+                display:"inline-flex",
+                alignItems:"center",
+                gap:5
+              })}
               onClick={() => props.onUpvote(pin.id)}
             >
-              {"👍 "+(pin.upvotes?pin.upvotes.length:0)}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill={pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0?"currentColor":"none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M12 3l-7 8h4v9h6v-9h4z" /></svg>
+              <span>
+                {pin.upvotes&&uname&&pin.upvotes.indexOf(uname)>=0 
+                  ? (lang === 'es' ? "Votado " : "Upvoted ") 
+                  : (lang === 'es' ? "Votar " : "Upvote ")}
+                {(pin.upvotes?pin.upvotes.length:0)}
+              </span>
             </button>
             <button style={miniBtnStyle} onClick={() => props.onSave(pin)}>⭐ {t('save_btn')}</button>
           </React.Fragment>

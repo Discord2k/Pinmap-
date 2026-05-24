@@ -38,7 +38,7 @@ function ActivityRow({ item, pinName, onClick, t }) {
   var isJournal = item.type === 'journal';
   var isUpvote  = item.type === 'upvote';
 
-  var icon  = isUpvote ? '👍' : isJournal ? '📷' : '💬';
+  var icon  = isUpvote ? '▲' : isJournal ? '📷' : '💬';
   var verb  = isUpvote 
     ? (t ? t('verb_upvoted') : 'upvoted') 
     : isJournal 
@@ -606,7 +606,7 @@ export function MineTab(props) {
                               <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,fontWeight:600}}>
                                 {t('entry_no') + entryNum}
                                 {pinHasUnread && <span style={{marginLeft:8,background:"#b85c2a",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>💬 {t('new_tag')}</span>}
-                                {pinHasUpvoteNew && <span style={{marginLeft:4,background:"#2a5d3c",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>👍 {t('new_tag')}</span>}
+                                {pinHasUpvoteNew && <span style={{marginLeft:4,background:"#2a5d3c",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:600,letterSpacing:"0.08em"}}>▲ {t('new_tag')}</span>}
                               </div>
                               {coordStr && <div style={{fontSize:10,color:T.ink4,fontFamily:T.mono}}>{coordStr}</div>}
                             </div>
@@ -634,7 +634,7 @@ export function MineTab(props) {
                             )}
                             {/* Stats */}
                             <div style={{display:"flex",alignItems:"center",gap:10,fontSize:12,color:T.ink4}}>
-                              <span>{"↑ "+upvoteCount+(pinHasUpvoteNew?" 🆕":"")}</span>
+                              <span>{"▲ "+upvoteCount+(pinHasUpvoteNew?" 🆕":"")}</span>
                               {commentCount>0 && <span style={{color:pinHasUnread?"#b85c2a":T.ink4,fontWeight:pinHasUnread?600:400}}>{"💬 "+commentCount+(pinHasUnread?" " + t('new_tag').toLowerCase():"")}</span>}
                               <span style={(function() {
                                 var prv = (p.privacy || "").toLowerCase();

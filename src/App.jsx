@@ -158,6 +158,14 @@ function App() {
   var [activeMapPackPinIds, setActiveMapPackPinIds] = useState([]);
   var [challengesLoading, setChallengesLoading] = useState(false);
   var [selPinMapPackIds, setSelPinMapPackIds] = useState([]);
+  var [deletedQuestIds, setDeletedQuestIds] = useState(function() {
+    try {
+      var saved = localStorage.getItem("pinmap_deleted_quests");
+      return saved ? JSON.parse(saved) : [];
+    } catch(e) {
+      return [];
+    }
+  });
 
   var [trails, setTrails] = useState([]);
   var [activeTrail, setActiveTrail] = useState(null);
@@ -748,9 +756,9 @@ function App() {
         // Only mark THIS notification as seen when user views it
         var pin = pins.find(function(p){return p.id===latest.pin_id;});
         if(pin){
-          openNotifPin(pin, latest.id, notifs.length);
+          openNotifPin(Object.assign({}, pin, {_type:latest.type, _message:latest.message}), latest.id, notifs.length);
         } else {
-          setNotifPin({id:latest.pin_id, name:latest.pin_name, tags:[], lat:0, lng:0, _noFocus:true, _notifId:latest.id, _remaining:notifs.length});
+          setNotifPin({id:latest.pin_id, name:latest.pin_name, tags:[], lat:0, lng:0, _noFocus:true, _notifId:latest.id, _remaining:notifs.length, _type:latest.type, _message:latest.message});
         }
       });
     }
@@ -1049,14 +1057,14 @@ function App() {
 
   useEffect(function(){
     if(!user||!uname||uname==="guest") return;
-    api.getFollows(uname).then(function(data){setFollows(data||[]);});
-    api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);});
-    api.getFollowers(uname).then(function(data){setFollowers(data||[]);});
-    api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);});
-    api.getCheckins(uname).then(function(data){setCheckins(data||[]);});
-    api.getMapPacks(uname).then(function(data){setMapPacks(data||[]);});
-    api.getTrails(uname).then(function(data){setTrails(data||[]);});
-    api.getSavedTrailIds(uname).then(function(data){setSavedTrailIds(data||[]);});
+    api.getFollows(uname).then(function(data){setFollows(data||[]);}).catch(function(e){console.warn("getFollows error:",e);});
+    api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);}).catch(function(e){console.warn("getUserFollows error:",e);});
+    api.getFollowers(uname).then(function(data){setFollowers(data||[]);}).catch(function(e){console.warn("getFollowers error:",e);});
+    api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);}).catch(function(e){console.warn("getSavedPins error:",e);});
+    api.getCheckins(uname).then(function(data){setCheckins(data||[]);}).catch(function(e){console.warn("getCheckins error:",e);});
+    api.getMapPacks(uname).then(function(data){setMapPacks(data||[]);}).catch(function(e){console.warn("getMapPacks error:",e);});
+    api.getTrails(uname).then(function(data){setTrails(data||[]);}).catch(function(e){console.warn("getTrails error:",e);});
+    api.getSavedTrailIds(uname).then(function(data){setSavedTrailIds(data||[]);}).catch(function(e){console.warn("getSavedTrailIds error:",e);});
     api.getProfile(uname).then(function(data){
       if(data) {
         setMyProfile(data);
@@ -1909,6 +1917,10 @@ function App() {
         api.followUser(id,uname,targetUser).then(function(){
           setUserFollows(function(prev){return prev.concat([{id:id,owner:uname,following:targetUser}]);});
           flash("Following @"+targetUser);
+          api.callEdgeFunction("new_follow", {
+            targetUser: targetUser,
+            followerName: uname
+          });
         });
       }
     });
@@ -2070,6 +2082,14 @@ function App() {
       setSelPin(function(prev){return prev&&prev.id===pinId?Object.assign({},prev,{upvotes:upvotes}):prev;});
       api.upvotePin(pinId,upvotes).then(function(){
         setSelPin(function(sp){return sp&&sp.id===pinId?Object.assign({},sp,{upvotes:upvotes}):sp;});
+        if(!has && pin.owner !== uname) {
+          api.callEdgeFunction("new_upvote", {
+            pinOwner: pin.owner,
+            upvoterName: uname,
+            pinName: pin.name,
+            pinId: pin.id
+          });
+        }
       }).catch(function(){flash("Failed");});
     });
   }
@@ -2667,11 +2687,24 @@ function App() {
     }},
       e("div",{style:{display:"flex",alignItems:"center",gap:10,flex:1},
        },
-        e("span",{style:{fontSize:22}},getPinIcon(notifPin.tags)),
+        e("span",{style:{fontSize:22}},(function(){
+          if(notifPin._type === 'upvote' || notifPin._type === 'comment_upvote') return '▲';
+          if(notifPin._type === 'follow') return '👤';
+          if(notifPin._type === 'collab_invite') return '👥';
+          if(notifPin._type === 'comment') return '💬';
+          return getPinIcon(notifPin.tags) || '🔔';
+        })()),
         e("div",null,
-          e("div",{style:{fontWeight:700,fontSize:13}},"💬 New comment on your pin"),
+          e("div",{style:{fontWeight:700,fontSize:13}},(function(){
+            if(notifPin._message) return notifPin._message;
+            if(notifPin._type === 'upvote') return (lang === 'es' ? "▲ Nuevo voto en tu pin" : "▲ New upvote on your pin");
+            if(notifPin._type === 'comment_upvote') return (lang === 'es' ? "▲ Nuevo voto en tu comentario" : "▲ New upvote on your comment");
+            if(notifPin._type === 'follow') return (lang === 'es' ? "👤 Alguien te ha seguido" : "👤 Someone followed you");
+            if(notifPin._type === 'collab_invite') return (lang === 'es' ? "👥 Invitación a colaborar" : "👥 Collaboration invite");
+            return (lang === 'es' ? "💬 Nuevo comentario en tu pin" : "💬 New comment on your pin");
+          })()),
           e("div",{style:{fontSize:11,color:"rgba(255,255,255,0.7)"}},
-            notifPin.name,
+            notifPin.name || "",
             notifPin._remaining>1&&e("span",{style:{marginLeft:6,background:"rgba(255,255,255,0.2)",padding:"1px 6px",borderRadius:10,fontSize:10}},"+"+( notifPin._remaining-1)+" more")
           )
         )
@@ -3176,8 +3209,7 @@ function App() {
           );
         })
       ),
-
-      e("div",{
+          e("div",{
         className: "pm-drawer-content" + (tab === "search" ? " pm-search-tab-content" : ""),
         style: {flex:1,overflowY:"auto"}
       },
@@ -3196,14 +3228,46 @@ function App() {
         tab==="search" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
 
         e("div",{className:"pm-search-input-wrap",style:{background:T.paper,flexShrink:0}},
-          e("input",{
-            style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
-              borderRadius:12,padding:"12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font,marginBottom:6},
-            placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar guías...":"Search guides..."):searchMode==="activity"?(lang==="es"?"Filtrar actividad...":"Filter activity..."):t("search_placeholder_places_detail"),
-            value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch,
-            onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else if(searchMode==="mappacks")setMapPackSearch(ev.target.value);else if(searchMode==="activity")setActivitySearch(ev.target.value);else setAddrSearch(ev.target.value);},
-            onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
-          }),
+          e("div",{style:{position:"relative",width:"100%",marginBottom:6}},
+            e("input",{
+              style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
+                borderRadius:12,padding:"12px 36px 12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font},
+              placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar guías...":"Search guides..."):searchMode==="activity"?(lang==="es"?"Filtrar activity...":"Filter activity..."):t("search_placeholder_places_detail"),
+              value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch,
+              onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else if(searchMode==="mappacks")setMapPackSearch(ev.target.value);else if(searchMode==="activity")setActivitySearch(ev.target.value);else setAddrSearch(ev.target.value);},
+              onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
+            }),
+            (function(){
+              var val = searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch;
+              if (!val) return null;
+              return e("button",{
+                style:{
+                  position:"absolute",
+                  right:12,
+                  top:"50%",
+                  transform:"translateY(-50%)",
+                  background:"none",
+                  border:"none",
+                  color:T.ink3,
+                  fontSize:22,
+                  fontWeight:"300",
+                  cursor:"pointer",
+                  padding:4,
+                  display:"flex",
+                  alignItems:"center",
+                  justifyContent:"center"
+                },
+                onClick:function(){
+                  if(searchMode==="tags"){setSearchTag("");setSearchResults(null);}
+                  else if(searchMode==="quests")setQuestSearch("");
+                  else if(searchMode==="trails"){setTrailSearch("");setTrailSearchResults([]);}
+                  else if(searchMode==="mappacks")setMapPackSearch("");
+                  else if(searchMode==="activity")setActivitySearch("");
+                  else {setAddrSearch("");setAddrResults([]);}
+                }
+              },"×");
+            })()
+          ),
           (searchMode!=="quests" && searchMode!=="activity" && searchMode!=="mappacks") && e("button",{
             style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:8},
             onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
@@ -3271,15 +3335,9 @@ function App() {
                     trackedList = saved ? JSON.parse(saved) : [];
                   } catch(e){}
 
-                  var deletedList = [];
-                  try {
-                    var savedDeleted = localStorage.getItem("pinmap_deleted_quests");
-                    deletedList = savedDeleted ? JSON.parse(savedDeleted) : [];
-                  } catch(e){}
-
                   var query = questSearch.toLowerCase().trim();
                   var visible = challenges.filter(function(ch) {
-                    return deletedList.indexOf(ch.id) < 0;
+                    return deletedQuestIds.indexOf(ch.id) < 0;
                   });
 
                   var filtered = visible.filter(function(ch) {
@@ -3387,14 +3445,14 @@ function App() {
                                     list = list.concat([ch.id]);
                                     flash("Started tracking quest! View in Profile.");
                                     // Remove from deleted/hidden if it was there
-                                    try {
-                                      var del = localStorage.getItem("pinmap_deleted_quests");
-                                      var delList = del ? JSON.parse(del) : [];
-                                      if (delList.indexOf(ch.id) >= 0) {
-                                        delList = delList.filter(function(x) { return x !== ch.id; });
-                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(delList));
+                                    setDeletedQuestIds(function(prev) {
+                                      if (prev.indexOf(ch.id) >= 0) {
+                                        var next = prev.filter(function(x) { return x !== ch.id; });
+                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(next));
+                                        return next;
                                       }
-                                    } catch(e){}
+                                      return prev;
+                                    });
                                   }
                                   localStorage.setItem("pinmap_tracked_quests", JSON.stringify(list));
                                   // Force state update
@@ -3434,14 +3492,14 @@ function App() {
                                       }
                                     }
                                     // Remove from deleted/hidden if it was there
-                                    try {
-                                      var del = localStorage.getItem("pinmap_deleted_quests");
-                                      var delList = del ? JSON.parse(del) : [];
-                                      if (delList.indexOf(ch.id) >= 0) {
-                                        delList = delList.filter(function(x) { return x !== ch.id; });
-                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(delList));
+                                    setDeletedQuestIds(function(prev) {
+                                      if (prev.indexOf(ch.id) >= 0) {
+                                        var next = prev.filter(function(x) { return x !== ch.id; });
+                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(next));
+                                        return next;
                                       }
-                                    } catch(e){}
+                                      return prev;
+                                    });
 
                                     setActiveQuestId(ch.id);
                                     localStorage.setItem("pinmap_active_quest_id", ch.id);
@@ -3466,16 +3524,12 @@ function App() {
                                     }
                                   } else {
                                     if(confirm("Remove this quest from your list?")){
-                                      var nextDeleted = [];
-                                      try {
-                                        var saved = localStorage.getItem("pinmap_deleted_quests");
-                                        nextDeleted = saved ? JSON.parse(saved) : [];
-                                      } catch(e){}
-                                      nextDeleted = nextDeleted.concat([ch.id]);
-                                      localStorage.setItem("pinmap_deleted_quests", JSON.stringify(nextDeleted));
+                                      setDeletedQuestIds(function(prev) {
+                                        var next = prev.concat([ch.id]);
+                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(next));
+                                        return next;
+                                      });
                                       flash("Quest removed from your list.");
-                                      // Force state update
-                                      setChallenges(function(prev){ return prev.slice(); });
                                     }
                                   }
                                 }
@@ -4059,6 +4113,8 @@ function App() {
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           mapPacks:mapPacks,
           challenges:challenges,
+          deletedQuestIds:deletedQuestIds,
+          setDeletedQuestIds:setDeletedQuestIds,
           activeQuestId:activeQuestId,
           setActiveQuestId:setActiveQuestId,
           challengesLoading:challengesLoading,
@@ -4304,8 +4360,45 @@ function App() {
       ),
       e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}},
         (uname&&selPin.owner!==uname)&&e(React.Fragment,null,
-          e("button",{style:{background:"none",border:"1px solid #d8cfb8",color:"#3c4540",padding:"4px 10px",fontSize:13,cursor:"pointer",borderRadius:10},onClick:function(){toggleUpvote(selPin.id);}},
-            (selPin.upvotes&&selPin.upvotes.indexOf(uname)>=0?"* ":"o ")+(selPin.upvotes?selPin.upvotes.length:0)),
+          (function(){
+            var isUpvoted = selPin.upvotes && selPin.upvotes.indexOf(uname) >= 0;
+            return e("button",{
+              style:{
+                background:"none",
+                border:"1px solid " + (isUpvoted ? "#ff4500" : "#d8cfb8"),
+                color: isUpvoted ? "#ff4500" : "#3c4540",
+                padding:"4px 10px",
+                fontSize:13,
+                cursor:"pointer",
+                borderRadius:10,
+                display:"inline-flex",
+                alignItems:"center",
+                gap:5,
+                fontWeight: isUpvoted ? 700 : 400
+              },
+              onClick:function(){toggleUpvote(selPin.id);}
+            },
+              e("svg",{
+                width:13,
+                height:13,
+                viewBox:"0 0 24 24",
+                fill: isUpvoted ? "currentColor" : "none",
+                stroke:"currentColor",
+                strokeWidth:"2.2",
+                strokeLinecap:"round",
+                strokeLinejoin:"round",
+                style:{flexShrink:0}
+               },
+                e("path",{d:"M12 3l-7 8h4v9h6v-9h4z"})
+              ),
+              e("span",null,
+                (isUpvoted 
+                  ? (lang === 'es' ? "Votado " : "Upvoted ") 
+                  : (lang === 'es' ? "Votar " : "Upvote ")) + 
+                (selPin.upvotes?selPin.upvotes.length:0)
+              )
+            );
+          })(),
           selPin.owner!==uname&&e("button",{
             style:{fontSize:12,padding:"4px 10px",borderRadius:6,cursor:"pointer",fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
               background:"none",border:"1px solid #d8cfb8",

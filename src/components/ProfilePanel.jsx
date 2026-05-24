@@ -81,14 +81,8 @@ export function ProfilePanel(props) {
     }
   });
 
-  var [deletedQuestIds, setDeletedQuestIds] = React.useState(function() {
-    try {
-      var saved = localStorage.getItem("pinmap_deleted_quests");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  var deletedQuestIds = props.deletedQuestIds || [];
+  var setDeletedQuestIds = props.setDeletedQuestIds || function(){};
 
   var toggleTrackQuest = function(id) {
     setTrackedQuestIds(function(prev) {
@@ -816,9 +810,11 @@ export function ProfilePanel(props) {
                                       }
                                     } else {
                                       if(confirm(t('toast_quest_remove_confirm'))){
-                                        var nextDeleted = deletedQuestIds.concat([ch.id]);
-                                        setDeletedQuestIds(nextDeleted);
-                                        localStorage.setItem("pinmap_deleted_quests", JSON.stringify(nextDeleted));
+                                        setDeletedQuestIds(function(prev) {
+                                          var nextDeleted = prev.concat([ch.id]);
+                                          localStorage.setItem("pinmap_deleted_quests", JSON.stringify(nextDeleted));
+                                          return nextDeleted;
+                                        });
                                         flash(t('toast_quest_removed'));
                                       }
                                     }
@@ -977,6 +973,24 @@ export function ProfilePanel(props) {
                               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>
                               <span>{isCurrentActive ? (lang === 'es' ? "Guía Activa" : "Active Guide") : (lang === 'es' ? "Ver en el mapa" : "View on Map")}</span>
                             </button>
+                            {user && pack.owner === uname && (
+                              <button 
+                                style={Object.assign({}, S.miniBtn, {
+                                  background: "transparent",
+                                  color: T.ink2,
+                                  border: "1px solid " + T.border,
+                                  padding: "4px 10px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4
+                                })}
+                                onClick={function(){
+                                  setShowCollabModal(pack);
+                                }}
+                              >
+                                👥 {lang === 'es' ? "Colaboradores" : "Collaborators"}
+                              </button>
+                            )}
                           </div>
                         </div>
                         {user && pack.owner === uname && (
@@ -1197,9 +1211,17 @@ export function ProfilePanel(props) {
               <button 
                 style={{fontSize:13,color:T.ink3,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6}}
                 onClick={() => {
-                  if(!("Notification" in window)){flash(lang === 'es' ? "No soportado en este navegador" : "Not supported on this browser");return;}
-                  if(Notification.permission==="denied"){flash(lang === 'es' ? "Bloqueado — ve a la Configuración del navegador → Configuración del Sitio → Notificaciones → Permitir" : "Blocked — go to browser Settings → Site Settings → Notifications → Allow");return;}
-                  subscribeToPush(uname).then(function(){if(Notification.permission==="granted"){setPushEnabled(true);flash(lang === 'es' ? "¡Activado!" : "Enabled!");}});
+                  var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+                  if(!isCapacitor && !("Notification" in window)){flash(lang === 'es' ? "No soportado en este navegador" : "Not supported on this browser");return;}
+                  if(!isCapacitor && Notification.permission==="denied"){flash(lang === 'es' ? "Bloqueado — ve a la Configuración del navegador → Configuración del Sitio → Notificaciones → Permitir" : "Blocked — go to browser Settings → Site Settings → Notifications → Allow");return;}
+                  subscribeToPush(uname).then(function(){
+                    if(isCapacitor || Notification.permission==="granted"){
+                      setPushEnabled(true);
+                      flash(lang === 'es' ? "¡Activado!" : "Enabled!");
+                    }
+                  }).catch(function(err){
+                    flash((lang === 'es' ? "Error: " : "Error: ") + err.message);
+                  });
                 }}
               >
                 {lang === 'es' ? "Activar" : "Enable"} <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
@@ -1528,6 +1550,113 @@ export function ProfilePanel(props) {
                 {t('quest_cancel')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── Collaborators Modal ────────────────────────────────────────────────── */}
+      {showCollabModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(26,32,28,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:16}} onClick={function(){ setShowCollabModal(null); setCollabInput(""); }}>
+          <div style={{background:T.paper,border:"2px solid "+T.forest,borderRadius:16,padding:22,width:"100%",maxWidth:400,boxShadow:T.shadowLg}} onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{fontSize:16,fontWeight:700,color:T.ink,marginBottom:12,fontFamily:T.mono,letterSpacing:"0.02em"}}>
+              👥 {lang === 'es' ? "Colaboradores para " : "Collaborators for "} {showCollabModal.name}
+            </div>
+            
+            {/* List current collaborators */}
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,fontFamily:T.mono,color:T.ink3,textTransform:"uppercase",marginBottom:6}}>
+                {lang === 'es' ? "Colaboradores actuales" : "Current Collaborators"}
+              </div>
+              <div style={{background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:8,padding:"8px 12px",maxHeight:120,overflowY:"auto"}}>
+                {((collabMapPacks[showCollabModal.id] || []).length === 0) ? (
+                  <div style={{fontSize:12.5,color:T.ink3,fontStyle:"italic"}}>
+                    {lang === 'es' ? "No hay colaboradores agregados todavía." : "No collaborators added yet."}
+                  </div>
+                ) : (
+                  (collabMapPacks[showCollabModal.id] || []).map(function(collabName){
+                    return (
+                      <div key={collabName} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 0",fontSize:13.5,color:T.ink}}>
+                        <span>@{collabName}</span>
+                        <button 
+                          style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",fontSize:12}}
+                          onClick={function(){
+                            api.removeMapPackCollaborator(showCollabModal.id, collabName).then(function(){
+                              setCollabMapPacks(function(prev){
+                                var next = Object.assign({}, prev);
+                                next[showCollabModal.id] = (prev[showCollabModal.id] || []).filter(function(n){ return n !== collabName; });
+                                return next;
+                              });
+                              flash(lang === 'es' ? "Colaborador eliminado" : "Collaborator removed");
+                            });
+                          }}
+                        >
+                          {lang === 'es' ? "Quitar" : "Remove"}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Invite input */}
+            <div style={{marginBottom:18}}>
+              <label style={{fontSize:11,fontFamily:T.mono,color:T.ink3,textTransform:"uppercase",display:"block",marginBottom:6}}>
+                {lang === 'es' ? "Invitar colaborador por nombre de usuario" : "Invite collaborator by username"}
+              </label>
+              <div style={{display:"flex",gap:6}}>
+                <input 
+                  type="text" 
+                  style={Object.assign({}, S.input, {marginBottom:0})}
+                  placeholder={lang === 'es' ? "Nombre de usuario..." : "Username..."}
+                  value={collabInput}
+                  onChange={function(e){ setCollabInput(e.target.value); }}
+                />
+                <button 
+                  style={Object.assign({}, S.btn, {padding:"0 16px",flexShrink:0})}
+                  onClick={function(){
+                    var target = collabInput.trim();
+                    if(!target) return;
+                    if(target === uname) {
+                      flash(lang === 'es' ? "¡Ya eres el creador de esta guía!" : "You are already the creator of this guide!");
+                      return;
+                    }
+                    if((collabMapPacks[showCollabModal.id] || []).indexOf(target) >= 0) {
+                      flash(lang === 'es' ? "¡Ya colabora en esta guía!" : "Already collaborating on this guide!");
+                      return;
+                    }
+                    api.addMapPackCollaborator(showCollabModal.id, target).then(function(){
+                      setCollabMapPacks(function(prev){
+                        var next = Object.assign({}, prev);
+                        next[showCollabModal.id] = (prev[showCollabModal.id] || []).concat([target]);
+                        return next;
+                      });
+                      flash(lang === 'es' ? "Colaborador invitado con éxito" : "Collaborator successfully invited");
+                      
+                      // Trigger collaborator invite push notification
+                      api.callEdgeFunction("collab_invite", {
+                        invitee: target,
+                        inviter: uname,
+                        packName: showCollabModal.name,
+                        packId: showCollabModal.id
+                      });
+                      
+                      setCollabInput("");
+                    }).catch(function(err){
+                      flash(lang === 'es' ? "Error al agregar: usuario no encontrado" : "Failed to add: user not found");
+                    });
+                  }}
+                >
+                  {lang === 'es' ? "Invitar" : "Invite"}
+                </button>
+              </div>
+            </div>
+
+            <button 
+              style={Object.assign({}, S.btnOutline, {width:"100%"})}
+              onClick={function(){ setShowCollabModal(null); setCollabInput(""); }}
+            >
+              {lang === 'es' ? "Cerrar" : "Close"}
+            </button>
           </div>
         </div>
       )}
