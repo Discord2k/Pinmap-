@@ -1184,14 +1184,26 @@ function App() {
 
     if (activeTrail && activeTrail.coordinates && activeTrail.coordinates.length > 0) {
       var latlngs = activeTrail.coordinates.map(function(pt) { return [pt[0], pt[1]]; });
+      
+      // Solid background line
       var poly = window.L.polyline(latlngs, {
         color: activeTrail.color || "#2a5d3c",
-        weight: 5,
+        weight: 6,
         opacity: 0.8,
         lineJoin: 'round'
-      }).addTo(map);
+      });
 
-      activeTrailPolyline.current = poly;
+      // Flowing dashed overlay line (animates along the path)
+      var flowPoly = window.L.polyline(latlngs, {
+        color: "#ffffff",
+        weight: 3.5,
+        opacity: 0.65,
+        lineJoin: 'round',
+        className: "pm-trail-flow"
+      });
+
+      var trailGroup = window.L.layerGroup([poly, flowPoly]).addTo(map);
+      activeTrailPolyline.current = trailGroup;
 
       try {
         var bounds = poly.getBounds();
@@ -1219,8 +1231,9 @@ function App() {
         color: "#e65100",
         weight: 6,
         opacity: 0.9,
-        dashArray: "5, 10",
-        lineJoin: 'round'
+        dashArray: "6, 12",
+        lineJoin: 'round',
+        className: "pm-recording-trail-line"
       }).addTo(map);
 
       recordingTrailPolyline.current = poly;
@@ -1641,7 +1654,7 @@ function App() {
           m.addTo(window._pinLayer); markers.current[pin.id]=m;
         } else {
           var sz=grp.length>99?52:grp.length>9?46:40;
-          var cIcon=window.L.divIcon({className:"",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+clrColor+';border:3px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;cursor:pointer;font-size:'+(grp.length>9?12:14)+'px;font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+grp.length+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+          var cIcon=window.L.divIcon({className:"pm-cluster",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+clrColor+';border:3px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;cursor:pointer;font-size:'+(grp.length>9?12:14)+'px;font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+grp.length+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
           var cm=window.L.marker([clat,clng],{icon:cIcon});
           var grpCopy=grp.slice();
           cm.on("click",function(){map.fitBounds(window.L.latLngBounds(grpCopy.map(function(p){return[p.lat,p.lng];})),{padding:[60,60],maxZoom:14});});
