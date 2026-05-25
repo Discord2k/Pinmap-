@@ -27,7 +27,9 @@ body { position:fixed; inset:0; }
 .leaflet-container { height:100%!important; width:100%!important; background:var(--paper2)!important; }
 .leaflet-pane,.leaflet-map-pane,.leaflet-tile-pane { z-index:1; }
 .leaflet-tile-pane { filter:saturate(0.55) contrast(0.92) brightness(1.03) sepia(0.04); }
-.pm-pin, .pm-cluster { background:none!important; border:none!important; animation: popIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+.pm-pin, .pm-cluster { background:none!important; border:none!important; }
+.pm-pin > svg { animation: popIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) both; transform-origin: bottom center; }
+.pm-cluster > div { animation: pop 0.25s cubic-bezier(0.34, 1.4, 0.64, 1) both; transform-origin: center center; }
 #map { height:100%!important; width:100%!important; position:absolute!important; top:0!important; left:0!important; }
 input,textarea,button,select { font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif; letter-spacing:-0.005em; -webkit-font-smoothing:antialiased; }
 .mono { font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace; font-feature-settings:"tnum"; }
