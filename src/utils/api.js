@@ -349,7 +349,8 @@ export const api = {
       .order("created_at", {ascending: false})
       .limit(25)
       .then(function(r) { return r.data || []; });
-  }
+  },
+  callEdgeFunction: callEdgeFunction
 };
 
 const VAPID_PUBLIC_KEY = "BPoen_AN-pimyj0ChkbFQybVATvnu1KBdntypfR9YOHbGbLUAe9h6oKixV52HobZyHF3dh5cEVT4Puvci-L1Qj0";
