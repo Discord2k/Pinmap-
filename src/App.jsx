@@ -76,6 +76,7 @@ function App() {
   var s14=useState(null);    var selPin=s14[0];        var setSelPin=s14[1];
   var [selPinOwnerProfile, setSelPinOwnerProfile] = useState(null);
   var s21=useState(null);    var editPin=s21[0];       var setEditPin=s21[1];
+  var [fullscreenPhoto, setFullscreenPhoto] = useState(null);
   var s22=useState({name:"",description:"",tags:"",color:"#2a5d3c",photo:null,photo_2:null,photo_3:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
   var s16=useState(null);    var userLL=s16[0];        var setUserLL=s16[1];
@@ -4244,7 +4245,7 @@ function App() {
       (selPin.photo || selPin.photo_2 || selPin.photo_3) && (function() {
         var activePhotos = [selPin.photo, selPin.photo_2, selPin.photo_3].filter(Boolean);
         if (activePhotos.length === 1) {
-          return e("img",{src:activePhotos[0],style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover",cursor:"pointer"},onClick:function(){window.open(activePhotos[0],"_blank");}});
+          return e("img",{src:activePhotos[0],style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover",cursor:"pointer"},onClick:function(){setFullscreenPhoto(activePhotos[0]);}});
         }
         return e("div",{style:{display:"flex",gap:8,overflowX:"auto",marginBottom:8,paddingBottom:6,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch"}},
           activePhotos.map(function(url, idx) {
@@ -4252,7 +4253,7 @@ function App() {
               key:idx,
               src:url,
               style:{width:"85%",height:150,borderRadius:8,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start",cursor:"pointer"},
-              onClick:function(){window.open(url,"_blank");}
+              onClick:function(){setFullscreenPhoto(url);}
             });
           })
         );
@@ -5091,6 +5092,28 @@ function App() {
         },
         onClick: function() { setActiveTrail(null); }
       }, "✕")
+    ),
+
+    fullscreenPhoto && e("div",{
+      style:{
+        position:"fixed",
+        top:0,left:0,right:0,bottom:0,
+        background:"rgba(18, 25, 20, 0.93)",
+        zIndex:3000,
+        display:"flex",
+        alignItems:"center",
+        justifyContent:"center",
+        padding:20
+      },
+      onClick:function(){setFullscreenPhoto(null);}
+    },
+      e("div",{style:{position:"relative",maxWidth:"90%",maxHeight:"90%",display:"flex",alignItems:"center",justifyContent:"center"},onClick:function(e){e.stopPropagation();}},
+        e("img",{src:fullscreenPhoto,alt:"Pin Photo Full View",style:{maxWidth:"100%",maxHeight:"85vh",borderRadius:8,boxShadow:"0 12px 48px rgba(0,0,0,0.4)"}}),
+        e("button",{
+          style:{position:"absolute",top:-14,right:-14,background:"#c05050",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontWeight:"bold",fontSize:14,boxShadow:"0 2px 8px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",padding:0},
+          onClick:function(){setFullscreenPhoto(null);}
+        },"✕")
+      )
     ),
 
     toast&&e("div",{className:"pm-toast",style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",color:"#2a5d3c",padding:"7px 16px",borderRadius:20,fontSize:13,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast),
