@@ -159,6 +159,7 @@ function App() {
   var [activeMapPackPinIds, setActiveMapPackPinIds] = useState([]);
   var [challengesLoading, setChallengesLoading] = useState(false);
   var [selPinMapPackIds, setSelPinMapPackIds] = useState([]);
+  var [collabPackIds, setCollabPackIds] = useState([]);
   var [deletedQuestIds, setDeletedQuestIds] = useState(function() {
     try {
       var saved = localStorage.getItem("pinmap_deleted_quests");
@@ -1028,7 +1029,20 @@ function App() {
     }).catch(function(err){
       console.error("Error loading pin guides:", err);
     });
-  }, [selPin]);
+
+    if (uname && uname !== 'guest') {
+      api.getMapPacks(uname).then(function(data){
+        setMapPacks(data || []);
+      }).catch(function(e){ console.warn("Error refreshing mappacks on pin selection:", e); });
+
+      sb.from("mappack_collaborators")
+        .select("mappack_id")
+        .eq("username", uname)
+        .then(function(r) {
+          setCollabPackIds((r.data || []).map(function(d) { return d.mappack_id; }));
+        }).catch(function(e){ console.warn("Error refreshing collab packs on pin selection:", e); });
+    }
+  }, [selPin, uname]);
 
   useEffect(function(){
     if(!selPin) {
@@ -1057,13 +1071,22 @@ function App() {
   }, [searchMode, userFollows, follows]);
 
   useEffect(function(){
-    if(!user||!uname||uname==="guest") return;
+    if(!user||!uname||uname==="guest") {
+      setCollabPackIds([]);
+      return;
+    }
     api.getFollows(uname).then(function(data){setFollows(data||[]);}).catch(function(e){console.warn("getFollows error:",e);});
     api.getUserFollows(uname).then(function(data){setUserFollows(data||[]);}).catch(function(e){console.warn("getUserFollows error:",e);});
     api.getFollowers(uname).then(function(data){setFollowers(data||[]);}).catch(function(e){console.warn("getFollowers error:",e);});
     api.getSavedPins(uname).then(function(data){setSavedPins(data||[]);}).catch(function(e){console.warn("getSavedPins error:",e);});
     api.getCheckins(uname).then(function(data){setCheckins(data||[]);}).catch(function(e){console.warn("getCheckins error:",e);});
     api.getMapPacks(uname).then(function(data){setMapPacks(data||[]);}).catch(function(e){console.warn("getMapPacks error:",e);});
+    sb.from("mappack_collaborators")
+      .select("mappack_id")
+      .eq("username", uname)
+      .then(function(r) {
+        setCollabPackIds((r.data || []).map(function(d) { return d.mappack_id; }));
+      }).catch(function(e){ console.warn("getCollabPacks error:", e); });
     api.getTrails(uname).then(function(data){setTrails(data||[]);}).catch(function(e){console.warn("getTrails error:",e);});
     api.getSavedTrailIds(uname).then(function(data){setSavedTrailIds(data||[]);}).catch(function(e){console.warn("getSavedTrailIds error:",e);});
     api.getProfile(uname).then(function(data){
@@ -1096,6 +1119,20 @@ function App() {
       }).catch(function(){});
     }
   },[user]);
+
+  useEffect(function(){
+    if (open && tab === "profile" && uname && uname !== 'guest') {
+      api.getMapPacks(uname).then(function(data){
+        setMapPacks(data || []);
+      }).catch(function(e){ console.warn("Error refreshing mappacks on profile open:", e); });
+      sb.from("mappack_collaborators")
+        .select("mappack_id")
+        .eq("username", uname)
+        .then(function(r) {
+          setCollabPackIds((r.data || []).map(function(d) { return d.mappack_id; }));
+        }).catch(function(e){ console.warn("Error refreshing collab packs on profile open:", e); });
+    }
+  }, [open, tab, uname]);
 
   useEffect(function(){
     if(!selPin) {
@@ -4193,6 +4230,7 @@ function App() {
           focusUserPins:focusUserPins,
           flash:flash,savedPins:savedPins,toggleSavePin:toggleSavePin,setOnboardStep:setOnboardStep,setShowWhatsNew:setShowWhatsNew,setOpen:setOpen,setShowFeatures:setShowFeatures,myProfile:myProfile,setMyProfile:setMyProfile,editingProfile:editingProfile,setEditingProfile:setEditingProfile,profileForm:profileForm,setProfileForm:setProfileForm,saveProfile:saveProfile,setShowImport:setShowImport,
           mapPacks:mapPacks,
+          collabPackIds:collabPackIds,
           challenges:challenges,
           deletedQuestIds:deletedQuestIds,
           setDeletedQuestIds:setDeletedQuestIds,
@@ -4311,7 +4349,7 @@ function App() {
         e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, "Add to Guides"),
         e("div", {style: {display: "flex", gap: 6, flexWrap: "wrap"}},
           (function() {
-            var myPacks = mapPacks.filter(function(g){ return g.owner === uname; });
+            var myPacks = mapPacks.filter(function(g){ return g.owner === uname || collabPackIds.indexOf(g.id) >= 0; });
             if (myPacks.length === 0) {
               return e("div", {style: {fontSize: 12, color: T.ink3}},
                 "No guides yet. ",
@@ -4367,7 +4405,7 @@ function App() {
                     });
                   }
                 }
-              }, (isInPack ? "✓ " : "＋ ") + g.name);
+              }, (isInPack ? "✓ " : "＋ ") + g.name + (g.owner !== uname ? " 👥" : ""));
             });
           })()
         )

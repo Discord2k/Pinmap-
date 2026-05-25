@@ -15,6 +15,10 @@ export function ProfilePanel(props) {
   var [showAllFollowers, setShowAllFollowers] = React.useState(false);
 
   var mapPacks = props.mapPacks || [];
+  var collabPackIds = props.collabPackIds || [];
+  var myCollections = mapPacks.filter(function(pack) {
+    return pack.owner === uname || collabPackIds.indexOf(pack.id) >= 0;
+  });
   var challenges = props.challenges || [];
   var allPins = props.allPins || [];
   var checkins = props.checkins || [];
@@ -846,16 +850,16 @@ export function ProfilePanel(props) {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                cursor: mapPacks.length > 1 ? "pointer" : "default",
+                cursor: myCollections.length > 1 ? "pointer" : "default",
                 userSelect: "none"
               }}
               onClick={function(){
-                if (mapPacks.length > 1) {
+                if (myCollections.length > 1) {
                   setCollectionsCollapsed(function(prev) { return !prev; });
                 }
               }}
             >
-              {mapPacks.length > 1 && (
+              {myCollections.length > 1 && (
                 <span style={{
                   fontSize: 10,
                   color: T.ink3,
@@ -868,7 +872,7 @@ export function ProfilePanel(props) {
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
-                <span>{t('collections')}</span>
+                <span>{t('collections') + (myCollections.length > 0 ? " · " + myCollections.length : "")}</span>
               </span>
               <span 
                 className="pm-info-btn"
@@ -908,9 +912,9 @@ export function ProfilePanel(props) {
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
-                  opacity: (mapPacks.length > 1 && collectionsCollapsed) ? 0 : 1,
-                  transform: (mapPacks.length > 1 && collectionsCollapsed) ? "scale(0.9)" : "scale(1)",
-                  pointerEvents: (mapPacks.length > 1 && collectionsCollapsed) ? "none" : "auto",
+                  opacity: (myCollections.length > 1 && collectionsCollapsed) ? 0 : 1,
+                  transform: (myCollections.length > 1 && collectionsCollapsed) ? "scale(0.9)" : "scale(1)",
+                  pointerEvents: (myCollections.length > 1 && collectionsCollapsed) ? "none" : "auto",
                   transition: "opacity 0.2s, transform 0.2s"
                 })}
                 onClick={function(){ setShowCreatePackModal(true); }}
@@ -920,13 +924,13 @@ export function ProfilePanel(props) {
               </button>
             )}
           </div>
-
-          <div className={"pm-collapsible " + ((mapPacks.length > 1 && collectionsCollapsed) ? "collapsed" : "")}>
+ 
+          <div className={"pm-collapsible " + ((myCollections.length > 1 && collectionsCollapsed) ? "collapsed" : "")}>
             <div>
-              {mapPacks.length === 0 ? (
+              {myCollections.length === 0 ? (
                 <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>{t('no_collections')}</div>
               ) : (
-                mapPacks.map(function(pack){
+                myCollections.map(function(pack){
                   var isCurrentActive = activeMapPack && activeMapPack.id === pack.id;
                   return (
                     <div 
@@ -947,6 +951,11 @@ export function ProfilePanel(props) {
                             {!pack.is_public && (
                               <span style={{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}>
                                 {t('private_badge')}
+                              </span>
+                            )}
+                            {pack.owner !== uname && (
+                              <span style={{fontSize:10,background:"rgba(42,93,60,0.08)",color:T.forest,padding:"1px 5px",borderRadius:4,fontWeight:600}}>
+                                👥 {lang === 'es' ? "Colaborador" : "Collaborator"}
                               </span>
                             )}
                             <span style={{color:T.ink3,fontSize:11}}>{t('by_author')} @{pack.owner}</span>

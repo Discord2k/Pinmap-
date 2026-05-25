@@ -571,3 +571,49 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.save_pin(TEXT, TEXT[]) TO authenticated;
+
+-- =========================================================================
+-- MAP PACK COLLABORATORS SCHEMA & MAP PACK PINS RLS UPDATE FOR COLLABORATORS
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.mappack_collaborators (
+  mappack_id TEXT REFERENCES public.mappacks(id) ON DELETE CASCADE,
+  username TEXT NOT NULL,
+  role TEXT DEFAULT 'editor',
+  PRIMARY KEY (mappack_id, username)
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.mappack_collaborators TO authenticated;
+GRANT SELECT ON public.mappack_collaborators TO anon;
+
+ALTER TABLE public.mappack_collaborators ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view collaborators" ON public.mappack_collaborators;
+CREATE POLICY "Anyone can view collaborators" ON public.mappack_collaborators FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Mappack owners can modify collaborators" ON public.mappack_collaborators;
+CREATE POLICY "Mappack owners can modify collaborators" ON public.mappack_collaborators FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM public.mappacks 
+    WHERE mappacks.id = mappack_collaborators.mappack_id AND mappacks.owner = public.current_username()
+  )
+);
+
+-- RLS Updates for mappack_pins to allow collaborators to modify pins
+DROP POLICY IF EXISTS "Mappack owners can modify mappack pins" ON public.mappack_pins;
+CREATE POLICY "Mappack owners and collaborators can modify mappack pins" ON public.mappack_pins
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.mappacks 
+      WHERE mappacks.id = mappack_pins.mappack_id 
+        AND (
+          mappacks.owner = public.current_username()
+          OR EXISTS (
+            SELECT 1 FROM public.mappack_collaborators 
+            WHERE mappack_collaborators.mappack_id = mappack_pins.mappack_id 
+              AND mappack_collaborators.username = public.current_username()
+          )
+        )
+    )
+  );
+
