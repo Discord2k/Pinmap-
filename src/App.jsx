@@ -3771,19 +3771,24 @@ function App() {
             ? e("div",null,
                 (function(){
                   var filtered = mapPacks.filter(function(g){
-                    return g.is_public && (
+                    var hasAccess = g.is_public || g.owner === uname || collabPackIds.indexOf(g.id) >= 0;
+                    return hasAccess && (
                       (g.name || "").toLowerCase().includes(mapPackSearch.toLowerCase()) || 
                       (g.description || "").toLowerCase().includes(mapPackSearch.toLowerCase())
                     );
                   });
                   if (filtered.length === 0) {
-                    return e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, "No public guides found.");
+                    return e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, lang === 'es' ? "No se encontraron guías." : "No guides found.");
                   }
                   return e("div",{style:{padding:"10px 0"}},
                     filtered.map(function(pack){
                       var isActive = activeMapPack && activeMapPack.id === pack.id;
                       return e("div",{key:pack.id,style:{padding:14,background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:10}},
-                        e("div",{style:{fontWeight:700,fontSize:15,color:T.ink}},pack.name),
+                        e("div",{style:{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:4}},
+                          e("span",{style:{fontWeight:700,fontSize:15,color:T.ink}},pack.name),
+                          !pack.is_public && e("span",{style:{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}, t('private_badge')),
+                          pack.owner !== uname && e("span",{style:{fontSize:10,background:"rgba(42,93,60,0.08)",color:T.forest,padding:"1px 5px",borderRadius:4,fontWeight:600}}, "👥 " + (lang === 'es' ? "Colaborador" : "Collaborator"))
+                        ),
                         pack.description && e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4,lineHeight:1.4}},pack.description),
                         e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
                           "by ",

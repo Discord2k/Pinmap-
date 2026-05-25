@@ -323,7 +323,16 @@ ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 -- Select policies
 DROP POLICY IF EXISTS "Anyone can view public mappacks" ON public.mappacks;
 CREATE POLICY "Anyone can view public mappacks" ON public.mappacks
-  FOR SELECT USING (is_public = true OR owner = public.current_username());
+  FOR SELECT USING (
+    is_public = true 
+    OR owner = public.current_username()
+    OR EXISTS (
+      SELECT 1 FROM public.mappack_collaborators 
+      WHERE mappack_collaborators.mappack_id = mappacks.id 
+        AND mappack_collaborators.username = public.current_username()
+    )
+  );
+
 
 DROP POLICY IF EXISTS "Anyone can view mappack pins" ON public.mappack_pins;
 CREATE POLICY "Anyone can view mappack pins" ON public.mappack_pins
