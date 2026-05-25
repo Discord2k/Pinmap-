@@ -546,7 +546,28 @@ GRANT EXECUTE ON FUNCTION public.get_auth_users() TO authenticated;
 ALTER TABLE public.pins ADD COLUMN IF NOT EXISTS photo_2 TEXT;
 ALTER TABLE public.pins ADD COLUMN IF NOT EXISTS photo_3 TEXT;
 
+-- =========================================================================
+-- SECURITY DEFINER FUNCTIONS FOR RLS BYPASS (UPVOTES & SAVES ON OTHER PINS)
+-- =========================================================================
 
+CREATE OR REPLACE FUNCTION public.upvote_pin(pin_id TEXT, new_upvotes TEXT[])
+RETURNS void AS $$
+BEGIN
+  UPDATE public.pins
+  SET upvotes = new_upvotes
+  WHERE id = pin_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
+GRANT EXECUTE ON FUNCTION public.upvote_pin(TEXT, TEXT[]) TO authenticated;
 
+CREATE OR REPLACE FUNCTION public.save_pin(pin_id TEXT, new_saved_by TEXT[])
+RETURNS void AS $$
+BEGIN
+  UPDATE public.pins
+  SET saved_by = new_saved_by
+  WHERE id = pin_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
+GRANT EXECUTE ON FUNCTION public.save_pin(TEXT, TEXT[]) TO authenticated;

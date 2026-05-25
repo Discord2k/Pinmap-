@@ -95,7 +95,21 @@ export function PinCard(props) {
                 {(pin.upvotes?pin.upvotes.length:0)}
               </span>
             </button>
-            <button style={miniBtnStyle} onClick={() => props.onSave(pin)}>⭐ {t('save_btn')}</button>
+            <button 
+              style={Object.assign({}, miniBtnStyle, {
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5
+              })} 
+              onClick={() => props.onSave(pin)}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              <span>{t('save_btn')}</span>
+            </button>
           </React.Fragment>
         )}
         {isOwner && !pin.saved_from && (
