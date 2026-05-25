@@ -668,11 +668,13 @@ CREATE POLICY "Mappack owners and collaborators can delete mappack pins" ON publ
 -- Helper function to check collaborator access using SECURITY DEFINER to bypass RLS and avoid infinite recursion
 CREATE OR REPLACE FUNCTION public.is_mappack_collaborator(pack_id TEXT, username TEXT)
 RETURNS boolean AS $$
-  SELECT EXISTS (
+BEGIN
+  RETURN EXISTS (
     SELECT 1 FROM public.mappack_collaborators
     WHERE mappack_id = pack_id AND username = username
   );
-$$ LANGUAGE sql SECURITY DEFINER;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.is_mappack_collaborator(TEXT, TEXT) TO public;
 
