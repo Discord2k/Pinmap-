@@ -594,6 +594,10 @@ DROP POLICY IF EXISTS "Anyone can view collaborators" ON public.mappack_collabor
 CREATE POLICY "Anyone can view collaborators" ON public.mappack_collaborators FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Mappack owners can modify collaborators" ON public.mappack_collaborators;
+DROP POLICY IF EXISTS "Mappack owners can insert collaborators" ON public.mappack_collaborators;
+DROP POLICY IF EXISTS "Mappack owners can update collaborators" ON public.mappack_collaborators;
+DROP POLICY IF EXISTS "Mappack owners can delete collaborators" ON public.mappack_collaborators;
+
 CREATE POLICY "Mappack owners can insert collaborators" ON public.mappack_collaborators FOR INSERT WITH CHECK (
   EXISTS (
     SELECT 1 FROM public.mappacks 
@@ -616,6 +620,9 @@ CREATE POLICY "Mappack owners can delete collaborators" ON public.mappack_collab
 -- RLS Updates for mappack_pins to allow collaborators to modify pins
 DROP POLICY IF EXISTS "Mappack owners can modify mappack pins" ON public.mappack_pins;
 DROP POLICY IF EXISTS "Mappack owners and collaborators can modify mappack pins" ON public.mappack_pins;
+DROP POLICY IF EXISTS "Mappack owners and collaborators can insert mappack pins" ON public.mappack_pins;
+DROP POLICY IF EXISTS "Mappack owners and collaborators can update mappack pins" ON public.mappack_pins;
+DROP POLICY IF EXISTS "Mappack owners and collaborators can delete mappack pins" ON public.mappack_pins;
 
 CREATE POLICY "Mappack owners and collaborators can insert mappack pins" ON public.mappack_pins
   FOR INSERT WITH CHECK (
