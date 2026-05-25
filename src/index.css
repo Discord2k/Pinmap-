@@ -196,20 +196,27 @@ button:active { transform:scale(0.97); }
   }
 }
 
-/* Flowing trail animation along SVG polyline */
+/* Flowing trail animation along SVG polyline (pattern length: 8 + 16 = 24) */
 @keyframes pmTrailFlow {
   to {
-    stroke-dashoffset: -32;
+    stroke-dashoffset: -24;
   }
 }
 
 .pm-trail-flow {
   stroke-dasharray: 8 16;
-  animation: pmTrailFlow 1.6s linear infinite;
+  animation: pmTrailFlow 1.5s linear infinite;
+}
+
+/* Recording trail animation (pattern length: 6 + 12 = 18) */
+@keyframes pmRecordingFlow {
+  to {
+    stroke-dashoffset: -18;
+  }
 }
 
 .pm-recording-trail-line {
-  animation: pmTrailFlow 1.2s linear infinite;
+  animation: pmRecordingFlow 1.2s linear infinite;
 }
 
 
