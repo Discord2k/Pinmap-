@@ -601,7 +601,19 @@ DROP POLICY IF EXISTS "Anyone can view collaborators" ON public.mappack_collabor
 CREATE POLICY "Anyone can view collaborators" ON public.mappack_collaborators FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Mappack owners can modify collaborators" ON public.mappack_collaborators;
-CREATE POLICY "Mappack owners can modify collaborators" ON public.mappack_collaborators FOR ALL USING (
+CREATE POLICY "Mappack owners can insert collaborators" ON public.mappack_collaborators FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.mappacks 
+    WHERE mappacks.id = mappack_collaborators.mappack_id AND mappacks.owner = public.current_username()
+  )
+);
+CREATE POLICY "Mappack owners can update collaborators" ON public.mappack_collaborators FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM public.mappacks 
+    WHERE mappacks.id = mappack_collaborators.mappack_id AND mappacks.owner = public.current_username()
+  )
+);
+CREATE POLICY "Mappack owners can delete collaborators" ON public.mappack_collaborators FOR DELETE USING (
   EXISTS (
     SELECT 1 FROM public.mappacks 
     WHERE mappacks.id = mappack_collaborators.mappack_id AND mappacks.owner = public.current_username()
@@ -610,8 +622,42 @@ CREATE POLICY "Mappack owners can modify collaborators" ON public.mappack_collab
 
 -- RLS Updates for mappack_pins to allow collaborators to modify pins
 DROP POLICY IF EXISTS "Mappack owners can modify mappack pins" ON public.mappack_pins;
-CREATE POLICY "Mappack owners and collaborators can modify mappack pins" ON public.mappack_pins
-  FOR ALL USING (
+DROP POLICY IF EXISTS "Mappack owners and collaborators can modify mappack pins" ON public.mappack_pins;
+
+CREATE POLICY "Mappack owners and collaborators can insert mappack pins" ON public.mappack_pins
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.mappacks 
+      WHERE mappacks.id = mappack_pins.mappack_id 
+        AND (
+          mappacks.owner = public.current_username()
+          OR EXISTS (
+            SELECT 1 FROM public.mappack_collaborators 
+            WHERE mappack_collaborators.mappack_id = mappack_pins.mappack_id 
+              AND mappack_collaborators.username = public.current_username()
+          )
+        )
+    )
+  );
+
+CREATE POLICY "Mappack owners and collaborators can update mappack pins" ON public.mappack_pins
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.mappacks 
+      WHERE mappacks.id = mappack_pins.mappack_id 
+        AND (
+          mappacks.owner = public.current_username()
+          OR EXISTS (
+            SELECT 1 FROM public.mappack_collaborators 
+            WHERE mappack_collaborators.mappack_id = mappack_pins.mappack_id 
+              AND mappack_collaborators.username = public.current_username()
+          )
+        )
+    )
+  );
+
+CREATE POLICY "Mappack owners and collaborators can delete mappack pins" ON public.mappack_pins
+  FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM public.mappacks 
       WHERE mappacks.id = mappack_pins.mappack_id 
