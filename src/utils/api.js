@@ -273,9 +273,6 @@ export const api = {
   getExpeditionLog: async function(followedUsers, followedTags) {
     followedUsers = followedUsers || [];
     followedTags = followedTags || [];
-    if (followedUsers.length === 0 && followedTags.length === 0) {
-      return [];
-    }
     
     var queries = [];
     
@@ -303,17 +300,15 @@ export const api = {
       );
     }
     
-    // 3. Fetch public trails from followed users
-    if (followedUsers.length > 0) {
-      queries.push(
-        sb.from("trails").select("*").in("owner", followedUsers).eq("is_public", true).order("created_at", {ascending: false}).limit(20)
-          .then(function(r) {
-            return (r.data || []).map(function(item) {
-              return Object.assign({}, item, {type: "trail"});
-            });
-          })
-      );
-    }
+    // 3. Fetch all public trails (always visible in feed)
+    queries.push(
+      sb.from("trails").select("*").eq("is_public", true).order("created_at", {ascending: false}).limit(20)
+        .then(function(r) {
+          return (r.data || []).map(function(item) {
+            return Object.assign({}, item, {type: "trail"});
+          });
+        })
+    );
     
     // 4. Fetch comments (journals) from followed users
     if (followedUsers.length > 0) {

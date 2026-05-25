@@ -540,6 +540,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.get_auth_users() TO authenticated;
 
+-- =========================================================================
+-- ADDITIONAL PIN PHOTO COLUMNS (Supports up to 3 photos)
+-- =========================================================================
+ALTER TABLE public.pins ADD COLUMN IF NOT EXISTS photo_2 TEXT;
+ALTER TABLE public.pins ADD COLUMN IF NOT EXISTS photo_3 TEXT;
+
+
 
 
 

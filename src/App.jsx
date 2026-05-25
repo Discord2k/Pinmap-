@@ -71,12 +71,12 @@ function App() {
   var [expeditionLog, setExpeditionLog] = useState([]);
   var [expeditionLogLoading, setExpeditionLogLoading] = useState(false);
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
-  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",trail_id:""}); var form=s12[0]; var setForm=s12[1];
+  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",trail_id:""}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
   var s14=useState(null);    var selPin=s14[0];        var setSelPin=s14[1];
   var [selPinOwnerProfile, setSelPinOwnerProfile] = useState(null);
   var s21=useState(null);    var editPin=s21[0];       var setEditPin=s21[1];
-  var s22=useState({name:"",description:"",tags:"",color:"#2a5d3c",photo:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
+  var s22=useState({name:"",description:"",tags:"",color:"#2a5d3c",photo:null,photo_2:null,photo_3:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
   var s16=useState(null);    var userLL=s16[0];        var setUserLL=s16[1];
   var s17=useState(false);   var locating=s17[0];      var setLocating=s17[1];
@@ -378,7 +378,7 @@ function App() {
     };
     setDrafts(function(d){return [draft].concat(d);});
     flash(t("toast_save_draft"));
-    setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:"",trail_id:""});
+    setForm({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",expires_at:"",trail_id:""});
     setPendingLL(null);
   }
 
@@ -1964,7 +1964,7 @@ function App() {
 
   function openEdit(pin){
     setEditPin(pin);
-    setEditForm({name:pin.name,description:pin.description||"",tags:(pin.tags||[]).join(" "),color:pin.color||"#2a5d3c",photo:pin.photo||null,trail_id:""});
+    setEditForm({name:pin.name,description:pin.description||"",tags:(pin.tags||[]).join(" "),color:pin.color||"#2a5d3c",photo:pin.photo||null,photo_2:pin.photo_2||null,photo_3:pin.photo_3||null,trail_id:""});
     setSelPin(null);
     api.getTrailForPin(pin.id).then(function(t) {
       if (t) {
@@ -1980,10 +1980,41 @@ function App() {
     var tags=editForm.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
     var banned=checkBannedTags(tags);
     if(banned.length>0){flash("Tag not allowed: #"+banned.join(", #"));return;}
-    var doUpdate = function(photoUrl) {
-      var patch={name:editForm.name.trim(),description:editForm.description.trim(),tags:tags,color:editForm.color,photo:photoUrl};
-      api.update(editPin.id,patch,uname).then(function(){
-        setPins(function(prev){return prev.map(function(p){return p.id===editPin.id?Object.assign({},p,patch):p;});});
+    
+    var uploadOne = function(fieldName, dataVal) {
+      if (dataVal && dataVal.startsWith('data:')) {
+        return uploadPhoto(dataVal, editPin.id).then(function(url) {
+          return {key: fieldName, url: url};
+        });
+      }
+      return Promise.resolve({key: fieldName, url: dataVal});
+    };
+
+    flash("Saving changes...");
+    Promise.all([
+      uploadOne('photo', editForm.photo),
+      uploadOne('photo_2', editForm.photo_2),
+      uploadOne('photo_3', editForm.photo_3)
+    ]).then(function(results) {
+      var urls = {};
+      results.forEach(function(r) { urls[r.key] = r.url; });
+      
+      var patch = {
+        name: editForm.name.trim(),
+        description: editForm.description.trim(),
+        tags: tags,
+        color: editForm.color,
+        photo: urls.photo || null,
+        photo_2: urls.photo_2 || null,
+        photo_3: urls.photo_3 || null
+      };
+
+      api.update(editPin.id, patch, uname).then(function() {
+        setPins(function(prev) {
+          return prev.map(function(p) {
+            return p.id === editPin.id ? Object.assign({}, p, patch) : p;
+          });
+        });
         
         // Handle updating linked trail
         api.unlinkTrailFromPin(editPin.id).then(function() {
@@ -1998,18 +2029,13 @@ function App() {
 
         setEditPin(null);
         flash("Pin updated!");
-      }).catch(function(){flash("Update failed");});
-    };
-    if(editForm.photo && editForm.photo.startsWith('data:')) {
-      flash("Uploading photo...");
-      uploadPhoto(editForm.photo, editPin.id).then(function(url){
-        doUpdate(url);
-      }).catch(function(){
-        doUpdate(editForm.photo);
+      }).catch(function() {
+        flash("Update failed");
       });
-    } else {
-      doUpdate(editForm.photo||null);
-    }
+    }).catch(function(err) {
+      console.error("Upload error:", err);
+      flash("Photo upload failed");
+    });
   }
 
   function savePin(){
@@ -2020,20 +2046,60 @@ function App() {
       var tags=form.tags.split(/[\s,]+/).map(function(t){return t.replace(/^#/,"").toLowerCase();}).filter(Boolean);
       var banned=checkBannedTags(tags);
       if(banned.length>0){flash("Tag not allowed: #"+banned.join(", #"));return;}
-      var pin={id:uid(),owner:uname,name:form.name.trim(),description:form.description.trim(),tags:tags,privacy:form.privacy,lat:pendingLL.lat,lng:pendingLL.lng,photo:form.photo||null,color:form.color||"#2a5d3c",upvotes:[],saved_by:[],saved_from:null,expires_at:form.expires_at?new Date(form.expires_at).toISOString():null};
-      var photoData = pin.photo;
-      var doInsert = function(photoUrl) {
-        var pinToSave = Object.assign({}, pin, {photo: photoUrl});
-        if(!navigator.onLine){
-          // Save to offline queue
-          dbPut("pins", Object.assign({}, pinToSave, {_offline:true})).then(function(){
-            setPins(function(p){return [Object.assign({},pinToSave,{_offline:true})].concat(p);});
-            setQueueCount(function(c){return c+1;});
-            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:"",trail_id:""});
-            setPendingLL(null);setTab("mine");
-            flash("📡 Offline — pin saved locally, will sync when online");
+      
+      var pin={
+        id:uid(),
+        owner:uname,
+        name:form.name.trim(),
+        description:form.description.trim(),
+        tags:tags,
+        privacy:form.privacy,
+        lat:pendingLL.lat,
+        lng:pendingLL.lng,
+        photo:form.photo||null,
+        photo_2:form.photo_2||null,
+        photo_3:form.photo_3||null,
+        color:form.color||"#2a5d3c",
+        upvotes:[],
+        saved_by:[],
+        saved_from:null,
+        expires_at:form.expires_at?new Date(form.expires_at).toISOString():null
+      };
+
+      var uploadOne = function(fieldName, dataVal) {
+        if (dataVal && dataVal.startsWith('data:')) {
+          return uploadPhoto(dataVal, pin.id).then(function(url) {
+            return {key: fieldName, url: url};
           });
-        } else {
+        }
+        return Promise.resolve({key: fieldName, url: dataVal});
+      };
+
+      if(!navigator.onLine){
+        // Save to offline queue
+        dbPut("pins", Object.assign({}, pin, {_offline:true})).then(function(){
+          setPins(function(p){return [Object.assign({},pin,{_offline:true})].concat(p);});
+          setQueueCount(function(c){return c+1;});
+          setForm({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",expires_at:"",trail_id:""});
+          setPendingLL(null);setTab("mine");
+          flash("📡 Offline — pin saved locally, will sync when online");
+        });
+      } else {
+        flash("Saving pin...");
+        Promise.all([
+          uploadOne('photo', form.photo),
+          uploadOne('photo_2', form.photo_2),
+          uploadOne('photo_3', form.photo_3)
+        ]).then(function(results) {
+          var urls = {};
+          results.forEach(function(r) { urls[r.key] = r.url; });
+          
+          var pinToSave = Object.assign({}, pin, {
+            photo: urls.photo || null,
+            photo_2: urls.photo_2 || null,
+            photo_3: urls.photo_3 || null
+          });
+
           api.insert(pinToSave).then(function(){
             setPins(function(p){
               // Check if this is first pin before adding
@@ -2053,25 +2119,16 @@ function App() {
                 });
             }
 
-            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,color:"#2a5d3c",expires_at:"",trail_id:""});
+            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",expires_at:"",trail_id:""});
             setPendingLL(null);setTab("mine");flash("Pin saved!");
             if(pinToSave.privacy==="public") {
               callEdgeFunction("new_pin", {pinOwner:uname, pinName:pinToSave.name, pinId:pinToSave.id});
             }
           }).catch(function(){flash("Save failed");});
-        }
-      };
-      if(photoData && photoData.startsWith('data:')) {
-        flash("Uploading photo...");
-        uploadPhoto(photoData, pin.id).then(function(url){
-          doInsert(url);
-        }).catch(function(){
-          // Fall back to base64 if upload fails
-          doInsert(photoData);
-          flash("Pin saved (photo stored locally)");
+        }).catch(function(err) {
+          console.error("Upload error:", err);
+          flash("Photo upload failed");
         });
-      } else {
-        doInsert(photoData);
       }
     });
   }
@@ -3757,7 +3814,7 @@ function App() {
                             e("span",{style:{fontSize:11,fontWeight:700,color:T.forest,fontFamily:T.mono}},"🥾 NEW TRAIL"),
                             e("span",{style:{fontSize:10,color:T.ink3}},timeLabel)
                           ),
-                          e("div",{style:{fontWeight:700,fontSize:15,color:T.ink}},item.name),
+                          e("div",{style:{fontWeight:700,fontSize:15,color:T.ink,cursor:"pointer",textDecoration:"underline"},onClick:function(){setActiveTrail(item);setOpen(false);}},item.name),
                           e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4}},Number((item.distance_km || 0) * 0.621371).toFixed(2)+" mi trail"),
                           e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
                             "by ",
@@ -4024,26 +4081,36 @@ function App() {
         !pendingLL && e("div",{style:{background:T.paper2,border:"1px dashed "+T.border,borderRadius:10,padding:"16px",marginBottom:12,textAlign:"center",color:T.ink3,fontSize:13}},
           t("form_no_location_hint")
         ),
-        e("div",{style:{marginBottom:12}},
+        e("div",{style:{marginBottom:16}},
           e("div",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:6}},t("photo_label")),
-          form.photo
-            ? e("div",{style:{position:"relative",marginBottom:6}},
-                e("img",{src:form.photo,style:{width:"100%",borderRadius:6,maxHeight:130,objectFit:"cover"}}),
-                e("button",{
-                  onClick:function(){setForm(function(f){return Object.assign({},f,{photo:null});});},
-                  style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.55)",border:"none",color:"#fff",borderRadius:"50%",width:22,height:22,cursor:"pointer",fontSize:12,lineHeight:1}
-                },"x")
-              )
-            : null,
-          e("button",{
-            style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,color:T.ink,cursor:"pointer",background:T.paper2,border:"1px solid "+T.border,borderRadius:6,padding:"8px 12px",fontFamily:T.font},
-            onClick:function(){takePhoto(function(compressed){setForm(function(f){return Object.assign({},f,{photo:compressed});});});}
-          }, 
-            e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",style:{flexShrink:0}},
-              e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
-              e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
-            ),
-            form.photo?t("replace_photo"):t("add_photo")
+          e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
+            [1, 2, 3].map(function(idx) {
+              var fieldName = idx === 1 ? 'photo' : 'photo_' + idx;
+              var photoVal = form[fieldName];
+              if (photoVal) {
+                return e("div",{key:idx,style:{position:"relative",width:68,height:68,borderRadius:8,overflow:"hidden",border:"1px solid "+T.border,flexShrink:0}},
+                  e("img",{src:photoVal,style:{width:"100%",height:"100%",objectFit:"cover"}}),
+                  e("button",{
+                    type:"button",
+                    onClick:function(){setForm(function(f){var patch={};patch[fieldName]=null;return Object.assign({},f,patch);});},
+                    style:{position:"absolute",top:2,right:2,background:"rgba(0,0,0,0.6)",border:"none",color:"#fff",borderRadius:"50%",width:16,height:16,cursor:"pointer",fontSize:10,lineHeight:"14px",display:"flex",alignItems:"center",justifyContent:"center"}
+                  },"x")
+                );
+              } else {
+                return e("button",{
+                  key:idx,
+                  type:"button",
+                  style:{width:68,height:68,borderRadius:8,border:"1px dashed "+T.border,background:T.paper2,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",color:T.ink3,gap:4,flexShrink:0},
+                  onClick:function(){takePhoto(function(compressed){setForm(function(f){var patch={};patch[fieldName]=compressed;return Object.assign({},f,patch);});});}
+                },
+                  e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},
+                    e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
+                    e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
+                  ),
+                  e("span",{style:{fontSize:8.5,fontWeight:600}},t("add_photo"))
+                );
+              }
+            })
           )
         ),
         e("div",{style:{marginBottom:12}},
@@ -4174,7 +4241,22 @@ function App() {
         e("path",{d:"M18 6L6 18M6 6l12 12",stroke:"#f6f1e4",strokeWidth:2.5,strokeLinecap:"round"})
       )
     ),
-      selPin.photo&&e("img",{src:selPin.photo,style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover"}}),
+      (selPin.photo || selPin.photo_2 || selPin.photo_3) && (function() {
+        var activePhotos = [selPin.photo, selPin.photo_2, selPin.photo_3].filter(Boolean);
+        if (activePhotos.length === 1) {
+          return e("img",{src:activePhotos[0],style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover",cursor:"pointer"},onClick:function(){window.open(activePhotos[0],"_blank");}});
+        }
+        return e("div",{style:{display:"flex",gap:8,overflowX:"auto",marginBottom:8,paddingBottom:6,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch"}},
+          activePhotos.map(function(url, idx) {
+            return e("img",{
+              key:idx,
+              src:url,
+              style:{width:"85%",height:150,borderRadius:8,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start",cursor:"pointer"},
+              onClick:function(){window.open(url,"_blank");}
+            });
+          })
+        );
+      })(),
       e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:2,paddingRight:20}},
       e("span",{style:{width:12,height:12,borderRadius:"50%",background:selPin.color||tagColor(selPin.tags&&selPin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
       e("span",{style:{fontSize:20,lineHeight:1}},getPinIcon(selPin.tags)),
@@ -4855,26 +4937,36 @@ function App() {
               style:{width:24,height:24,borderRadius:"50%",border:"none",padding:0,cursor:"pointer"}})
           )
         ),
-        e("div",{style:{marginBottom:12}},
+        e("div",{style:{marginBottom:16}},
           e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},t("photo_label")),
-          editForm.photo
-            ? e("div",{style:{position:"relative",marginBottom:6}},
-                e("img",{src:editForm.photo,style:{width:"100%",borderRadius:6,maxHeight:130,objectFit:"cover"}}),
-                e("button",{
-                  onClick:function(){setEditForm(function(f){return Object.assign({},f,{photo:null});});},
-                  style:{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.55)",border:"none",color:"#fff",borderRadius:"50%",width:22,height:22,cursor:"pointer",fontSize:12,lineHeight:1}
-                },"x")
-              )
-            : null,
-          e("button",{
-            style:{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,color:"#3c4540",cursor:"pointer",background:"#efe9d8",border:"1px solid #d8cfb8",borderRadius:6,padding:"8px 12px",fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"},
-            onClick:function(){takePhoto(function(compressed){setEditForm(function(f){return Object.assign({},f,{photo:compressed});});});}
-          }, 
-            e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",style:{flexShrink:0}},
-              e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
-              e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
-            ),
-            editForm.photo?t("replace_photo"):t("add_photo")
+          e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
+            [1, 2, 3].map(function(idx) {
+              var fieldName = idx === 1 ? 'photo' : 'photo_' + idx;
+              var photoVal = editForm[fieldName];
+              if (photoVal) {
+                return e("div",{key:idx,style:{position:"relative",width:68,height:68,borderRadius:8,overflow:"hidden",border:"1px solid "+T.border,flexShrink:0}},
+                  e("img",{src:photoVal,style:{width:"100%",height:"100%",objectFit:"cover"}}),
+                  e("button",{
+                    type:"button",
+                    onClick:function(){setEditForm(function(f){var patch={};patch[fieldName]=null;return Object.assign({},f,patch);});},
+                    style:{position:"absolute",top:2,right:2,background:"rgba(0,0,0,0.6)",border:"none",color:"#fff",borderRadius:"50%",width:16,height:16,cursor:"pointer",fontSize:10,lineHeight:"14px",display:"flex",alignItems:"center",justifyContent:"center"}
+                  },"x")
+                );
+              } else {
+                return e("button",{
+                  key:idx,
+                  type:"button",
+                  style:{width:68,height:68,borderRadius:8,border:"1px dashed "+T.border,background:"#efe9d8",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#3c4540",gap:4,flexShrink:0},
+                  onClick:function(){takePhoto(function(compressed){setEditForm(function(f){var patch={};patch[fieldName]=compressed;return Object.assign({},f,patch);});});}
+                },
+                  e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},
+                    e("path",{d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}),
+                    e("circle",{cx:"12",cy:"13",r:"4",stroke:"currentColor",strokeWidth:2})
+                  ),
+                  e("span",{style:{fontSize:8.5,fontWeight:600}},t("add_photo"))
+                );
+              }
+            })
           )
         ),
         e("div",{style:{marginBottom:12}},
