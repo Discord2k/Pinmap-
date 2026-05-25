@@ -1057,6 +1057,22 @@ function App() {
   }, [selPin]);
 
   useEffect(function(){
+    if (!uname || uname === 'guest') return;
+    if (tab === 'profile' || tab === 'search') {
+      api.getMapPacks(uname).then(function(data){
+        setMapPacks(data || []);
+      }).catch(function(e){ console.warn("Error refreshing mappacks on tab switch:", e); });
+
+      sb.from("mappack_collaborators")
+        .select("mappack_id")
+        .eq("username", uname)
+        .then(function(r) {
+          setCollabPackIds((r.data || []).map(function(d) { return d.mappack_id; }));
+        }).catch(function(e){ console.warn("Error refreshing collab packs on tab switch:", e); });
+    }
+  }, [tab, uname]);
+
+  useEffect(function(){
     if (searchMode !== "activity") return;
     setExpeditionLogLoading(true);
     var followedUsers = userFollows.map(function(f){ return f.following; });
