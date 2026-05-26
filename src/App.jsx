@@ -4483,7 +4483,7 @@ function App() {
 
     
 
-    selPin && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"12%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:12,padding:"14px 15px",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
+    selPin && !open && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"12%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:12,padding:"14px 15px",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
       e("button",{
       style:{position:"absolute",top:10,right:10,width:36,height:36,borderRadius:"50%",
         background:"rgba(26,32,28,0.72)",border:"2px solid rgba(246,241,228,0.6)",
@@ -5398,7 +5398,7 @@ function App() {
       t: t
     }),
 
-    activeTrail && e("div", {
+    activeTrail && !open && e("div", {
       style: {
         position: "absolute",
         top: 16,
