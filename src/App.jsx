@@ -2597,6 +2597,97 @@ function App() {
     }
   }
 
+  function renderTagSuggestions(currentVal, updateFn) {
+    var parts = (currentVal || "").split(/[\s,]+/);
+    var lastPart = parts[parts.length - 1] || "";
+    var cleanLast = lastPart.replace(/^#/, "").toLowerCase();
+    
+    var allExistingTags = [];
+    var counts = {};
+    pins.forEach(function(p) {
+      if (p.tags) {
+        p.tags.forEach(function(t) {
+          if (t && !t.startsWith("_icon:")) {
+            var tl = t.toLowerCase();
+            counts[tl] = (counts[tl] || 0) + 1;
+            if (allExistingTags.map(function(x){return x.toLowerCase();}).indexOf(tl) === -1) {
+              allExistingTags.push(t);
+            }
+          }
+        });
+      }
+    });
+
+    var typedTags = parts.slice(0, parts.length - 1).map(function(t) {
+      return t.replace(/^#/, "").toLowerCase();
+    }).filter(Boolean);
+
+    var suggestions = [];
+    if (!cleanLast) {
+      var sorted = allExistingTags.slice().sort(function(a, b) {
+        return (counts[b.toLowerCase()] || 0) - (counts[a.toLowerCase()] || 0);
+      });
+      suggestions = sorted.filter(function(t) {
+        return typedTags.indexOf(t.toLowerCase()) === -1;
+      }).slice(0, 5);
+    } else {
+      suggestions = allExistingTags.filter(function(t) {
+        var tl = t.toLowerCase();
+        if (tl === cleanLast) return false;
+        return (
+          tl.indexOf(cleanLast) === 0 || 
+          cleanLast.indexOf(tl) === 0 ||
+          (tl.endsWith('s') && tl.slice(0, -1) === cleanLast) ||
+          (cleanLast.endsWith('s') && cleanLast.slice(0, -1) === tl)
+        );
+      }).slice(0, 5);
+    }
+
+    if (suggestions.length === 0) return null;
+
+    return e("div", {
+      style: {
+        display: "flex",
+        gap: 6,
+        overflowX: "auto",
+        padding: "4px 0 8px 0",
+        marginTop: -6,
+        marginBottom: 8,
+        WebkitOverflowScrolling: "touch",
+        alignItems: "center"
+      }
+    },
+      e("span", {style: {fontSize: 10, color: T.ink3, flexShrink: 0, fontFamily: T.mono, marginRight: 2}}, 
+        cleanLast ? "Suggested:" : "Popular:"
+      ),
+      suggestions.map(function(tag) {
+        return e("button", {
+          key: tag,
+          type: "button",
+          style: {
+            fontSize: 10.5,
+            padding: "3px 8px",
+            borderRadius: 10,
+            background: T.forestPale,
+            color: T.forest,
+            border: "1px solid " + T.forest + "25",
+            cursor: "pointer",
+            flexShrink: 0,
+            fontFamily: T.mono,
+            transition: "all 0.15s ease"
+          },
+          onClick: function() {
+            var newParts = parts.slice(0, parts.length - 1);
+            newParts.push("#" + tag);
+            var newVal = newParts.join(" ");
+            if (newVal) newVal += " ";
+            updateFn(newVal);
+          }
+        }, "#" + tag);
+      })
+    );
+  }
+
   if(!sessionChecked||!splashDone){
     return e(Splash,{loading:!sessionChecked,onGoogle:api.signInGoogle,onGuest:function(){setSplashDone(true);},t:t});
   }
@@ -4140,6 +4231,9 @@ function App() {
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
         e("input",{style:S.input,placeholder:t("form_placeholder_tags_hint"),value:form.tags,
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
+        renderTagSuggestions(form.tags, function(newTags) {
+          setForm(function(f){return Object.assign({},f,{tags:newTags});});
+        }),
         e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}},
           ["#2a5d3c","#b85c2a","#1565c0","#c62828","#6a1b9a","#00695c","#4e342e","#37474f","#f57f17"].map(function(c){
             return e("button",{key:c,onClick:function(){setForm(function(f){return Object.assign({},f,{color:c});});},
@@ -5079,6 +5173,9 @@ function App() {
         e("input",{style:Object.assign({},S.input),placeholder:t("form_placeholder_name"),value:editForm.name,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
         e("textarea",{style:Object.assign({},S.input,{height:60,resize:"none"}),placeholder:t("form_placeholder_desc_optional"),value:editForm.description,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
         e("input",{style:Object.assign({},S.input),placeholder:t("form_label_tags"),value:editForm.tags,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
+        renderTagSuggestions(editForm.tags, function(newTags) {
+          setEditForm(function(f){return Object.assign({},f,{tags:newTags});});
+        }),
         e("div",{style:{display:"flex",gap:6,marginBottom:12,marginTop:12}},
           ["public","private","insider"].map(function(p){
             return e("button",{key:p,
