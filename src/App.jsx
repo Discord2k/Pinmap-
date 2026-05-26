@@ -172,6 +172,7 @@ function App() {
 
   var [trails, setTrails] = useState([]);
   var [activeTrail, setActiveTrail] = useState(null);
+  var [trailInfoExpanded, setTrailInfoExpanded] = useState(false);
   var [showTrailQuestPanel, setShowTrailQuestPanel] = useState(false);
   var [recordingTrail, setRecordingTrail] = useState(false);
   var [isRecordingPaused, setIsRecordingPaused] = useState(false);
@@ -183,6 +184,10 @@ function App() {
   var recordingTimerId = useRef(null);
   var activeTrailPolyline = useRef(null);
   var recordingTrailPolyline = useRef(null);
+
+  React.useEffect(function(){
+    setTrailInfoExpanded(false);
+  }, [activeTrail]);
 
   var [myActivity, setMyActivity] = useState([]);
   var activityCache = useRef({data: null, ts: 0}); // {data:[], ts: ms epoch}
@@ -5406,27 +5411,113 @@ function App() {
         borderRadius: 16,
         padding: "8px 14px",
         display: "flex",
-        alignItems: "center",
-        gap: 10,
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 6,
         boxShadow: T.shadow,
-        fontFamily: T.font
+        fontFamily: T.font,
+        width: "90%",
+        maxWidth: 320,
+        boxSizing: "border-box"
       }
     },
-      e("div", { style: { width: 8, height: 8, borderRadius: "50%", backgroundColor: activeTrail.color || T.forest } }),
-      e("div", { style: { fontSize: 13, fontWeight: 600, color: T.ink } }, 
-        activeTrail.name + " (" + Number((activeTrail.distance_km || 0) * 0.621371).toFixed(2) + " mi)"
-      ),
-      e("button", {
+      e("div", {
         style: {
-          background: "transparent",
-          border: "none",
-          color: T.ink3,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
           cursor: "pointer",
-          fontSize: 14,
-          padding: "2px 6px"
+          userSelect: "none"
         },
-        onClick: function() { setActiveTrail(null); }
-      }, "✕")
+        onClick: function() { setTrailInfoExpanded(!trailInfoExpanded); }
+      },
+        e("div", { style: { width: 8, height: 8, borderRadius: "50%", backgroundColor: activeTrail.color || T.forest, flexShrink: 0 } }),
+        e("div", { style: { fontSize: 13, fontWeight: 700, color: T.ink, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, 
+          activeTrail.name
+        ),
+        e("div", { style: { fontSize: 11, fontFamily: T.mono, color: T.ink3, flexShrink: 0 } },
+          Number((activeTrail.distance_km || 0) * 0.621371).toFixed(2) + " mi"
+        ),
+        e("span", { style: { fontSize: 10, color: T.ink3, marginLeft: 4, flexShrink: 0 } },
+          trailInfoExpanded ? "▲" : "▼"
+        ),
+        e("button", {
+          style: {
+            background: "transparent",
+            border: "none",
+            color: T.ink3,
+            cursor: "pointer",
+            fontSize: 14,
+            padding: "2px 6px",
+            marginLeft: 6,
+            flexShrink: 0
+          },
+          onClick: function(e) { e.stopPropagation(); setActiveTrail(null); }
+        }, "✕")
+      ),
+      trailInfoExpanded && e("div", {
+        style: {
+          borderTop: "1px dashed " + T.border,
+          paddingTop: 8,
+          marginTop: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6
+        }
+      },
+        activeTrail.description && e("div", {
+          style: {
+            fontSize: 12.5,
+            color: T.ink2,
+            fontStyle: "italic",
+            lineHeight: 1.4
+          }
+        }, activeTrail.description),
+        e("div", {
+          style: {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: 11,
+            color: T.ink3
+          }
+        },
+          activeTrail.duration_seconds > 0 && e("span", null, 
+            "⏱️ " + (function(secs) {
+              if (!secs) return "";
+              var h = Math.floor(secs / 3600);
+              var m = Math.floor((secs % 3600) / 60);
+              var s = secs % 60;
+              if (h > 0) return h + "h " + m + "m";
+              if (m > 0) return m + "m " + s + "s";
+              return s + "s";
+            })(activeTrail.duration_seconds)
+          ),
+          activeTrail.owner && e("span", { style: { marginLeft: "auto" } }, 
+            "👤 @" + activeTrail.owner
+          )
+        ),
+        activeTrail.pin_id && e("button", {
+          style: Object.assign({}, S.miniBtn, {
+            width: "100%",
+            justifyContent: "center",
+            background: T.forestPale,
+            color: T.forest,
+            border: "none",
+            padding: "5px",
+            fontSize: 11.5,
+            marginTop: 4
+          }),
+          onClick: function() {
+            var matchingPin = pins.find(function(p) { return p.id === activeTrail.pin_id; });
+            if (matchingPin) {
+              focusPin(matchingPin);
+            } else {
+              flash("Linked pin not found on map");
+            }
+          }
+        }, "📍 Focus Linked Pin")
+      )
     ),
 
     fullscreenPhoto && e("div",{
