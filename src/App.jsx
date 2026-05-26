@@ -4358,9 +4358,9 @@ function App() {
       (selPin.photo || selPin.photo_2 || selPin.photo_3) && (function() {
         var activePhotos = [selPin.photo, selPin.photo_2, selPin.photo_3].filter(Boolean);
         if (activePhotos.length === 1) {
-          return e("img",{src:activePhotos[0],style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover",cursor:"pointer"},onClick:function(){setFullscreenPhoto(activePhotos[0]);}});
+          return e("img",{src:activePhotos[0],style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover",cursor:"pointer",flexShrink:0},onClick:function(){setFullscreenPhoto(activePhotos[0]);}});
         }
-        return e("div",{style:{display:"flex",gap:8,overflowX:"auto",marginBottom:8,paddingBottom:6,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch"}},
+        return e("div",{style:{display:"flex",gap:8,overflowX:"auto",marginBottom:8,paddingBottom:6,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",flexShrink:0}},
           activePhotos.map(function(url, idx) {
             return e("img",{
               key:idx,
