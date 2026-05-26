@@ -4233,7 +4233,7 @@ function App() {
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         renderTagSuggestions(form.tags, function(newTags) {
           setForm(function(f){return Object.assign({},f,{tags:newTags});});
-        }),
+        }, pendingLL ? pendingLL.lat : undefined, pendingLL ? pendingLL.lng : undefined),
         e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}},
           ["#2a5d3c","#b85c2a","#1565c0","#c62828","#6a1b9a","#00695c","#4e342e","#37474f","#f57f17"].map(function(c){
             return e("button",{key:c,onClick:function(){setForm(function(f){return Object.assign({},f,{color:c});});},
@@ -5175,7 +5175,7 @@ function App() {
         e("input",{style:Object.assign({},S.input),placeholder:t("form_label_tags"),value:editForm.tags,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         renderTagSuggestions(editForm.tags, function(newTags) {
           setEditForm(function(f){return Object.assign({},f,{tags:newTags});});
-        }),
+        }, editPin ? editPin.lat : undefined, editPin ? editPin.lng : undefined),
         e("div",{style:{display:"flex",gap:6,marginBottom:12,marginTop:12}},
           ["public","private","insider"].map(function(p){
             return e("button",{key:p,
