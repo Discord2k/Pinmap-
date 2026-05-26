@@ -70,7 +70,7 @@ export function PinCard(props) {
         {props.dist !== undefined && <span style={{color:"#2a5d3c",marginLeft:4}}>{(props.dist * 0.621371).toFixed(1)} mi</span>}
       </div>
       <div style={{fontSize:13,marginBottom:4}}>
-        {(pin.tags||[]).map(function(t){
+        {(pin.tags||[]).filter(function(t){return !t.startsWith("_icon:");}).map(function(t){
           return <span key={t} style={{color:tagColor(t),marginRight:3}}>{"#"+t}</span>;
         })}
       </div>

@@ -71,13 +71,13 @@ function App() {
   var [expeditionLog, setExpeditionLog] = useState([]);
   var [expeditionLogLoading, setExpeditionLogLoading] = useState(false);
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
-  var s12=useState({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",trail_id:""}); var form=s12[0]; var setForm=s12[1];
+  var s12=useState({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,trail_id:""}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
   var s14=useState(null);    var selPin=s14[0];        var setSelPin=s14[1];
   var [selPinOwnerProfile, setSelPinOwnerProfile] = useState(null);
   var s21=useState(null);    var editPin=s21[0];       var setEditPin=s21[1];
   var [fullscreenPhoto, setFullscreenPhoto] = useState(null);
-  var s22=useState({name:"",description:"",tags:"",color:"#2a5d3c",photo:null,photo_2:null,photo_3:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
+  var s22=useState({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
   var s16=useState(null);    var userLL=s16[0];        var setUserLL=s16[1];
   var s17=useState(false);   var locating=s17[0];      var setLocating=s17[1];
@@ -380,7 +380,7 @@ function App() {
     };
     setDrafts(function(d){return [draft].concat(d);});
     flash(t("toast_save_draft"));
-    setForm({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",expires_at:"",trail_id:""});
+    setForm({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,expires_at:"",trail_id:""});
     setPendingLL(null);
   }
 
@@ -2018,7 +2018,20 @@ function App() {
 
   function openEdit(pin){
     setEditPin(pin);
-    setEditForm({name:pin.name,description:pin.description||"",tags:(pin.tags||[]).join(" "),color:pin.color||"#2a5d3c",photo:pin.photo||null,photo_2:pin.photo_2||null,photo_3:pin.photo_3||null,trail_id:""});
+    var customIcon = (pin.tags || []).find(function(t) { return t.startsWith("_icon:"); });
+    var customIconChar = customIcon ? customIcon.split(":")[1] : "";
+    setEditForm({
+      name:pin.name,
+      description:pin.description||"",
+      tags:(pin.tags||[]).filter(function(t){return !t.startsWith("_icon:");}).join(" "),
+      privacy:pin.privacy||"public",
+      color:pin.color||"#2a5d3c",
+      icon:customIconChar,
+      photo:pin.photo||null,
+      photo_2:pin.photo_2||null,
+      photo_3:pin.photo_3||null,
+      trail_id:""
+    });
     setSelPin(null);
     api.getTrailForPin(pin.id).then(function(t) {
       if (t) {
@@ -2044,6 +2057,11 @@ function App() {
       return Promise.resolve({key: fieldName, url: dataVal});
     };
 
+    var finalTags = tags.filter(function(t){return !t.startsWith("_icon:");});
+    if(editForm.icon) {
+      finalTags.push("_icon:" + editForm.icon);
+    }
+
     flash("Saving changes...");
     Promise.all([
       uploadOne('photo', editForm.photo),
@@ -2056,7 +2074,8 @@ function App() {
       var patch = {
         name: editForm.name.trim(),
         description: editForm.description.trim(),
-        tags: tags,
+        tags: finalTags,
+        privacy: editForm.privacy,
         color: editForm.color,
         photo: urls.photo || null,
         photo_2: urls.photo_2 || null,
@@ -2101,12 +2120,17 @@ function App() {
       var banned=checkBannedTags(tags);
       if(banned.length>0){flash("Tag not allowed: #"+banned.join(", #"));return;}
       
+      var finalTags = tags.filter(function(t){return !t.startsWith("_icon:");});
+      if(form.icon) {
+        finalTags.push("_icon:" + form.icon);
+      }
+
       var pin={
         id:uid(),
         owner:uname,
         name:form.name.trim(),
         description:form.description.trim(),
-        tags:tags,
+        tags:finalTags,
         privacy:form.privacy,
         lat:pendingLL.lat,
         lng:pendingLL.lng,
@@ -2134,7 +2158,7 @@ function App() {
         dbPut("pins", Object.assign({}, pin, {_offline:true})).then(function(){
           setPins(function(p){return [Object.assign({},pin,{_offline:true})].concat(p);});
           setQueueCount(function(c){return c+1;});
-          setForm({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",expires_at:"",trail_id:""});
+          setForm({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,expires_at:"",trail_id:""});
           setPendingLL(null);setTab("mine");
           flash("📡 Offline — pin saved locally, will sync when online");
         });
@@ -2173,7 +2197,7 @@ function App() {
                 });
             }
 
-            setForm({name:"",description:"",tags:"",privacy:"public",photo:null,photo_2:null,photo_3:null,color:"#2a5d3c",expires_at:"",trail_id:""});
+            setForm({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,expires_at:"",trail_id:""});
             setPendingLL(null);setTab("mine");flash("Pin saved!");
             if(pinToSave.privacy==="public") {
               callEdgeFunction("new_pin", {pinOwner:uname, pinName:pinToSave.name, pinId:pinToSave.id});
@@ -4137,6 +4161,36 @@ function App() {
               }},t("form_privacy_" + p));
           })
         ),
+        e("div",{style:{marginBottom:12}},
+          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}}, "Custom Icon / Emoji"),
+          e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
+            e("input",{
+              style:Object.assign({},S.input,{width:50,textAlign:"center",fontSize:16,padding:"6px",margin:0}),
+              maxLength:2,
+              placeholder:getPinIcon(form.tags.split(/[\s,]+/).filter(Boolean)),
+              value:form.icon || "",
+              onChange:function(ev){setForm(function(f){return Object.assign({},f,{icon:ev.target.value});});}
+            }),
+            e("div",{style:{display:"flex",gap:4,flexWrap:"wrap",flex:1}},
+              ["🥾","⛺","☕","🍺","🚴","🎣","📷","🏔️"].map(function(emoji){
+                return e("button",{
+                  key:emoji,
+                  type:"button",
+                  style:{
+                    padding:"5px 8px",borderRadius:6,border:"1px solid "+(form.icon===emoji?T.forest:T.border),
+                    background:form.icon===emoji?T.forestPale:"#efe9d8",fontSize:13,cursor:"pointer"
+                  },
+                  onClick:function(){setForm(function(f){return Object.assign({},f,{icon:emoji});});}
+                }, emoji);
+              }),
+              form.icon && e("button",{
+                type:"button",
+                style:{padding:"5px 8px",borderRadius:6,border:"1px solid "+T.border,background:"#fff",fontSize:11,cursor:"pointer",color:"#c05050"},
+                onClick:function(){setForm(function(f){return Object.assign({},f,{icon:""});});}
+              }, "Reset")
+            )
+          )
+        ),
         !pendingLL && e("div",{style:{background:T.paper2,border:"1px dashed "+T.border,borderRadius:10,padding:"16px",marginBottom:12,textAlign:"center",color:T.ink3,fontSize:13}},
           t("form_no_location_hint")
         ),
@@ -4352,7 +4406,7 @@ function App() {
       ),
       selPin.description&&e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
       e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}},
-        (selPin.tags||[]).map(function(t){
+        (selPin.tags||[]).filter(function(t){return !t.startsWith("_icon:");}).map(function(t){
           return e("span",{key:t,style:{fontSize:12,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
         })
       ),
@@ -5025,6 +5079,51 @@ function App() {
         e("input",{style:Object.assign({},S.input),placeholder:t("form_placeholder_name"),value:editForm.name,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
         e("textarea",{style:Object.assign({},S.input,{height:60,resize:"none"}),placeholder:t("form_placeholder_desc_optional"),value:editForm.description,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
         e("input",{style:Object.assign({},S.input),placeholder:t("form_label_tags"),value:editForm.tags,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
+        e("div",{style:{display:"flex",gap:6,marginBottom:12,marginTop:12}},
+          ["public","private","insider"].map(function(p){
+            return e("button",{key:p,
+              style:{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+(editForm.privacy===p?T.forest:T.border),
+                background:editForm.privacy===p?T.forestPale:"transparent",color:editForm.privacy===p?T.forest:T.ink2,
+                fontSize:12,cursor:"pointer",fontWeight:editForm.privacy===p?600:400,textTransform:"capitalize"},
+              onClick:function(){
+                setEditForm(function(f){return Object.assign({},f,{privacy:p});});
+                if(p==="insider" && !localStorage.getItem("pm-seen-insider-explainer")){
+                  setShowInsiderExplainer(true);
+                  localStorage.setItem("pm-seen-insider-explainer","1");
+                }
+              }},t("form_privacy_" + p));
+          })
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}}, "Custom Icon / Emoji"),
+          e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
+            e("input",{
+              style:Object.assign({},S.input,{width:50,textAlign:"center",fontSize:16,padding:"6px",margin:0}),
+              maxLength:2,
+              placeholder:getPinIcon(editForm.tags.split(/[\s,]+/).filter(Boolean)),
+              value:editForm.icon || "",
+              onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{icon:ev.target.value});});}
+            }),
+            e("div",{style:{display:"flex",gap:4,flexWrap:"wrap",flex:1}},
+              ["🥾","⛺","☕","🍺","🚴","🎣","📷","🏔️"].map(function(emoji){
+                return e("button",{
+                  key:emoji,
+                  type:"button",
+                  style:{
+                    padding:"5px 8px",borderRadius:6,border:"1px solid "+(editForm.icon===emoji?T.forest:T.border),
+                    background:editForm.icon===emoji?T.forestPale:"#efe9d8",fontSize:13,cursor:"pointer"
+                  },
+                  onClick:function(){setEditForm(function(f){return Object.assign({},f,{icon:emoji});});}
+                }, emoji);
+              }),
+              editForm.icon && e("button",{
+                type:"button",
+                style:{padding:"5px 8px",borderRadius:6,border:"1px solid "+T.border,background:"#fff",fontSize:11,cursor:"pointer",color:"#c05050"},
+                onClick:function(){setEditForm(function(f){return Object.assign({},f,{icon:""});});}
+              }, "Reset")
+            )
+          )
+        ),
         e("div",{style:{marginBottom:12}},
           e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}},t("form_label_color")),
           e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}},

@@ -265,6 +265,10 @@ export function checkBannedTags(tags) {
 }
 
 export function getPinIcon(tags) {
+  var customIconTag = (tags||[]).find(function(t){return t.startsWith("_icon:");});
+  if(customIconTag){
+    return customIconTag.split(":")[1];
+  }
   var t = (tags||[]).join(" ").toLowerCase();
   if(/pub|bar|brewery|beer|tavern|cerveceria|cervecería|cerveza|taberna/.test(t))          return "🍺";
   if(/trail|hike|hiking|trailhead|trek|sendero|caminata|caminar|excursion|excursión|trekking|senderismo/.test(t))     return "🥾";
