@@ -76,6 +76,7 @@ export function ProfilePanel(props) {
   var [badgesCollapsed, setBadgesCollapsed] = React.useState(true);
   var [followingCollapsed, setFollowingCollapsed] = React.useState(true);
   var [followersCollapsed, setFollowersCollapsed] = React.useState(true);
+  var [settingsCollapsed, setSettingsCollapsed] = React.useState(true);
   var [helpPopup, setHelpPopup] = React.useState(null);
   var [trackedQuestIds, setTrackedQuestIds] = React.useState(function() {
     try {
@@ -882,24 +883,20 @@ export function ProfilePanel(props) {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                cursor: myCollections.length > 1 ? "pointer" : "default",
+                cursor: "pointer",
                 userSelect: "none"
               }}
               onClick={function(){
-                if (myCollections.length > 1) {
-                  setCollectionsCollapsed(function(prev) { return !prev; });
-                }
+                setCollectionsCollapsed(function(prev) { return !prev; });
               }}
             >
-              {myCollections.length > 1 && (
-                <span style={{
-                  fontSize: 10,
-                  color: T.ink3,
-                  display: "inline-block",
-                  transition: "transform 0.2s",
-                  transform: collectionsCollapsed ? "rotate(0deg)" : "rotate(90deg)"
-                }}>▶</span>
-              )}
+              <span style={{
+                fontSize: 10,
+                color: T.ink3,
+                display: "inline-block",
+                transition: "transform 0.2s",
+                transform: collectionsCollapsed ? "rotate(0deg)" : "rotate(90deg)"
+              }}>▶</span>
               <span style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -944,9 +941,9 @@ export function ProfilePanel(props) {
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
-                  opacity: (myCollections.length > 1 && collectionsCollapsed) ? 0 : 1,
-                  transform: (myCollections.length > 1 && collectionsCollapsed) ? "scale(0.9)" : "scale(1)",
-                  pointerEvents: (myCollections.length > 1 && collectionsCollapsed) ? "none" : "auto",
+                  opacity: collectionsCollapsed ? 0 : 1,
+                  transform: collectionsCollapsed ? "scale(0.9)" : "scale(1)",
+                  pointerEvents: collectionsCollapsed ? "none" : "auto",
                   transition: "opacity 0.2s, transform 0.2s"
                 })}
                 onClick={function(){ setShowCreatePackModal(true); }}
@@ -957,7 +954,7 @@ export function ProfilePanel(props) {
             )}
           </div>
  
-          <div className={"pm-collapsible " + ((myCollections.length > 1 && collectionsCollapsed) ? "collapsed" : "")}>
+          <div className={"pm-collapsible " + (collectionsCollapsed ? "collapsed" : "")}>
             <div>
               {myCollections.length === 0 ? (
                 <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>{t('no_collections')}</div>
@@ -1197,14 +1194,24 @@ export function ProfilePanel(props) {
 
       {/* ── Settings ───────────────────────────────────────────────────────────── */}
       {!editingProfile && (
-        <div style={{padding:"0 22px",borderBottom:"1px solid "+T.borderSoft}}>
-          <div style={Object.assign({}, S.secHead, {padding:"20px 0 8px", display:"flex", alignItems:"center", gap:8})}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        <div style={{borderBottom:"1px solid "+T.borderSoft}}>
+          <div
+            style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
+            onClick={function(){ setSettingsCollapsed(function(v){ return !v; }); }}
+          >
+            <div style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              <span>{t('settings')}</span>
+            </div>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" style={{transition:"transform 0.2s",transform:settingsCollapsed?"rotate(0deg)":"rotate(180deg)",flexShrink:0}}>
+              <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span>{t('settings')}</span>
           </div>
+          {!settingsCollapsed && (
+            <div style={{padding:"0 22px 12px"}}>
           
           {/* Language Setting Dropdown */}
           <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft}}>
@@ -1369,6 +1376,8 @@ export function ProfilePanel(props) {
               <div style={{color:"#c05050",fontSize:16}}>{">"}</div>
             </div>
           )}
+          </div>
+        )}
         </div>
       )}
  
