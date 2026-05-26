@@ -72,6 +72,7 @@ export function ProfilePanel(props) {
   var [questsCollapsed, setQuestsCollapsed] = React.useState(true);
   var [collectionsCollapsed, setCollectionsCollapsed] = React.useState(true);
   var [trailsCollapsed, setTrailsCollapsed] = React.useState(true);
+  var [expandedTrails, setExpandedTrails] = React.useState({});
   var [badgesCollapsed, setBadgesCollapsed] = React.useState(true);
   var [followingCollapsed, setFollowingCollapsed] = React.useState(true);
   var [followersCollapsed, setFollowersCollapsed] = React.useState(true);
@@ -417,6 +418,8 @@ export function ProfilePanel(props) {
                 URL.revokeObjectURL(url);
               };
 
+              var isExpanded = expandedTrails[trail.id] === true;
+
               return (
                 <div 
                   key={trail.id}
@@ -424,28 +427,34 @@ export function ProfilePanel(props) {
                   style={Object.assign({}, S.card, {
                     padding: "12px 14px",
                     marginBottom: 10,
-                    cursor: "default",
+                    cursor: "pointer",
                     border: isCurrentActive ? "2px solid " + (trail.color || T.forest) : "1px solid " + T.borderSoft,
                     background: isCurrentActive ? T.paper : T.paper2
                   })}
+                  onClick={function(){
+                    setExpandedTrails(function(prev){
+                      return Object.assign({}, prev, {[trail.id]: !prev[trail.id]});
+                    });
+                  }}
                 >
                   <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                     <div style={{width: 8, height: 8, borderRadius: "50%", background: trail.color || T.forest, marginTop: 5, flexShrink: 0}} />
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                        <span style={{fontWeight:700,fontSize:14,color:T.ink}}>{trail.name}</span>
-                        {!trail.is_public && (
-                          <span style={{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}>
-                            {t('private_badge')}
-                          </span>
-                        )}
-                        <span style={{color:T.ink3,fontSize:11}}>{t('by_author')} @{trail.owner}</span>
+                    <div style={{flex:1, minWidth: 0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",justifyContent:"space-between"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",flex:1,minWidth:0}}>
+                          <span style={{fontWeight:700,fontSize:14,color:T.ink,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{trail.name}</span>
+                          {!trail.is_public && (
+                            <span style={{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4,flexShrink:0}}>
+                              {t('private_badge')}
+                            </span>
+                          )}
+                          <span style={{color:T.ink3,fontSize:11,flexShrink:0}}>{t('by_author')} @{trail.owner}</span>
+                        </div>
+                        <div style={{color: T.ink3, fontSize: 11, padding: "0 4px", flexShrink: 0}}>
+                          {isExpanded ? "▲" : "▼"}
+                        </div>
                       </div>
                       
-                      {trail.description && (
-                        <div style={{fontSize:12.5,color:T.ink2,marginTop:3,lineHeight:1.4}}>{trail.description}</div>
-                      )}
-
                       <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
                         <span style={{fontSize:11,fontFamily:T.mono,background:T.paper3,color:T.ink2,padding:"2px 6px",borderRadius:6}}>
                            🥾 {Number((trail.distance_km || 0) * 0.621371).toFixed(2)} mi
@@ -456,47 +465,61 @@ export function ProfilePanel(props) {
                           </span>
                         )}
                       </div>
-                      
-                      <div style={{display:"flex",gap:8,marginTop:10}}>
-                        <button 
-                           style={Object.assign({}, S.miniBtn, {
-                            background: isCurrentActive ? (trail.color || T.forest) : "transparent",
-                            color: isCurrentActive ? T.paper : T.forest,
-                            border: "1px solid " + (trail.color || T.forest),
-                            padding: "4px 10px"
-                          })}
-                          onClick={function(){
-                            props.setOpen(false); // Close Profile drawer
-                            props.onSelectTrail(isCurrentActive ? null : trail);
-                          }}
+
+                      {isExpanded && (
+                        <div 
+                          style={{marginTop: 10, borderTop: "1px dashed " + T.borderSoft, paddingTop: 10}}
+                          onClick={function(e){ e.stopPropagation(); }}
                         >
-                          {isCurrentActive ? "🗺️ " + t('active_route') : "🗺️ " + t('view_trail')}
-                        </button>
-                        <button 
-                          style={Object.assign({}, S.miniBtn, {
-                            background: "transparent",
-                            color: T.ink2,
-                            border: "1px solid " + T.border,
-                            padding: "4px 10px"
-                          })}
-                          onClick={handleExport}
-                        >
-                          📥 {t('export_gpx')}
-                        </button>
-                      </div>
+                          {trail.description && (
+                            <div style={{fontSize:12.5,color:T.ink2,marginBottom:10,lineHeight:1.4,fontStyle:"italic"}}>{trail.description}</div>
+                          )}
+                          
+                          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                            <button 
+                               style={Object.assign({}, S.miniBtn, {
+                                background: isCurrentActive ? (trail.color || T.forest) : "transparent",
+                                color: isCurrentActive ? T.paper : T.forest,
+                                border: "1px solid " + (trail.color || T.forest),
+                                padding: "4px 10px"
+                              })}
+                              onClick={function(e){
+                                e.stopPropagation();
+                                props.setOpen(false); // Close Profile drawer
+                                props.onSelectTrail(isCurrentActive ? null : trail);
+                              }}
+                            >
+                              {isCurrentActive ? "🗺️ " + t('active_route') : "🗺️ " + t('view_trail')}
+                            </button>
+                            <button 
+                              style={Object.assign({}, S.miniBtn, {
+                                background: "transparent",
+                                color: T.ink2,
+                                border: "1px solid " + T.border,
+                                padding: "4px 10px"
+                              })}
+                              onClick={function(e){ e.stopPropagation(); handleExport(); }}
+                            >
+                              📥 {t('export_gpx')}
+                            </button>
+
+                            {user && isOwner && (
+                              <button 
+                                style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4,marginLeft:"auto"}}
+                                onClick={function(e){
+                                  e.stopPropagation();
+                                  if(confirm(t('toast_trail_delete_confirm'))){
+                                    props.onDeleteTrail(trail.id);
+                                  }
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {user && isOwner && (
-                      <button 
-                        style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
-                        onClick={function(){
-                          if(confirm(t('toast_trail_delete_confirm'))){
-                            props.onDeleteTrail(trail.id);
-                          }
-                        }}
-                      >
-                        🗑️
-                      </button>
-                    )}
                   </div>
                 </div>
               );

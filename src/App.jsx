@@ -2553,7 +2553,7 @@ function App() {
   }
 
   var myPins=pins.filter(function(p){return p.owner===uname;});
-  var myTags=[].concat.apply([],[].map.call(myPins,function(p){return p.tags||[];})).filter(function(t,i,a){return a.indexOf(t)===i;});
+  var myTags=[].concat.apply([],[].map.call(myPins,function(p){return p.tags||[];})).filter(function(t,i,a){return a.indexOf(t)===i && !t.startsWith("_icon:");});
 
   // Recent tags: from pins sorted by created_at desc, deduplicated, max 4
   var BASE_LAYERS = [
@@ -2571,7 +2571,7 @@ function App() {
   var sortedPins = pins.slice().sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
   for(var _i=0; _i<sortedPins.length && recentTags.length<4; _i++){
     (sortedPins[_i].tags||[]).forEach(function(t){
-      if(!recentTagsSeen[t] && recentTags.length<4){ recentTagsSeen[t]=1; recentTags.push(t); }
+      if(t && !t.startsWith("_icon:") && !recentTagsSeen[t] && recentTags.length<4){ recentTagsSeen[t]=1; recentTags.push(t); }
     });
   }
   // Pad with defaults if not enough recent tags

@@ -68,7 +68,7 @@ export const api = {
     var since=new Date(Date.now()-7*24*60*60*1000).toISOString();
     return sb.from("pins").select("tags").eq("privacy","public").gte("created_at",since).then(function(r){
       var counts={};
-      (r.data||[]).forEach(function(p){(p.tags||[]).forEach(function(t){counts[t]=(counts[t]||0)+1;});});
+      (r.data||[]).forEach(function(p){(p.tags||[]).forEach(function(t){if(t && !t.startsWith("_icon:")) counts[t]=(counts[t]||0)+1;});});
       var result=[];
       Object.keys(counts).forEach(function(k){result.push({tag:k,count:counts[k]});});
       result.sort(function(a,b){return b.count-a.count;});
