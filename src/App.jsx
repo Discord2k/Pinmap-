@@ -179,6 +179,29 @@ function App() {
   var [recordedPoints, setRecordedPoints] = useState([]);
   var [recordedDistanceKm, setRecordedDistanceKm] = useState(0);
   var [recordedDurationSec, setRecordedDurationSec] = useState(0);
+  var [trailsListCollapsed, setTrailsListCollapsed] = useState(true);
+
+  var processedTrails = React.useMemo(function() {
+    if (!trails || trails.length === 0) return [];
+    var list = trails.slice();
+    if (userLL && userLL.lat && userLL.lng) {
+      list = list.map(function(t) {
+        var minDist = Infinity;
+        if (t.coordinates && t.coordinates.length > 0) {
+          for (var i = 0; i < t.coordinates.length; i++) {
+            var pt = t.coordinates[i];
+            var d = distKm(userLL.lat, userLL.lng, pt[0], pt[1]);
+            if (d < minDist) minDist = d;
+          }
+        }
+        return Object.assign({}, t, { _distanceKm: minDist });
+      });
+      list.sort(function(a, b) {
+        return a._distanceKm - b._distanceKm;
+      });
+    }
+    return list;
+  }, [trails, userLL]);
 
   var recordingWatchId = useRef(null);
   var recordingTimerId = useRef(null);
@@ -3242,7 +3265,13 @@ function App() {
 
           // Trails list
           e("div",{style:{padding:"8px 14px 4px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid "+T.borderSoft}},
-            e("div",{style:{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},t("trails_routes")),
+            e("div",{
+              style:{display:"flex",alignItems:"center",gap:6,cursor:"pointer",userSelect:"none"},
+              onClick:function(){ setTrailsListCollapsed(function(v){return !v;}); }
+            },
+              e("span",{style:{fontSize:11,color:T.ink3,transform:trailsListCollapsed?"rotate(0deg)":"rotate(90deg)",transition:"transform 0.2s",display:"inline-block"}},"▶"),
+              e("div",{style:{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},t("trails_routes"))
+            ),
             e("button",{
               style:{padding:"4px 10px",borderRadius:6,border:"none",background:T.forest,color:T.paper,fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4},
               onClick:function(){ setShowTrailQuestPanel(false); if(window._startTrailRecording) window._startTrailRecording(); else flash(t("open_profile_to_record")); }
@@ -3251,25 +3280,27 @@ function App() {
               t("record_btn")
             )
           ),
-          trails.length===0
-            ? e("div",{style:{padding:"10px 14px 12px",fontSize:12,color:T.ink4,fontStyle:"italic"}},t("no_recorded_trails"))
-            : e("div",{style:{maxHeight:180,overflowY:"auto"}},
-                trails.slice(0,8).map(function(trail){
-                  var isActive = activeTrail && activeTrail.id===trail.id;
-                  return e("div",{
-                    key:trail.id,
-                    style:{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},
-                    onClick:function(){ setShowTrailQuestPanel(false); setActiveTrail(isActive ? null : trail); }
-                  },
-                    e("div",{style:{width:7,height:7,borderRadius:"50%",background:trail.color||T.forest,flexShrink:0}}),
-                    e("div",{style:{flex:1,minWidth:0}},
-                      e("div",{style:{fontSize:12,fontWeight:600,color:T.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},trail.name),
-                      e("div",{style:{fontSize:10,color:T.ink4,fontFamily:T.mono}},Number((trail.distance_km||0)*0.621371).toFixed(2)+" mi")
-                    ),
-                    e("div",{style:{fontSize:10,fontWeight:700,color:isActive?T.forest:T.ink4,flexShrink:0}},isActive?t("active_badge_on"):t("view_label"))
-                  );
-                })
-              )
+          !trailsListCollapsed && (
+            processedTrails.length===0
+              ? e("div",{style:{padding:"10px 14px 12px",fontSize:12,color:T.ink4,fontStyle:"italic"}},t("no_recorded_trails"))
+              : e("div",{style:{maxHeight:180,overflowY:"auto"}},
+                  processedTrails.slice(0,4).map(function(trail){
+                    var isActive = activeTrail && activeTrail.id===trail.id;
+                    return e("div",{
+                      key:trail.id,
+                      style:{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},
+                      onClick:function(){ setShowTrailQuestPanel(false); setActiveTrail(isActive ? null : trail); }
+                    },
+                      e("div",{style:{width:7,height:7,borderRadius:"50%",background:trail.color||T.forest,flexShrink:0}}),
+                      e("div",{style:{flex:1,minWidth:0}},
+                        e("div",{style:{fontSize:12,fontWeight:600,color:T.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},trail.name),
+                        e("div",{style:{fontSize:10,color:T.ink4,fontFamily:T.mono}},Number((trail.distance_km||0)*0.621371).toFixed(2)+" mi")
+                      ),
+                      e("div",{style:{fontSize:10,fontWeight:700,color:isActive?T.forest:T.ink4,flexShrink:0}},isActive?t("active_badge_on"):t("view_label"))
+                    );
+                  })
+                )
+          )
         )
       ),
 
