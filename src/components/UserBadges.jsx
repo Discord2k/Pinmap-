@@ -4,9 +4,16 @@ import { getBadgesStatus } from '../utils/badges';
 export function UserBadges(props) {
   var pinsCount = props.pinsCount || 0;
   var checkinsCount = props.checkinsCount || 0;
+  var trailsCount = props.trailsCount || 0;
+  var mappacksCount = props.mappacksCount || 0;
+  var challengesCount = props.challengesCount || 0;
   var lang = props.lang || 'en';
   var t = props.t || function(key) { return key; };
-  var badgeStatuses = getBadgesStatus(pinsCount, checkinsCount, lang);
+  var flash = props.flash || function(){};
+
+  var badgeStatuses = getBadgesStatus(pinsCount, checkinsCount, trailsCount, mappacksCount, challengesCount, lang);
+
+
 
   return (
     <div style={{ padding: '16px 0' }}>
@@ -90,7 +97,13 @@ export function UserBadges(props) {
               >
                 {badge.type === 'pins' 
                   ? badge.threshold + " " + (lang === 'es' ? 'pin' + (badge.threshold > 1 ? 'es' : '') : 'pin' + (badge.threshold > 1 ? 's' : ''))
-                  : badge.threshold + " " + (lang === 'es' ? 'visita' + (badge.threshold > 1 ? 's' : '') : 'check-in' + (badge.threshold > 1 ? 's' : ''))
+                  : badge.type === 'checkins'
+                    ? badge.threshold + " " + (lang === 'es' ? 'visita' + (badge.threshold > 1 ? 's' : '') : 'check-in' + (badge.threshold > 1 ? 's' : ''))
+                    : badge.type === 'trails'
+                      ? badge.threshold + " " + (lang === 'es' ? 'ruta' + (badge.threshold > 1 ? 's' : '') : 'route' + (badge.threshold > 1 ? 's' : ''))
+                      : badge.type === 'mappacks'
+                        ? badge.threshold + " " + (lang === 'es' ? 'guía' + (badge.threshold > 1 ? 's' : '') : 'guide' + (badge.threshold > 1 ? 's' : ''))
+                        : badge.threshold + " " + (lang === 'es' ? 'desafío' + (badge.threshold > 1 ? 's' : '') : 'quest' + (badge.threshold > 1 ? 's' : ''))
                 }
               </div>
             </div>

@@ -550,7 +550,16 @@ export function ProfilePanel(props) {
           </div>
           {!badgesCollapsed && (
             <div style={{padding:"0 22px 12px"}}>
-              <UserBadges pinsCount={own.length} checkinsCount={props.checkinsCount || 0} lang={lang} t={props.t} />
+              <UserBadges 
+                pinsCount={own.length} 
+                checkinsCount={props.checkinsCount || 0} 
+                trailsCount={trails.filter(function(t){ return t.owner === uname; }).length}
+                mappacksCount={mapPacks.filter(function(p){ return p.owner === uname; }).length}
+                challengesCount={challenges.filter(function(c){ return c.owner === uname; }).length}
+                lang={lang} 
+                t={props.t} 
+                flash={flash}
+              />
             </div>
           )}
         </div>

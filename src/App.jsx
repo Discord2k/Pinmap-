@@ -13,6 +13,7 @@ import { WhatsNew } from './components/WhatsNew';
 import { CompassModal } from './components/CompassModal';
 import { TrailRecorder } from './components/TrailRecorder';
 import { LANGUAGES, translations } from './utils/i18n';
+import { getBadgesStatus } from './utils/badges';
 import JSZip from 'jszip';
 
 var e = React.createElement;
@@ -369,6 +370,46 @@ function App() {
   var uname = userName(user);
 
   function flash(msg) { setToast(msg); setTimeout(function(){setToast("");},3000); }
+
+  // --- REAL-TIME ACHIEVEMENT NOTIFICATION ENGINE ---
+  useEffect(function() {
+    if (!uname || uname === 'guest') return;
+    
+    var ownPins = pins.filter(function(p){ return p.owner === uname && !p.saved_from; }).length;
+    var ownCheckins = checkins.length;
+    var ownTrails = trails.filter(function(t){ return t.owner === uname; }).length;
+    var ownMapPacks = mapPacks.filter(function(p){ return p.owner === uname; }).length;
+    var ownChallenges = challenges.filter(function(c){ return c.owner === uname; }).length;
+
+    var badgeStatuses = getBadgesStatus(ownPins, ownCheckins, ownTrails, ownMapPacks, ownChallenges, lang);
+    var unlocked = badgeStatuses.filter(function(b) { return b.unlocked; }).map(function(b) { return b.id; });
+    
+    var storedStr = localStorage.getItem("pinmap_unlocked_badges");
+    if (storedStr === null) {
+      // First time loading - initialize silently
+      localStorage.setItem("pinmap_unlocked_badges", JSON.stringify(unlocked));
+      return;
+    }
+
+    try {
+      var acknowledged = JSON.parse(storedStr) || [];
+      var newUnlocks = badgeStatuses.filter(function(badge) {
+        return badge.unlocked && acknowledged.indexOf(badge.id) < 0;
+      });
+
+      if (newUnlocks.length > 0) {
+        newUnlocks.forEach(function(badge) {
+          var msg = lang === 'es'
+            ? `🎉 ¡Logro Desbloqueado: ${badge.emoji} ${badge.title}!`
+            : `🎉 Achievement Unlocked: ${badge.emoji} ${badge.title}!`;
+          flash(msg);
+        });
+        localStorage.setItem("pinmap_unlocked_badges", JSON.stringify(unlocked));
+      }
+    } catch (e) {
+      console.error("Error in live achievement tracker:", e);
+    }
+  }, [pins, checkins, trails, mapPacks, challenges, uname, lang]);
 
   function saveDraft() {
     if(!form.name.trim() && !pendingLL) { flash(t("toast_draft_error")); return; }

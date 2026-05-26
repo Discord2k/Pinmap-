@@ -12,7 +12,10 @@
 
 export const BADGE_TIERS = {
   PINS: [1, 10, 50, 100],
-  CHECKINS: [1, 5, 15, 35]
+  CHECKINS: [1, 5, 15, 35],
+  TRAILS: [1, 5],
+  MAPPACKS: [1],
+  CHALLENGES: [1]
 };
 
 export const BADGES = [
@@ -178,6 +181,92 @@ export const BADGES = [
         text: "#9aa097"
       }
     }
+  },
+
+  // --- TRAILS BADGES ---
+  {
+    id: "trails_1",
+    type: "trails",
+    threshold: 1,
+    emoji: "👣",
+    title: "Trail Seeker",
+    description: "Recorded or imported your first GPX trail route.",
+    colors: {
+      unlocked: {
+        bg: "#f4f9f4",     // Pale green
+        border: "#d5ecd5", // Soft green border
+        text: "#2b5c2b"    // Forest green
+      },
+      locked: {
+        bg: "#f5f3ed",
+        border: "#e1ded6",
+        text: "#9aa097"
+      }
+    }
+  },
+  {
+    id: "trails_5",
+    type: "trails",
+    threshold: 5,
+    emoji: "🥾",
+    title: "Pathfinder",
+    description: "Logged 5 different trail routes. Your paths cover new ground.",
+    colors: {
+      unlocked: {
+        bg: "#fcf6ed",     // Soft clay/orange
+        border: "#f5e3cc", // Clay border
+        text: "#704812"    // Oak brown
+      },
+      locked: {
+        bg: "#f5f3ed",
+        border: "#e1ded6",
+        text: "#9aa097"
+      }
+    }
+  },
+
+  // --- MAP PACKS BADGES ---
+  {
+    id: "mappacks_1",
+    type: "mappacks",
+    threshold: 1,
+    emoji: "🗺️",
+    title: "Atlas Curator",
+    description: "Created your first custom guide map pack.",
+    colors: {
+      unlocked: {
+        bg: "#fdf8ee",     // Soft yellow/amber
+        border: "#f8e7ce", // Muted gold border
+        text: "#7a5315"    // Deep bronze
+      },
+      locked: {
+        bg: "#f5f3ed",
+        border: "#e1ded6",
+        text: "#9aa097"
+      }
+    }
+  },
+
+  // --- CHALLENGE DESIGNER BADGES ---
+  {
+    id: "challenges_1",
+    type: "challenges",
+    threshold: 1,
+    emoji: "🏆",
+    title: "Quest Master",
+    description: "Designed and published a custom location explorer quest.",
+    colors: {
+      unlocked: {
+        bg: "#fdf6fb",     // Soft orchid
+        border: "#f7dff2", // Plum border
+        text: "#741d63"    // Violet/plum text
+      },
+      locked: {
+        bg: "#f5f3ed",
+        border: "#e1ded6",
+        text: "#9aa097"
+      }
+    }
   }
 ];
 
@@ -214,6 +303,22 @@ const BADGE_TRANSLATIONS = {
     checkin_35: {
       title: "Gran Conector",
       description: "Registraste 35 visitas. Un miembro célebre de la comunidad de Pin Map."
+    },
+    trails_1: {
+      title: "Buscador de Senderos",
+      description: "Grabaste o importaste tu primera ruta GPX."
+    },
+    trails_5: {
+      title: "Explorador de Rutas",
+      description: "Registraste 5 rutas de senderos diferentes. Tus caminos cubren nuevos horizontes."
+    },
+    mappacks_1: {
+      title: "Curador del Atlas",
+      description: "Creaste tu primer paquete de mapas o guía personalizada."
+    },
+    challenges_1: {
+      title: "Diseñador de Leyendas",
+      description: "Diseñaste y publicaste un desafío de explorador de ubicación personalizado."
     }
   }
 };
@@ -222,14 +327,27 @@ const BADGE_TRANSLATIONS = {
  * Checks which badges are unlocked for a user based on their stats.
  * @param {number} pinsCount - Number of pins placed by the user
  * @param {number} checkinsCount - Number of check-ins to other users' pins
+ * @param {number} trailsCount - Number of trails recorded
+ * @param {number} mappacksCount - Number of map packs/guides created
+ * @param {number} challengesCount - Number of challenges designed
  * @param {string} lang - The active language code ('en' or 'es')
  * @returns {Array} Array of badges with their unlock status
  */
-export function getBadgesStatus(pinsCount, checkinsCount, lang) {
+export function getBadgesStatus(pinsCount, checkinsCount, trailsCount, mappacksCount, challengesCount, lang) {
   return BADGES.map(function(badge) {
-    var isUnlocked = badge.type === 'pins' 
-      ? pinsCount >= badge.threshold 
-      : checkinsCount >= badge.threshold;
+    var isUnlocked = false;
+    if (badge.type === 'pins') {
+      isUnlocked = pinsCount >= badge.threshold;
+    } else if (badge.type === 'checkins') {
+      isUnlocked = checkinsCount >= badge.threshold;
+    } else if (badge.type === 'trails') {
+      isUnlocked = trailsCount >= badge.threshold;
+    } else if (badge.type === 'mappacks') {
+      isUnlocked = mappacksCount >= badge.threshold;
+    } else if (badge.type === 'challenges') {
+      isUnlocked = challengesCount >= badge.threshold;
+    }
+
     var localized = badge;
     if (lang === 'es' && BADGE_TRANSLATIONS.es[badge.id]) {
       localized = Object.assign({}, badge, BADGE_TRANSLATIONS.es[badge.id]);
