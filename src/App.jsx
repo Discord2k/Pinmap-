@@ -4162,7 +4162,7 @@ function App() {
           })
         ),
         e("div",{style:{marginBottom:12}},
-          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}}, "Custom Icon / Emoji"),
+          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}}, "Custom icon / emoji or click on pin to add your own from keyboard"),
           e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
             e("input",{
               style:Object.assign({},S.input,{width:50,textAlign:"center",fontSize:16,padding:"6px",margin:0}),
@@ -5095,7 +5095,7 @@ function App() {
           })
         ),
         e("div",{style:{marginBottom:12}},
-          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}}, "Custom Icon / Emoji"),
+          e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}}, "Custom icon / emoji or click on pin to add your own from keyboard"),
           e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
             e("input",{
               style:Object.assign({},S.input,{width:50,textAlign:"center",fontSize:16,padding:"6px",margin:0}),
