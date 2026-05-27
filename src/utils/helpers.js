@@ -114,6 +114,11 @@ export const ONBOARD_STEPS_EN = [
     target: "map-center"
   },
   {
+    title: "Filter Map Pins",
+    body: "Tap this button to switch between showing all public pins, only your own pins, or hiding all pins to clear the map.",
+    target: "btn-pin-layer-toggle"
+  },
+  {
     title: "Record Your Routes",
     body: "Click here to toggle the Trails & Quests panel. Start recording your path in real-time or import external GPX files.",
     target: "btn-trail-quest"
@@ -145,6 +150,11 @@ export const ONBOARD_STEPS_ES = [
     title: "Coloca tu Primer Pin",
     body: "Mantén presionado (o toca) en cualquier parte del mapa para añadir un pin. Ponle etiquetas, colores, fotos o un temporizador de expiración.",
     target: "map-center"
+  },
+  {
+    title: "Filtrar Pines del Mapa",
+    body: "Toca este botón para cambiar entre mostrar todos los pines públicos, solo tus propios pines u ocultar todos los pines para limpiar el mapa.",
+    target: "btn-pin-layer-toggle"
   },
   {
     title: "Graba tus Rutas",

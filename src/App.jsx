@@ -19,7 +19,7 @@ import JSZip from 'jszip';
 var e = React.createElement;
 
 function App() {
-  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("mine"), focusedMarker=useRef(null), focusPinId=useRef(null);
+  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("public"), focusedMarker=useRef(null), focusPinId=useRef(null);
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
   var s2=useState(false);    var sessionChecked=s2[0]; var setSessionChecked=s2[1];
   var s3=useState(false);    var splashDone=s3[0];     var setSplashDone=s3[1];
@@ -88,7 +88,7 @@ function App() {
   var s38=useState(
     localStorage.getItem(ONBOARD_KEY) && !localStorage.getItem(WHATSNEW_KEY)
   ); var showWhatsNew=s38[0]; var setShowWhatsNew=s38[1];
-  var s23=useState("mine"); var mapLayer=s23[0]; var setMapLayer=s23[1];
+  var s23=useState("public"); var mapLayer=s23[0]; var setMapLayer=s23[1];
   var s25=useState("osm"); var baseLayer=s25[0]; var setBaseLayer=s25[1];
   var s26=useState(false); var layerMenuOpen=s26[0]; var setLayerMenuOpen=s26[1];
   var s28=useState(null); var viewUser=s28[0]; var setViewUser=s28[1];
@@ -1002,14 +1002,14 @@ function App() {
   useEffect(function(){
     api.getSession().then(function(res){
       var session=res.data&&res.data.session;
-      if(session&&session.user){ setUser(session.user); setSplashDone(true); }
+      if(session&&session.user){ setUser(session.user); setSplashDone(true); setMapLayer("public"); }
       setSessionChecked(true);
     }).catch(function(err){
       console.error("Auth error:", err);
       setSessionChecked(true);
     });
     var sub=api.onAuthChange(function(event,session){
-      if(session&&session.user){ setUser(session.user); setSplashDone(true); }
+      if(session&&session.user){ setUser(session.user); setSplashDone(true); setMapLayer("public"); }
       else { setUser(null); }
     });
     return function(){ if(sub&&sub.data&&sub.data.subscription) sub.data.subscription.unsubscribe(); };
@@ -3117,6 +3117,7 @@ function App() {
 
       // Pin layer toggle: All → Mine → Off
       e("button",{
+        id:"btn-pin-layer-toggle",
         onClick:function(){
           setMapLayer(function(cur){
             if(cur==="mine")   return "public";
