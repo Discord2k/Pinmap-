@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const SB_URL = "https://uuxggoydnjvsssbenkkt.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eGdnb3lkbmp2c3NzYmVua2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODg4OTgsImV4cCI6MjA5MjY2NDg5OH0.VniG6qm6Z9spdezyw-85k4liEuyC9i3B_T2Pxo-9nK0";
 export const sb = createClient(SB_URL, SB_KEY);
+export const MAPTILER_KEY = "cCEkeqwvi9IYXse9ufa5";
 
 function sbWithUser(uname) {
   return sb;

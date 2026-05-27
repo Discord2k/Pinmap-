@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v297";
+var CACHE_NAME = "pinmap-v298";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -29,12 +29,9 @@ self.addEventListener("activate", function(event) {
 self.addEventListener("fetch", function(event) {
   var url = event.request.url;
 
-  // Cache map tiles (OSM standard only - not satellite)
-  if (url.includes("tile.openstreetmap.org") ||
-      url.includes("tile.opentopomap.org") ||
-      url.includes("tile.waymarkedtrails.org") ||
-      url.includes("tiles.openseamap.org") ||
-      url.includes("tile-cyclosm.openstreetmap.fr")) {
+  // Cache MapTiler map tiles and OpenSeaMap overlay
+  if (url.includes("api.maptiler.com") ||
+      url.includes("tiles.openseamap.org")) {
     event.respondWith(cacheTile(event.request));
     return;
   }

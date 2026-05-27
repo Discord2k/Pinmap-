@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api, sb, subscribeToPush, uploadPhoto, callEdgeFunction } from './utils/api';
+import { api, sb, subscribeToPush, uploadPhoto, callEdgeFunction, MAPTILER_KEY } from './utils/api';
 import { dbGetAll, dbPut, dbDelete, uid, formatLL, tagColor, getPinIcon, distKm, checkBannedTags, userName, userAvatar, dlFile, toGeoJSON, toGPX, WHATSNEW, ONBOARD_KEY, WHATSNEW_KEY, ALL_FEATURES, ONBOARD_STEPS, getOnboardSteps, getWhatsNewList, getAllFeatures } from './utils/helpers';
 import { T, S } from './utils/styles';
 import { Splash } from './components/Splash';
@@ -494,12 +494,16 @@ function App() {
       var tSE = pSE.divideBy(256).floor();
       for(var x = tNW.x; x <= tSE.x; x++){
         for(var y = tNW.y; y <= tSE.y; y++){
-          if(baseLayer==="osm"||baseLayer==="trails"||baseLayer==="seamap") {
-            tiles.push("https://a.tile.openstreetmap.org/"+z+"/"+x+"/"+y+".png");
-            if(baseLayer==="trails") tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
+          if(baseLayer==="osm"||baseLayer==="seamap") {
+            tiles.push("https://api.maptiler.com/maps/streets-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
             if(baseLayer==="seamap") tiles.push("https://tiles.openseamap.org/seamark/"+z+"/"+x+"/"+y+".png");
-          } else if(baseLayer==="topo") tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
-          else if(baseLayer==="cycleosm") tiles.push("https://a.tile-cyclosm.openstreetmap.fr/cyclosm/"+z+"/"+x+"/"+y+".png");
+          } else if(baseLayer==="topo") {
+            tiles.push("https://api.maptiler.com/maps/topo-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
+          } else if(baseLayer==="trails"||baseLayer==="cycleosm") {
+            tiles.push("https://api.maptiler.com/maps/outdoor-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
+          } else if(baseLayer==="satellite") {
+            tiles.push("https://api.maptiler.com/maps/satellite/"+z+"/"+x+"/"+y+".jpg?key=" + MAPTILER_KEY);
+          }
         }
       }
     }
@@ -2626,12 +2630,12 @@ function App() {
 
   // Recent tags: from pins sorted by created_at desc, deduplicated, max 4
   var BASE_LAYERS = [
-    {id:"osm",       label:t("layer_standard", "Standard"),  icon:"🗺", url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors"},
-    {id:"topo",      label:t("layer_topo", "Topo"),      icon:"▲",  url:"https://a.tile.opentopomap.org/{z}/{x}/{y}.png",                                               attr:"(c) OpenTopoMap contributors"},
-    {id:"satellite", label:t("layer_satellite", "Satellite"), icon:"🛰",  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",  attr:"(c) Esri"},
-    {id:"trails",    label:t("layer_trails", "Trails"),    icon:"🥾",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenStreetMap contributors", overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
-    {id:"cycleosm",  label:t("layer_cycle", "Cycle"),     icon:"🚲",  url:"https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",                              attr:"(c) OpenStreetMap contributors | Style: CyclOSM"},
-    {id:"seamap",    label:t("layer_sea", "Sea"),       icon:"⚓",  url:"https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",                                              attr:"(c) OpenSeaMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
+    {id:"osm",       label:t("layer_standard", "Standard"),  icon:"🗺", url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                  attr:"© MapTiler © OpenStreetMap contributors"},
+    {id:"topo",      label:t("layer_topo", "Topo"),      icon:"▲",  url:"https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                      attr:"© MapTiler © OpenStreetMap contributors"},
+    {id:"satellite", label:t("layer_satellite", "Satellite"), icon:"🛰",  url:"https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=" + MAPTILER_KEY,                                      attr:"© MapTiler © Esri"},
+    {id:"trails",    label:t("layer_trails", "Trails"),    icon:"🥾",  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors"},
+    {id:"cycleosm",  label:t("layer_cycle", "Cycle"),     icon:"🚲",  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors"},
+    {id:"seamap",    label:t("layer_sea", "Sea"),       icon:"⚓",  url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                    attr:"© MapTiler © OpenStreetMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
   ];
 
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
