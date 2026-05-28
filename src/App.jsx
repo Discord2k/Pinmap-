@@ -1163,14 +1163,24 @@ function App() {
       if(!mapDiv.current||!window.maplibregl){setTimeout(tryInit,100);return;}
       if(mapObj.current) return;
       
-      var map = new window.maplibregl.Map({
-        container: mapDiv.current,
-        style: "https://api.maptiler.com/maps/streets-v2/style.json?key=" + MAPTILER_KEY,
-        center: [-98, 39],
-        zoom: 4,
-        maxBounds: [[-180, -85], [180, 85]],
-        antialias: true
-      });
+      var map;
+      try {
+        if (!window.maplibregl.supported()) {
+          throw new Error("WebGL is not supported or is disabled in your browser.");
+        }
+        map = new window.maplibregl.Map({
+          container: mapDiv.current,
+          style: "https://api.maptiler.com/maps/streets-v2/style.json?key=" + MAPTILER_KEY,
+          center: [-98, 39],
+          zoom: 4,
+          maxBounds: [[-180, -85], [180, 85]],
+          antialias: true
+        });
+      } catch (err) {
+        console.error("MapLibre GL JS init failed:", err);
+        flash("❌ Map Error: " + err.message);
+        return;
+      }
       
       // Monkey-patch Leaflet methods for backwards compatibility
       map.setView = function(latlng, zoom, options) {
