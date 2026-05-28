@@ -1323,53 +1323,79 @@ function App() {
         if (baseLayerRef.current === "satellite") {
           // Add 3D building extrusions on hybrid satellite layer
           try {
-            // Find a symbol layer to insert buildings below labels
-            var layers = map.getStyle().layers;
-            var labelLayerId;
-            for (var i = 0; i < layers.length; i++) {
-              if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
-                labelLayerId = layers[i].id;
+            var allLayers = map.getStyle().layers;
+            var allSources = map.getStyle().sources;
+
+            // Find the source used for buildings in this style
+            var buildingLayer = null;
+            for (var bi = 0; bi < allLayers.length; bi++) {
+              var bl = allLayers[bi];
+              if (bl['source-layer'] === 'building' || bl['source-layer'] === 'buildings') {
+                buildingLayer = bl;
                 break;
               }
             }
-            if (!map.getSource('composite') && !map.getSource('maptiler_planet')) {
-              // Style has its own building source — find it
+
+            // Find first symbol layer to insert buildings beneath labels
+            var labelLayerId;
+            for (var li = 0; li < allLayers.length; li++) {
+              var ll = allLayers[li];
+              if (ll.type === 'symbol' && ll.layout && ll.layout['text-field']) {
+                labelLayerId = ll.id;
+                break;
+              }
             }
-            // Check if a building layer already exists in the style
-            var hasBuildingSource = layers.some(function(l){ return l['source-layer'] === 'building'; });
-            if (hasBuildingSource && !map.getLayer('3d-buildings')) {
+
+            if (buildingLayer && !map.getLayer('pm-3d-buildings')) {
+              var bSource = buildingLayer.source;
+              var bSourceLayer = buildingLayer['source-layer'];
+
+              // MapTiler hybrid uses render_height; standard OSM uses height
+              var heightExpr = [
+                'coalesce', ['get', 'render_height'], ['get', 'height'], 5
+              ];
+              var baseExpr = [
+                'coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0
+              ];
+
               map.addLayer({
-                id: '3d-buildings',
+                id: 'pm-3d-buildings',
                 type: 'fill-extrusion',
-                source: layers.find(function(l){ return l['source-layer'] === 'building'; }).source,
-                'source-layer': 'building',
+                source: bSource,
+                'source-layer': bSourceLayer,
                 minzoom: 14,
-                filter: ['==', 'extrude', 'true'],
+                // No extrude filter — show all buildings that have geometry
                 paint: {
                   'fill-extrusion-color': [
-                    'interpolate', ['linear'], ['get', 'height'],
+                    'interpolate', ['linear'],
+                    ['coalesce', ['get', 'render_height'], ['get', 'height'], 0],
                     0,   '#c8bda8',
-                    50,  '#b0a898',
-                    200, '#988f84'
+                    30,  '#b8ad9a',
+                    100, '#a89e94',
+                    300, '#988f84'
                   ],
                   'fill-extrusion-height': [
                     'interpolate', ['linear'], ['zoom'],
                     14, 0,
-                    14.5, ['get', 'height']
+                    14.5, heightExpr
                   ],
                   'fill-extrusion-base': [
                     'interpolate', ['linear'], ['zoom'],
                     14, 0,
-                    14.5, ['get', 'min_height']
+                    14.5, baseExpr
                   ],
-                  'fill-extrusion-opacity': 0.75,
-                  'fill-extrusion-ambient-occlusion-intensity': 0.3,
+                  'fill-extrusion-opacity': 0.8,
+                  'fill-extrusion-ambient-occlusion-intensity': 0.35,
                   'fill-extrusion-ambient-occlusion-radius': 3
                 }
               }, labelLayerId);
+
+              console.log('[PINMAP] 3D buildings added from source:', bSource, '/', bSourceLayer);
+            } else if (!buildingLayer) {
+              console.warn('[PINMAP] No building source-layer found in style. Available layers:', allLayers.map(function(l){ return l.id + '(' + (l['source-layer'] || '-') + ')'; }).join(', '));
             }
           } catch(e) {
-            console.warn('3D buildings layer skipped:', e.message);
+            console.warn('[PINMAP] 3D buildings layer error:', e.message);
           }
         }
         if (baseLayerRef.current === "trails") {
