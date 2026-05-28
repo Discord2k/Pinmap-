@@ -3510,8 +3510,8 @@ function App() {
         e("span",{style:{fontSize:11,fontWeight:800,color:is3d ? T.paper : T.ink2,lineHeight:1,fontFamily:T.mono}}, is3d ? "3D" : "2D")
       ),
 
-      // Layers button
-      e("button",{
+      // Layers button (div wrapper instead of button to prevent HTML validation warning from nested buttons)
+      e("div",{
         onClick:function(){setLayerMenuOpen(function(v){return !v;});},
         style:{width:40,height:40,borderRadius:10,
           background:baseLayer!=="osm"?"rgba(42,93,60,0.12)":"rgba(246,241,228,0.95)",
@@ -3533,7 +3533,7 @@ function App() {
         }},
           BASE_LAYERS.map(function(layer){
             var active=baseLayer===layer.id;
-            return e("button",{key:layer.id,onClick:function(){switchBaseLayer(layer.id);setLayerMenuOpen(false);},
+            return e("button",{key:layer.id,onClick:function(ev){ev.stopPropagation(); switchBaseLayer(layer.id);setLayerMenuOpen(false);},
               style:{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",
                 background:active?T.forest:"transparent",cursor:"pointer",textAlign:"left",width:"100%"}
             },
