@@ -1320,69 +1320,7 @@ function App() {
           }
           map.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
         }
-        if (baseLayerRef.current === "satellite") {
-          // The hybrid style is raster-based — no vector building data is embedded.
-          // We explicitly add the MapTiler planet vector source and draw extrusions from it.
-          try {
-            // Add the planet vector source if not already present
-            if (!map.getSource('pm-planet')) {
-              map.addSource('pm-planet', {
-                type: 'vector',
-                url: 'https://api.maptiler.com/tiles/v3/tiles.json?key=' + MAPTILER_KEY
-              });
-            }
-
-            if (!map.getLayer('pm-3d-buildings')) {
-              // Insert below any label/symbol layers so labels stay on top
-              var allLayers = map.getStyle().layers;
-              var labelLayerId;
-              for (var li = 0; li < allLayers.length; li++) {
-                var ll = allLayers[li];
-                if (ll.type === 'symbol' && ll.layout && ll.layout['text-field']) {
-                  labelLayerId = ll.id;
-                  break;
-                }
-              }
-
-              map.addLayer({
-                id: 'pm-3d-buildings',
-                type: 'fill-extrusion',
-                source: 'pm-planet',
-                'source-layer': 'building',
-                minzoom: 14,
-                paint: {
-                  // Warm stone gradient by height; default 6m for untagged buildings
-                  'fill-extrusion-color': [
-                    'interpolate', ['linear'],
-                    ['coalesce', ['get', 'render_height'], ['get', 'height'], 0],
-                    0,   '#c8bda8',
-                    30,  '#b8ad9a',
-                    100, '#a89e94',
-                    300, '#988f84'
-                  ],
-                  // Fade buildings in between zoom 14–14.5 so they don't pop
-                  'fill-extrusion-height': [
-                    'interpolate', ['linear'], ['zoom'],
-                    14, 0,
-                    14.5, ['coalesce', ['get', 'render_height'], ['get', 'height'], 6]
-                  ],
-                  'fill-extrusion-base': [
-                    'interpolate', ['linear'], ['zoom'],
-                    14, 0,
-                    14.5, ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0]
-                  ],
-                  'fill-extrusion-opacity': 0.82,
-                  'fill-extrusion-ambient-occlusion-intensity': 0.4,
-                  'fill-extrusion-ambient-occlusion-radius': 3
-                }
-              }, labelLayerId);
-
-              console.log('[PINMAP] 3D buildings layer added via pm-planet source');
-            }
-          } catch(e) {
-            console.warn('[PINMAP] 3D buildings error:', e.message);
-          }
-        }
+        // 3D buildings are injected by a dedicated useEffect below (baseLayer + styleLoadCount)
         if (baseLayerRef.current === "trails") {
           if (!map.getSource('hiking-trails')) {
             map.addSource('hiking-trails', {
@@ -1625,6 +1563,69 @@ function App() {
     
     mapObj.current.setStyle("https://api.maptiler.com/maps/" + styleName + "/style.json?key=" + MAPTILER_KEY);
   },[baseLayer]);
+
+  // Inject 3D building extrusions whenever satellite style finishes loading.
+  // Runs after every style switch (styleLoadCount increments in style.load).
+  // Uses direct .pbf tile URLs to avoid async TileJSON fetch delays.
+  useEffect(function() {
+    var map = mapObj.current;
+    if (!map || baseLayer !== 'satellite') return;
+    try {
+      // Use direct tile URLs — no TileJSON async fetch needed
+      if (!map.getSource('pm-planet')) {
+        map.addSource('pm-planet', {
+          type: 'vector',
+          tiles: [
+            'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=' + MAPTILER_KEY
+          ],
+          minzoom: 0,
+          maxzoom: 14
+        });
+      }
+      if (!map.getLayer('pm-3d-buildings')) {
+        // Find first symbol/label layer so buildings render beneath labels
+        var styleLayers = map.getStyle().layers;
+        var insertBefore;
+        for (var i = 0; i < styleLayers.length; i++) {
+          if (styleLayers[i].type === 'symbol') {
+            insertBefore = styleLayers[i].id;
+            break;
+          }
+        }
+        map.addLayer({
+          id: 'pm-3d-buildings',
+          type: 'fill-extrusion',
+          source: 'pm-planet',
+          'source-layer': 'building',
+          minzoom: 13,
+          paint: {
+            'fill-extrusion-color': [
+              'interpolate', ['linear'],
+              ['coalesce', ['get', 'render_height'], ['get', 'height'], 0],
+              0,   '#d4c9b8',
+              30,  '#b8ad9a',
+              100, '#a89e94',
+              300, '#988f84'
+            ],
+            'fill-extrusion-height': [
+              'interpolate', ['linear'], ['zoom'],
+              13, 0,
+              14, ['coalesce', ['get', 'render_height'], ['get', 'height'], 6]
+            ],
+            'fill-extrusion-base': [
+              'interpolate', ['linear'], ['zoom'],
+              13, 0,
+              14, ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0]
+            ],
+            'fill-extrusion-opacity': 0.85
+          }
+        }, insertBefore);
+        console.log('[PINMAP] 3D buildings injected OK');
+      }
+    } catch(e) {
+      console.warn('[PINMAP] 3D buildings inject error:', e.message);
+    }
+  }, [baseLayer, styleLoadCount]);
 
   // Re-check comments whenever user, pins or tab changes
   useEffect(function(){
