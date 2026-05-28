@@ -3510,17 +3510,25 @@ function App() {
 
       // Layers button (div wrapper instead of button to prevent HTML validation warning from nested buttons)
       e("div",{
-        onClick:function(){setLayerMenuOpen(function(v){return !v;});},
+        onClick:function(){
+          setLayerMenuOpen(function(v){
+            var next = !v;
+            if (next) {
+              setShowTrailQuestPanel(false);
+            }
+            return next;
+          });
+        },
         style:{width:40,height:40,borderRadius:10,
-          background:baseLayer!=="osm"?"rgba(42,93,60,0.12)":"rgba(246,241,228,0.95)",
+          background:layerMenuOpen?T.forest:baseLayer!=="osm"?"rgba(42,93,60,0.12)":"rgba(246,241,228,0.95)",
           backdropFilter:"blur(12px)",
-          border:"1px solid "+(baseLayer!=="osm"?T.forest:T.border),
+          border:"1px solid "+(layerMenuOpen?T.forest:baseLayer!=="osm"?T.forest:T.border),
           display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:T.shadow,
           position:"relative"}
       },
         e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none"},
           e("path",{d:"M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
-            stroke:baseLayer!=="osm"?T.forest:T.ink2,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"})
+            stroke:layerMenuOpen?T.paper:baseLayer!=="osm"?T.forest:T.ink2,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"})
         ),
         layerMenuOpen && e("div",{style:{
           position:"absolute",right:48,top:0,
@@ -3549,7 +3557,15 @@ function App() {
       e("div",{style:{position:"relative"}},
         e("button",{
           id:"btn-trail-quest",
-          onClick:function(){ setShowTrailQuestPanel(function(v){return !v;}); },
+          onClick:function(){
+            setShowTrailQuestPanel(function(v){
+              var next = !v;
+              if (next) {
+                setLayerMenuOpen(false);
+              }
+              return next;
+            });
+          },
           style:{width:40,height:40,borderRadius:10,
             background:showTrailQuestPanel ? T.forest : "rgba(246,241,228,0.95)",
             backdropFilter:"blur(12px)",
