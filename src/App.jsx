@@ -16,10 +16,149 @@ import { LANGUAGES, translations } from './utils/i18n';
 import { getBadgesStatus } from './utils/badges';
 import JSZip from 'jszip';
 
+var mapObjRef = { current: null };
+
+window.L = {
+  point: function(x, y) { return { x: x, y: y }; },
+  latLng: function(lat, lng) { return { lat: lat, lng: lng }; },
+  latLngBounds: function(pts) {
+    if (!pts || pts.length === 0) {
+      return {
+        isValid: function() { return false; },
+        getSouthWest: function() { return { lat: 0, lng: 0 }; },
+        getNorthEast: function() { return { lat: 0, lng: 0 }; }
+      };
+    }
+    var lats = pts.map(function(p){ return p[0]; });
+    var lngs = pts.map(function(p){ return p[1]; });
+    return {
+      isValid: function() { return true; },
+      getSouthWest: function() { return { lat: Math.min.apply(null, lats), lng: Math.min.apply(null, lngs) }; },
+      getNorthEast: function() { return { lat: Math.max.apply(null, lats), lng: Math.max.apply(null, lngs) }; }
+    };
+  },
+  layerGroup: function() {
+    return {
+      clearLayers: function() {
+        if (window._clearMapLibreMarkers) {
+          window._clearMapLibreMarkers();
+        }
+      },
+      addTo: function() { return this; }
+    };
+  },
+  divIcon: function(options) {
+    var el = document.createElement('div');
+    el.className = options.className || '';
+    el.innerHTML = options.html || '';
+    if (options.iconSize) {
+      el.style.width = options.iconSize[0] + 'px';
+      el.style.height = options.iconSize[1] + 'px';
+    }
+    var anchor = 'center';
+    if (options.iconAnchor) {
+      if (options.iconAnchor[1] === options.iconSize[1]) {
+        anchor = 'bottom';
+      }
+    }
+    return { el: el, anchor: anchor };
+  },
+  marker: function(latlng, options) {
+    var lat = latlng[0];
+    var lng = latlng[1];
+    var el = options.icon.el;
+    var markerInstance = new window.maplibregl.Marker({
+      element: el,
+      anchor: options.icon.anchor || 'center'
+    }).setLngLat([lng, lat]);
+    
+    markerInstance.on = function(event, cb) {
+      if (event === 'click') {
+        el.addEventListener('click', cb);
+      }
+      return markerInstance;
+    };
+    
+    var origAddTo = markerInstance.addTo.bind(markerInstance);
+    markerInstance.addTo = function(target) {
+      if (mapObjRef.current) {
+        origAddTo(mapObjRef.current);
+      }
+      return markerInstance;
+    };
+    return markerInstance;
+  },
+  polyline: function(latlngs, options) {
+    var id = "poly_" + Math.random().toString(36).slice(2, 10);
+    var sourceId = id + "_source";
+    var layerId = id + "_layer";
+    
+    var geojson = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: latlngs.map(function(pt) { return [pt[1], pt[0]]; })
+      }
+    };
+    
+    var activeMap = mapObjRef.current;
+    if (activeMap) {
+      activeMap.addSource(sourceId, {
+        type: 'geojson',
+        data: geojson
+      });
+      
+      var isDashed = options.dashArray || options.className === "pm-recording-trail-line";
+      var paintProps = {
+        'line-color': options.color || '#ff0000',
+        'line-width': options.weight || 4,
+        'line-opacity': options.opacity || 0.8
+      };
+      if (isDashed) {
+        paintProps['line-dasharray'] = [2, 2];
+      }
+      
+      activeMap.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: paintProps
+      });
+    }
+    
+    return {
+      remove: function() {
+        if (activeMap) {
+          if (activeMap.getLayer(layerId)) activeMap.removeLayer(layerId);
+          if (activeMap.getSource(sourceId)) activeMap.removeSource(sourceId);
+        }
+      },
+      getBounds: function() {
+        var lats = latlngs.map(function(p){ return p[0]; });
+        var lngs = latlngs.map(function(p){ return p[1]; });
+        return {
+          isValid: function() { return latlngs.length > 0; },
+          getSouthWest: function() { return { lat: Math.min.apply(null, lats), lng: Math.min.apply(null, lngs) }; },
+          getNorthEast: function() { return { lat: Math.max.apply(null, lats), lng: Math.max.apply(null, lngs) }; }
+        };
+      },
+      addTo: function(target) {
+        return this;
+      }
+    };
+  }
+};
+
 var e = React.createElement;
 
 function App() {
   var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("public"), focusedMarker=useRef(null), focusPinId=useRef(null);
+  var [styleLoadCount, setStyleLoadCount] = useState(0);
+  var [is3d, setIs3d] = useState(false);
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
   var s2=useState(false);    var sessionChecked=s2[0]; var setSessionChecked=s2[1];
   var s3=useState(false);    var splashDone=s3[0];     var setSplashDone=s3[1];
@@ -1021,34 +1160,129 @@ function App() {
 
   useEffect(function(){
     function tryInit(){
-      if(!mapDiv.current||!window.L){setTimeout(tryInit,100);return;}
+      if(!mapDiv.current||!window.maplibregl){setTimeout(tryInit,100);return;}
       if(mapObj.current) return;
-      var map=window.L.map(mapDiv.current,{
-        zoomControl:false,
-        scrollWheelZoom:true,
-        minZoom:2,
-        maxBounds:[[-85,-180],[85,180]],
-        maxBoundsViscosity:1.0,
-        worldCopyJump:true
-      }).setView([39,-98],4);
-      var initTile = window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap contributors",maxZoom:19});
-      initTile.addTo(map);
-      currentBase.current = [initTile];
-      setTimeout(function(){map.invalidateSize();},300);
-      map.on("moveend",function(){var c=map.getCenter();setMapCenter({lat:c.lat,lng:c.lng});});
-      map.on("click",function(ev){setPendingLL(ev.latlng);setTab("add");setOpen(true);flash("📍 Location set — fill details in Drop tab");});
-      map.on("zoomstart",function(){
-        // Clear ALL markers immediately - prevents ghost clusters
-        if(window._pinLayer) window._pinLayer.clearLayers();
-        Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){}; });
+      
+      var map = new window.maplibregl.Map({
+        container: mapDiv.current,
+        style: "https://api.maptiler.com/maps/streets-v2/style.json?key=" + MAPTILER_KEY,
+        center: [-98, 39],
+        zoom: 4,
+        maxBounds: [[-180, -85], [180, 85]],
+        antialias: true
+      });
+      
+      // Monkey-patch Leaflet methods for backwards compatibility
+      map.setView = function(latlng, zoom, options) {
+        var lat = Array.isArray(latlng) ? latlng[0] : latlng.lat;
+        var lng = Array.isArray(latlng) ? latlng[1] : latlng.lng;
+        map.jumpTo({ center: [lng, lat], zoom: zoom });
+        return map;
+      };
+      
+      var origFitBounds = map.fitBounds.bind(map);
+      map.fitBounds = function(bounds, options) {
+        var coords;
+        if (bounds && bounds.getNorthEast) {
+          var ne = bounds.getNorthEast();
+          var sw = bounds.getSouthWest();
+          coords = [ [sw.lng, sw.lat], [ne.lng, ne.lat] ];
+        } else if (Array.isArray(bounds) && bounds.length === 2 && Array.isArray(bounds[0])) {
+          var b0_0 = bounds[0][0];
+          var b0_1 = bounds[0][1];
+          var b1_0 = bounds[1][0];
+          var b1_1 = bounds[1][1];
+          coords = [ [b0_1, b0_0], [b1_1, b1_0] ];
+        } else {
+          coords = bounds;
+        }
+        if (coords) {
+          origFitBounds(coords, options);
+        }
+        return map;
+      };
+      
+      map.getSize = function() {
+        var rect = map.getContainer().getBoundingClientRect();
+        return { x: rect.width, y: rect.height };
+      };
+      
+      map.latLngToContainerPoint = function(latlng) {
+        var lat = Array.isArray(latlng) ? latlng[0] : latlng.lat;
+        var lng = Array.isArray(latlng) ? latlng[1] : latlng.lng;
+        var pt = map.project([lng, lat]);
+        return pt;
+      };
+      
+      map.containerPointToLatLng = function(point) {
+        var x = point.x !== undefined ? point.x : point[0];
+        var y = point.y !== undefined ? point.y : point[1];
+        var ll = map.unproject([x, y]);
+        return { lat: ll.lat, lng: ll.lng };
+      };
+      
+      map.invalidateSize = function() {
+        map.resize();
+        return map;
+      };
+      
+      // Setup pin layer mocks
+      window._clearMapLibreMarkers = function() {
+        Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){} });
         markers.current = {};
+      };
+      window._pinLayer = {
+        clearLayers: function() {
+          window._clearMapLibreMarkers();
+        },
+        addTo: function() { return this; }
+      };
+
+      mapObjRef.current = map;
+
+      // Add navigation controls
+      map.addControl(new window.maplibregl.NavigationControl({
+        showCompass: true,
+        visualizePitch: true
+      }), 'top-left');
+
+      setTimeout(function(){map.resize();},300);
+      
+      map.on("moveend",function(){var c=map.getCenter();setMapCenter({lat:c.lat,lng:c.lng});});
+      map.on("click",function(ev){
+        var latlng = { lat: ev.lngLat.lat, lng: ev.lngLat.lng };
+        setPendingLL(latlng);
+        setTab("add");
+        setOpen(true);
+        flash("📍 Location set — fill details in Drop tab");
+      });
+      map.on("zoomstart",function(){
+        window._clearMapLibreMarkers();
       });
       map.on("zoomend",function(){
-        if(window._pinLayer) window._pinLayer.clearLayers();
-        Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){}; });
-        markers.current = {};
+        window._clearMapLibreMarkers();
         setMapZoom(map.getZoom());
       });
+      
+      map.on('style.load', function() {
+        if (baseLayer === "seamap") {
+          if (!map.getSource('seamarks')) {
+            map.addSource('seamarks', {
+              type: 'raster',
+              tiles: ['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'],
+              tileSize: 256
+            });
+            map.addLayer({
+              id: 'seamarks-layer',
+              type: 'raster',
+              source: 'seamarks',
+              paint: { 'raster-opacity': 0.85 }
+            });
+          }
+        }
+        setStyleLoadCount(function(c){ return c + 1; });
+      });
+
       mapObj.current=map;
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(pos) {
@@ -1249,29 +1483,22 @@ function App() {
 
   // Switch base layer when baseLayer state changes
   useEffect(function(){
-    if(!mapObj.current||!window.L) return;
+    if(!mapObj.current) return;
     var def = BASE_LAYERS.find(function(b){return b.id===baseLayer;});
     if(!def) return;
-    // Remove current base and overlay
-    if(currentBase.current){ currentBase.current.forEach(function(l){l.remove();}); }
-    // OpenTopoMap only has tiles up to z17 — cap zoom for topo only
+    
+    var styleName = "streets-v2";
+    if (baseLayer === "topo") styleName = "topo-v2";
+    else if (baseLayer === "satellite") styleName = "satellite";
+    else if (baseLayer === "trails" || baseLayer === "cycleosm") styleName = "outdoor-v2";
+    
     var layerMaxZoom = baseLayer === "topo" ? 17 : 19;
     mapObj.current.setMaxZoom(layerMaxZoom);
-    // If currently zoomed past the new max, pull back
     if(mapObj.current.getZoom() > layerMaxZoom){
       mapObj.current.setZoom(layerMaxZoom);
     }
-    // Add new base
-    var layers = [];
-    var base = window.L.tileLayer(def.url,{attribution:def.attr,maxZoom:layerMaxZoom});
-    base.addTo(mapObj.current);
-    layers.push(base);
-    if(def.overlay){
-      var ov = window.L.tileLayer(def.overlay,{attribution:def.attr,maxZoom:layerMaxZoom,opacity:0.85});
-      ov.addTo(mapObj.current);
-      layers.push(ov);
-    }
-    currentBase.current = layers;
+    
+    mapObj.current.setStyle("https://api.maptiler.com/maps/" + styleName + "/style.json?key=" + MAPTILER_KEY);
   },[baseLayer]);
 
   // Re-check comments whenever user, pins or tab changes
@@ -1341,7 +1568,7 @@ function App() {
         console.error("Error fitting bounds:", e);
       }
     }
-  }, [activeTrail, mapObj.current]);
+  }, [activeTrail, mapObj.current, styleLoadCount]);
 
   useEffect(function() {
     var map = mapObj.current;
@@ -1365,7 +1592,7 @@ function App() {
 
       recordingTrailPolyline.current = poly;
     }
-  }, [recordingTrail, recordedPoints, mapObj.current]);
+  }, [recordingTrail, recordedPoints, mapObj.current, styleLoadCount]);
 
   useEffect(function() {
     return function() {
@@ -1847,7 +2074,7 @@ function App() {
         }
       }, 200);
     }
-  },[pins,activeFilter,mapLayer,uname,mapZoom,showExpiringOnly,activeMapPack,activeMapPackPinIds,focusedUser]);
+  },[pins,activeFilter,mapLayer,uname,mapZoom,styleLoadCount,showExpiringOnly,activeMapPack,activeMapPackPinIds,focusedUser]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
@@ -3145,6 +3372,42 @@ function App() {
           color:mapLayer==="mine"?T.paper:mapLayer==="none"?T.ink4:T.ink2,lineHeight:1}},
           mapLayer==="mine"?t("layer_mine", "mine"):mapLayer==="public"?t("layer_all", "all"):t("layer_off", "off")
         )
+      ),
+
+      // 2D/3D Terrain Toggle
+      e("button",{
+        onClick:function(){
+          setIs3d(function(prev) {
+            var next = !prev;
+            if (mapObj.current) {
+              if (next) {
+                // Enable 3D Terrain
+                if (!mapObj.current.getSource('maptiler-dem')) {
+                  mapObj.current.addSource('maptiler-dem', {
+                    type: 'raster-dem',
+                    url: "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=" + MAPTILER_KEY,
+                    tileSize: 256
+                  });
+                }
+                mapObj.current.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
+                mapObj.current.easeTo({ pitch: 55, bearing: -15, duration: 1000 });
+              } else {
+                // Disable 3D Terrain
+                mapObj.current.setTerrain(null);
+                mapObj.current.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+              }
+            }
+            return next;
+          });
+        },
+        style:{width:40,height:40,borderRadius:10,cursor:"pointer",
+          background:is3d ? T.forest : "rgba(246,241,228,0.95)",
+          backdropFilter:"blur(12px)",
+          border:"1px solid "+(is3d ? T.forest : T.border),
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+          boxShadow:T.shadow,gap:2}
+      },
+        e("span",{style:{fontSize:11,fontWeight:800,color:is3d ? T.paper : T.ink2,lineHeight:1,fontFamily:T.mono}}, is3d ? "3D" : "2D")
       ),
 
       // Layers button
