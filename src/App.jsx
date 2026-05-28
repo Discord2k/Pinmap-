@@ -1571,16 +1571,22 @@ function App() {
     var map = mapObj.current;
     if (!map || baseLayer !== 'satellite') return;
     try {
-      // Use direct tile URLs — no TileJSON async fetch needed
-      if (!map.getSource('pm-planet')) {
-        map.addSource('pm-planet', {
-          type: 'vector',
-          tiles: [
-            'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=' + MAPTILER_KEY
-          ],
-          minzoom: 0,
-          maxzoom: 14
-        });
+      var sourceId = 'pm-planet';
+      if (map.getSource('openmaptiles')) {
+        sourceId = 'openmaptiles';
+      } else if (map.getSource('maptiler')) {
+        sourceId = 'maptiler';
+      } else {
+        if (!map.getSource('pm-planet')) {
+          map.addSource('pm-planet', {
+            type: 'vector',
+            tiles: [
+              'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key=' + MAPTILER_KEY
+            ],
+            minzoom: 0,
+            maxzoom: 14
+          });
+        }
       }
       if (!map.getLayer('pm-3d-buildings')) {
         // Find first symbol/label layer so buildings render beneath labels
@@ -1595,7 +1601,7 @@ function App() {
         map.addLayer({
           id: 'pm-3d-buildings',
           type: 'fill-extrusion',
-          source: 'pm-planet',
+          source: sourceId,
           'source-layer': 'building',
           minzoom: 13,
           paint: {
