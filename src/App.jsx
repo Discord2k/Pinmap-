@@ -1165,7 +1165,9 @@ function App() {
       
       var map;
       try {
-        if (!window.maplibregl.supported()) {
+        var canvas = document.createElement('canvas');
+        var supportsWebGL = !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+        if (!supportsWebGL) {
           throw new Error("WebGL is not supported or is disabled in your browser.");
         }
         map = new window.maplibregl.Map({
