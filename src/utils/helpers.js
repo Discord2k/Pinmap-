@@ -119,6 +119,11 @@ export const ONBOARD_STEPS_EN = [
     target: "btn-pin-layer-toggle"
   },
   {
+    title: "Explore in 3D Terrain",
+    body: "Tap the 2D/3D button to tilt the camera and load high-resolution 3D terrain! Rotate and tilt the map by dragging with your right mouse button (or Ctrl + drag). On mobile, swipe up/down with two fingers to adjust the tilt and rotate.",
+    target: "btn-3d-toggle"
+  },
+  {
     title: "Record Your Routes",
     body: "Click here to toggle the Trails & Quests panel. Start recording your path in real-time or import external GPX files.",
     target: "btn-trail-quest"
@@ -155,6 +160,11 @@ export const ONBOARD_STEPS_ES = [
     title: "Filtrar Pines del Mapa",
     body: "Toca este botón para cambiar entre mostrar todos los pines públicos, solo tus propios pines u ocultar todos los pines para limpiar el mapa.",
     target: "btn-pin-layer-toggle"
+  },
+  {
+    title: "Explora en Terreno 3D",
+    body: "¡Toca el botón 2D/3D para inclinar la cámara y cargar relieve 3D de alta resolución! Rota e inclina el mapa arrastrando con el botón derecho (o Ctrl + arrastrar). En móvil, desliza hacia arriba/abajo con dos dedos para ajustar la inclinación y rotar.",
+    target: "btn-3d-toggle"
   },
   {
     title: "Graba tus Rutas",

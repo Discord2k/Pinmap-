@@ -37,14 +37,22 @@ window.L = {
       getNorthEast: function() { return { lat: Math.max.apply(null, lats), lng: Math.max.apply(null, lngs) }; }
     };
   },
-  layerGroup: function() {
+  layerGroup: function(layers) {
     return {
       clearLayers: function() {
+        if (layers) {
+          layers.forEach(function(l) { if (l && l.remove) l.remove(); });
+        }
         if (window._clearMapLibreMarkers) {
           window._clearMapLibreMarkers();
         }
       },
-      addTo: function() { return this; }
+      addTo: function() { return this; },
+      remove: function() {
+        if (layers) {
+          layers.forEach(function(l) { if (l && l.remove) l.remove(); });
+        }
+      }
     };
   },
   divIcon: function(options) {
@@ -74,7 +82,10 @@ window.L = {
     
     markerInstance.on = function(event, cb) {
       if (event === 'click') {
-        el.addEventListener('click', cb);
+        el.addEventListener('click', function(ev) {
+          ev.stopPropagation(); // Prevent click from bubbling to the map
+          cb(ev);
+        });
       }
       return markerInstance;
     };
@@ -156,7 +167,7 @@ window.L = {
 var e = React.createElement;
 
 function App() {
-  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("public"), focusedMarker=useRef(null), focusPinId=useRef(null);
+  var mapDiv=useRef(null), mapObj=useRef(null), markers=useRef({}), baseLayers=useRef({}), currentBase=useRef(null), mapLayerRef=useRef("public"), baseLayerRef=useRef("osm"), focusedMarker=useRef(null), focusPinId=useRef(null), is3dRef=useRef(false);
   var [styleLoadCount, setStyleLoadCount] = useState(0);
   var [is3d, setIs3d] = useState(false);
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
@@ -592,7 +603,7 @@ function App() {
     setPendingLL(null);
   }
 
-  // Disable / re-enable all Leaflet map gestures while the reticle is open
+  // Disable / re-enable map gestures while the reticle is open
   React.useEffect(function(){
     if(!mapObj.current) return;
     var m = mapObj.current;
@@ -602,17 +613,17 @@ function App() {
       var rw = Math.round(vw * 0.70), rh = Math.round(vh * 0.54);
       setReticleBox({ top: Math.round((vh-rh)/2), left: Math.round((vw-rw)/2), width: rw, height: rh });
       // Lock the map so touch/scroll gestures don't zoom the whole viewport
-      m.dragging.disable();
-      m.touchZoom.disable();
-      m.doubleClickZoom.disable();
-      m.scrollWheelZoom.disable();
-      if(m.tap) m.tap.disable();
+      if (m.dragPan) m.dragPan.disable();
+      if (m.dragRotate) m.dragRotate.disable();
+      if (m.touchZoomRotate) m.touchZoomRotate.disable();
+      if (m.doubleClickZoom) m.doubleClickZoom.disable();
+      if (m.scrollZoom) m.scrollZoom.disable();
     } else {
-      m.dragging.enable();
-      m.touchZoom.enable();
-      m.doubleClickZoom.enable();
-      m.scrollWheelZoom.enable();
-      if(m.tap) m.tap.enable();
+      if (m.dragPan) m.dragPan.enable();
+      if (m.dragRotate) m.dragRotate.enable();
+      if (m.touchZoomRotate) m.touchZoomRotate.enable();
+      if (m.doubleClickZoom) m.doubleClickZoom.enable();
+      if (m.scrollZoom) m.scrollZoom.enable();
     }
   }, [offlineMode]);
 
@@ -638,10 +649,11 @@ function App() {
             if(baseLayer==="seamap") tiles.push("https://tiles.openseamap.org/seamark/"+z+"/"+x+"/"+y+".png");
           } else if(baseLayer==="topo") {
             tiles.push("https://api.maptiler.com/maps/topo-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
-          } else if(baseLayer==="trails"||baseLayer==="cycleosm") {
+          } else if(baseLayer==="trails") {
             tiles.push("https://api.maptiler.com/maps/outdoor-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
+            tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
           } else if(baseLayer==="satellite") {
-            tiles.push("https://api.maptiler.com/maps/satellite/"+z+"/"+x+"/"+y+".jpg?key=" + MAPTILER_KEY);
+            tiles.push("https://api.maptiler.com/maps/hybrid/"+z+"/"+x+"/"+y+".jpg?key=" + MAPTILER_KEY);
           }
         }
       }
@@ -1012,6 +1024,8 @@ function App() {
 
   // Keep mapLayerRef in sync so marker closures always see current value
   useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
+  useEffect(function(){ baseLayerRef.current = baseLayer; },[baseLayer]);
+  useEffect(function(){ is3dRef.current = is3d; },[is3d]);
 
   // Set timer to allow banner after 5 seconds
   useEffect(function(){
@@ -1159,8 +1173,9 @@ function App() {
   },[]);
 
   useEffect(function(){
+    var timer;
     function tryInit(){
-      if(!mapDiv.current||!window.maplibregl){setTimeout(tryInit,100);return;}
+      if(!mapDiv.current||!window.maplibregl){timer = setTimeout(tryInit,100);return;}
       if(mapObj.current) return;
       
       var map;
@@ -1189,7 +1204,11 @@ function App() {
       map.setView = function(latlng, zoom, options) {
         var lat = Array.isArray(latlng) ? latlng[0] : latlng.lat;
         var lng = Array.isArray(latlng) ? latlng[1] : latlng.lng;
-        map.jumpTo({ center: [lng, lat], zoom: zoom });
+        var finalZoom = zoom;
+        if (is3dRef.current && finalZoom > 12) {
+          finalZoom = 12;
+        }
+        map.jumpTo({ center: [lng, lat], zoom: finalZoom });
         return map;
       };
       
@@ -1241,6 +1260,19 @@ function App() {
       
       // Setup pin layer mocks
       window._clearMapLibreMarkers = function() {
+        if (map) {
+          try {
+            var container = map.getContainer();
+            if (container) {
+              var markerEls = container.querySelectorAll('.pm-map-pin');
+              markerEls.forEach(function(el) {
+                var parent = el.closest('.maplibregl-marker');
+                if (parent) parent.remove();
+                else el.remove();
+              });
+            }
+          } catch(e) {}
+        }
         Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){} });
         markers.current = {};
       };
@@ -1257,28 +1289,39 @@ function App() {
       map.addControl(new window.maplibregl.NavigationControl({
         showCompass: true,
         visualizePitch: true
-      }), 'top-left');
+      }), 'bottom-left');
 
       setTimeout(function(){map.resize();},300);
       
-      map.on("moveend",function(){var c=map.getCenter();setMapCenter({lat:c.lat,lng:c.lng});});
       map.on("click",function(ev){
+        var target = ev.originalEvent ? ev.originalEvent.target : null;
+        if (target && (target.closest('.maplibregl-marker') || target.closest('.maplibregl-ctrl') || target.closest('.leaflet-marker-icon') || target.closest('.pm-pin') || target.closest('.pm-cluster'))) {
+          return;
+        }
         var latlng = { lat: ev.lngLat.lat, lng: ev.lngLat.lng };
         setPendingLL(latlng);
         setTab("add");
         setOpen(true);
         flash("📍 Location set — fill details in Drop tab");
       });
-      map.on("zoomstart",function(){
-        window._clearMapLibreMarkers();
-      });
-      map.on("zoomend",function(){
-        window._clearMapLibreMarkers();
+      map.on("moveend",function(){
+        var c = map.getCenter();
+        setMapCenter({lat: c.lat, lng: c.lng});
         setMapZoom(map.getZoom());
       });
       
       map.on('style.load', function() {
-        if (baseLayer === "seamap") {
+        if (is3dRef.current) {
+          if (!map.getSource('maptiler-dem')) {
+            map.addSource('maptiler-dem', {
+              type: 'raster-dem',
+              url: "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=" + MAPTILER_KEY,
+              tileSize: 256
+            });
+          }
+          map.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
+        }
+        if (baseLayerRef.current === "seamap") {
           if (!map.getSource('seamarks')) {
             map.addSource('seamarks', {
               type: 'raster',
@@ -1289,6 +1332,20 @@ function App() {
               id: 'seamarks-layer',
               type: 'raster',
               source: 'seamarks',
+              paint: { 'raster-opacity': 0.85 }
+            });
+          }
+        } else if (baseLayerRef.current === "trails") {
+          if (!map.getSource('hiking-trails')) {
+            map.addSource('hiking-trails', {
+              type: 'raster',
+              tiles: ['https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png'],
+              tileSize: 256
+            });
+            map.addLayer({
+              id: 'hiking-trails-layer',
+              type: 'raster',
+              source: 'hiking-trails',
               paint: { 'raster-opacity': 0.85 }
             });
           }
@@ -1310,6 +1367,13 @@ function App() {
       }
     }
     if(splashDone) tryInit();
+    return function(){
+      if (timer) clearTimeout(timer);
+      if (mapObj.current) {
+        try { mapObj.current.remove(); } catch(e){}
+        mapObj.current = null;
+      }
+    };
   },[splashDone]);
 
   useEffect(function(){
@@ -1502,8 +1566,8 @@ function App() {
     
     var styleName = "streets-v2";
     if (baseLayer === "topo") styleName = "topo-v2";
-    else if (baseLayer === "satellite") styleName = "satellite";
-    else if (baseLayer === "trails" || baseLayer === "cycleosm") styleName = "outdoor-v2";
+    else if (baseLayer === "satellite") styleName = "hybrid";
+    else if (baseLayer === "trails") styleName = "outdoor-v2";
     
     var layerMaxZoom = baseLayer === "topo" ? 17 : 19;
     mapObj.current.setMaxZoom(layerMaxZoom);
@@ -1974,10 +2038,25 @@ function App() {
     }
 
     // Clear ALL existing markers atomically
-    if(window._pinLayer){ window._pinLayer.clearLayers(); }
-    else { window._pinLayer = window.L.layerGroup().addTo(mapObj.current); }
-    Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){} });
-    markers.current={};
+    if (window._clearMapLibreMarkers) {
+      window._clearMapLibreMarkers();
+    } else {
+      if (map) {
+        try {
+          var container = map.getContainer();
+          if (container) {
+            var markerEls = container.querySelectorAll('.pm-map-pin');
+            markerEls.forEach(function(el) {
+              var parent = el.closest('.maplibregl-marker');
+              if (parent) parent.remove();
+              else el.remove();
+            });
+          }
+        } catch(e) {}
+      }
+      Object.values(markers.current).forEach(function(m){ try{m.remove();}catch(e){} });
+      markers.current={};
+    }
     var map=mapObj.current;
     var zoom=map.getZoom();
 
@@ -1995,6 +2074,10 @@ function App() {
         return true;
       });
       if(activeFilter) clPins=clPins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;});
+      var bounds = map.getBounds();
+      if(bounds) {
+        clPins = clPins.filter(function(p){ return bounds.contains([p.lng, p.lat]); });
+      }
       var clusters=[], used=new Array(clPins.length).fill(false);
       for(var ci=0;ci<clPins.length;ci++){
         if(used[ci]) continue;
@@ -2015,13 +2098,13 @@ function App() {
           var pin=grp[0]; var color=pin.color||tagColor(pin.tags&&pin.tags[0]||"x");
           var pinEmoji=getPinIcon(pin.tags); var hasEmoji=pinEmoji!=="📍";
           var innerHtml=hasEmoji?'<foreignObject x="3" y="3" width="20" height="20"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:12px;text-align:center;line-height:20px">'+pinEmoji+'</div></foreignObject>':'<circle cx="13" cy="13" r="4" fill="white"/>';
-          var icon=window.L.divIcon({className:"pm-pin",html:'<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.18))"><path d="M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z" fill="'+color+'" stroke="#f6f1e4" stroke-width="1.5"/>'+innerHtml+'</svg>',iconSize:[28,36],iconAnchor:[14,36]});
+          var icon=window.L.divIcon({className:"pm-pin pm-map-pin",html:'<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.18))"><path d="M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z" fill="'+color+'" stroke="#f6f1e4" stroke-width="1.5"/>'+innerHtml+'</svg>',iconSize:[28,36],iconAnchor:[14,36]});
           var m=window.L.marker([pin.lat,pin.lng],{icon:icon});
           m.on("click",function(){if(!activeMapPack&&pin.owner!==uname&&(mapLayerRef.current==="mine"||mapLayerRef.current==="none"))setMapLayer("public");setSelPin(pin);setOpen(false);if(pin.owner===uname)markCommentsSeen();});
           m.addTo(window._pinLayer); markers.current[pin.id]=m;
         } else {
           var sz=grp.length>99?52:grp.length>9?46:40;
-          var cIcon=window.L.divIcon({className:"pm-cluster",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+clrColor+';border:3px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;cursor:pointer;font-size:'+(grp.length>9?12:14)+'px;font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+grp.length+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+          var cIcon=window.L.divIcon({className:"pm-cluster pm-map-pin",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+clrColor+';border:3px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;cursor:pointer;font-size:'+(grp.length>9?12:14)+'px;font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'+grp.length+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
           var cm=window.L.marker([clat,clng],{icon:cIcon});
           var grpCopy=grp.slice();
           cm.on("click",function(){map.fitBounds(window.L.latLngBounds(grpCopy.map(function(p){return[p.lat,p.lng];})),{padding:[60,60],maxZoom:14});});
@@ -2054,6 +2137,10 @@ function App() {
       return true;
     });
     var visible=activeFilter?layerPins.filter(function(p){return p.tags&&p.tags.indexOf(activeFilter)>=0;}):layerPins;
+    var bounds = map.getBounds();
+    if(bounds) {
+      visible = visible.filter(function(p){ return bounds.contains([p.lng, p.lat]); });
+    }
     visible.forEach(function(pin){
       var color=pin.color||tagColor(pin.tags&&pin.tags[0]||"x");
       var pinEmoji=getPinIcon(pin.tags);
@@ -2062,7 +2149,7 @@ function App() {
         ? '<foreignObject x="3" y="3" width="20" height="20"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:12px;text-align:center;line-height:20px">'+pinEmoji+'</div></foreignObject>'
         : '<circle cx="13" cy="13" r="4" fill="white"/>';
       var icon=window.L.divIcon({
-        className:"pm-pin",
+        className:"pm-pin pm-map-pin",
         html:'<svg width="30" height="38" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/>'+innerHtml+'</svg>',
         iconSize:[30,38],
         iconAnchor:[15,38]
@@ -2087,7 +2174,7 @@ function App() {
         }
       }, 200);
     }
-  },[pins,activeFilter,mapLayer,uname,mapZoom,styleLoadCount,showExpiringOnly,activeMapPack,activeMapPackPinIds,focusedUser]);
+  },[pins,activeFilter,mapLayer,uname,mapZoom,mapCenter,styleLoadCount,showExpiringOnly,activeMapPack,activeMapPackPinIds,focusedUser]);
 
   function requireAuth(cb) { if(!user){api.signInGoogle();return;} cb(); }
 
@@ -2872,9 +2959,8 @@ function App() {
   var BASE_LAYERS = [
     {id:"osm",       label:t("layer_standard", "Standard"),  icon:"🗺", url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                  attr:"© MapTiler © OpenStreetMap contributors"},
     {id:"topo",      label:t("layer_topo", "Topo"),      icon:"▲",  url:"https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                      attr:"© MapTiler © OpenStreetMap contributors"},
-    {id:"satellite", label:t("layer_satellite", "Satellite"), icon:"🛰",  url:"https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=" + MAPTILER_KEY,                                      attr:"© MapTiler © Esri"},
-    {id:"trails",    label:t("layer_trails", "Trails"),    icon:"🥾",  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors"},
-    {id:"cycleosm",  label:t("layer_cycle", "Cycle"),     icon:"🚲",  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors"},
+    {id:"satellite", label:t("layer_satellite", "Satellite"), icon:"🛰",  url:"https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=" + MAPTILER_KEY,                                        attr:"© MapTiler © Esri"},
+    {id:"trails",    label:t("layer_trails", "Trails"),    icon:"🥾",  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
     {id:"seamap",    label:t("layer_sea", "Sea"),       icon:"⚓",  url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                    attr:"© MapTiler © OpenStreetMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
   ];
 
@@ -3389,6 +3475,7 @@ function App() {
 
       // 2D/3D Terrain Toggle
       e("button",{
+        id:"btn-3d-toggle",
         onClick:function(){
           setIs3d(function(prev) {
             var next = !prev;
@@ -3616,23 +3703,7 @@ function App() {
       )
     ),
 
-    // Bottom-left: Zoom controls (above coordinates)
-    e("div",{style:{position:"absolute",bottom:"calc(108px + env(safe-area-inset-bottom,0px))",left:14,zIndex:999,display:"flex",flexDirection:"column",borderRadius:10,overflow:"hidden",boxShadow:T.shadow,border:"1px solid "+T.border}},
-      e("button",{
-        id:"btn-zoom-in",
-        onClick:function(){if(mapObj.current) mapObj.current.zoomIn();},
-        style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
-          border:"none",borderBottom:"1px solid "+T.border,
-          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:22,color:T.ink,fontWeight:300}
-      },"+"),
-      e("button",{
-        id:"btn-zoom-out",
-        onClick:function(){if(mapObj.current) mapObj.current.zoomOut();},
-        style:{width:40,height:40,background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
-          border:"none",
-          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:28,color:T.ink,fontWeight:300,lineHeight:1}
-      },"−")
-    ),
+
 
     // Bottom-left: coordinates + zoom
     e("div",{style:{position:"absolute",bottom:"calc(70px + env(safe-area-inset-bottom,0px))",left:14,zIndex:999}},
@@ -5713,7 +5784,7 @@ function App() {
     activeTrail && !open && e("div", {
       style: {
         position: "absolute",
-        top: 16,
+        top: "calc(76px + env(safe-area-inset-top, 0px))",
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 1000,

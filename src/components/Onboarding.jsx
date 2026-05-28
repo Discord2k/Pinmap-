@@ -93,7 +93,7 @@ export function Onboarding(props) {
     cardStyles.bottom = window.innerHeight - targetRect.top + 14;
     cardStyles.transform = "translateX(-50%)";
     arrowDirection = "down";
-  } else if (info.target === 'btn-trail-quest' || info.target === 'btn-pin-layer-toggle') {
+  } else if (info.target === 'btn-trail-quest' || info.target === 'btn-pin-layer-toggle' || info.target === 'btn-3d-toggle') {
     if (window.innerWidth < 480) {
       // Center card on mobile and place it below the target button
       cardStyles.left = "50%";
@@ -275,6 +275,7 @@ export function Onboarding(props) {
             {info.target === 'btn-tab-search' && "🔍"}
             {info.target === 'map-center' && "📍"}
             {info.target === 'btn-pin-layer-toggle' && "👥"}
+            {info.target === 'btn-3d-toggle' && "🏔"}
             {info.target === 'btn-trail-quest' && "🥾"}
             {info.target === 'btn-tab-profile' && "🏆"}
             {info.target === 'wrap-up' && "🎉"}
