@@ -1320,6 +1320,58 @@ function App() {
           }
           map.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
         }
+        if (baseLayerRef.current === "satellite") {
+          // Add 3D building extrusions on hybrid satellite layer
+          try {
+            // Find a symbol layer to insert buildings below labels
+            var layers = map.getStyle().layers;
+            var labelLayerId;
+            for (var i = 0; i < layers.length; i++) {
+              if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
+                labelLayerId = layers[i].id;
+                break;
+              }
+            }
+            if (!map.getSource('composite') && !map.getSource('maptiler_planet')) {
+              // Style has its own building source — find it
+            }
+            // Check if a building layer already exists in the style
+            var hasBuildingSource = layers.some(function(l){ return l['source-layer'] === 'building'; });
+            if (hasBuildingSource && !map.getLayer('3d-buildings')) {
+              map.addLayer({
+                id: '3d-buildings',
+                type: 'fill-extrusion',
+                source: layers.find(function(l){ return l['source-layer'] === 'building'; }).source,
+                'source-layer': 'building',
+                minzoom: 14,
+                filter: ['==', 'extrude', 'true'],
+                paint: {
+                  'fill-extrusion-color': [
+                    'interpolate', ['linear'], ['get', 'height'],
+                    0,   '#c8bda8',
+                    50,  '#b0a898',
+                    200, '#988f84'
+                  ],
+                  'fill-extrusion-height': [
+                    'interpolate', ['linear'], ['zoom'],
+                    14, 0,
+                    14.5, ['get', 'height']
+                  ],
+                  'fill-extrusion-base': [
+                    'interpolate', ['linear'], ['zoom'],
+                    14, 0,
+                    14.5, ['get', 'min_height']
+                  ],
+                  'fill-extrusion-opacity': 0.75,
+                  'fill-extrusion-ambient-occlusion-intensity': 0.3,
+                  'fill-extrusion-ambient-occlusion-radius': 3
+                }
+              }, labelLayerId);
+            }
+          } catch(e) {
+            console.warn('3D buildings layer skipped:', e.message);
+          }
+        }
         if (baseLayerRef.current === "trails") {
           if (!map.getSource('hiking-trails')) {
             map.addSource('hiking-trails', {
