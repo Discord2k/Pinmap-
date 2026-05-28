@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v300";
+var CACHE_NAME = "pinmap-v301";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -29,9 +29,8 @@ self.addEventListener("activate", function(event) {
 self.addEventListener("fetch", function(event) {
   var url = event.request.url;
 
-  // Cache MapTiler map tiles, OpenSeaMap overlay, and Waymarked Trails overlay
+  // Cache MapTiler map tiles and Waymarked Trails overlay
   if (url.includes("api.maptiler.com") ||
-      url.includes("tiles.openseamap.org") ||
       url.includes("tile.waymarkedtrails.org")) {
     event.respondWith(cacheTile(event.request));
     return;
