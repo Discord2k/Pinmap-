@@ -1175,7 +1175,8 @@ function App() {
           style: "https://api.maptiler.com/maps/streets-v2/style.json?key=" + MAPTILER_KEY,
           center: [-98, 39],
           zoom: 4,
-          maxBounds: [[-180, -85], [180, 85]],
+          maxZoom: 19,
+          maxBounds: [[-179.9, -85], [179.9, 85]],
           antialias: true
         });
       } catch (err) {
