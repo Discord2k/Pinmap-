@@ -3520,15 +3520,15 @@ function App() {
           });
         },
         style:{width:40,height:40,borderRadius:10,
-          background:layerMenuOpen?T.forest:baseLayer!=="osm"?"rgba(42,93,60,0.12)":"rgba(246,241,228,0.95)",
+          background:(layerMenuOpen || baseLayer!=="osm")?T.forest:"rgba(246,241,228,0.95)",
           backdropFilter:"blur(12px)",
-          border:"1px solid "+(layerMenuOpen?T.forest:baseLayer!=="osm"?T.forest:T.border),
+          border:"1px solid "+((layerMenuOpen || baseLayer!=="osm")?T.forest:T.border),
           display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:T.shadow,
           position:"relative"}
       },
         e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none"},
           e("path",{d:"M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
-            stroke:layerMenuOpen?T.paper:baseLayer!=="osm"?T.forest:T.ink2,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"})
+            stroke:(layerMenuOpen || baseLayer!=="osm")?T.paper:T.ink2,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"})
         ),
         layerMenuOpen && e("div",{style:{
           position:"absolute",right:48,top:0,

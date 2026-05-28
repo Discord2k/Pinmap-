@@ -28,7 +28,7 @@ body { position:fixed; inset:0; }
 .leaflet-pane,.leaflet-map-pane,.leaflet-tile-pane { z-index:1; }
 .leaflet-tile-pane { filter:saturate(0.55) contrast(0.92) brightness(1.03) sepia(0.04); }
 .pm-map-container .maplibregl-canvas {
-  filter: saturate(0.72) contrast(1.05) brightness(0.98) sepia(0.08);
+  filter: saturate(0.82) contrast(1.18) brightness(0.93) sepia(0.04);
   transition: filter 0.3s ease;
 }
 .pm-map-container.pm-map-satellite .maplibregl-canvas {
