@@ -644,9 +644,8 @@ function App() {
       var tSE = pSE.divideBy(256).floor();
       for(var x = tNW.x; x <= tSE.x; x++){
         for(var y = tNW.y; y <= tSE.y; y++){
-          if(baseLayer==="osm"||baseLayer==="seamap") {
+           if(baseLayer==="osm") {
             tiles.push("https://api.maptiler.com/maps/streets-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
-            if(baseLayer==="seamap") tiles.push("https://tiles.openseamap.org/seamark/"+z+"/"+x+"/"+y+".png");
           } else if(baseLayer==="topo") {
             tiles.push("https://api.maptiler.com/maps/topo-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
           } else if(baseLayer==="trails") {
@@ -1321,21 +1320,7 @@ function App() {
           }
           map.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
         }
-        if (baseLayerRef.current === "seamap") {
-          if (!map.getSource('seamarks')) {
-            map.addSource('seamarks', {
-              type: 'raster',
-              tiles: ['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'],
-              tileSize: 256
-            });
-            map.addLayer({
-              id: 'seamarks-layer',
-              type: 'raster',
-              source: 'seamarks',
-              paint: { 'raster-opacity': 0.85 }
-            });
-          }
-        } else if (baseLayerRef.current === "trails") {
+        if (baseLayerRef.current === "trails") {
           if (!map.getSource('hiking-trails')) {
             map.addSource('hiking-trails', {
               type: 'raster',
@@ -2955,13 +2940,26 @@ function App() {
   var myPins=pins.filter(function(p){return p.owner===uname;});
   var myTags=[].concat.apply([],[].map.call(myPins,function(p){return p.tags||[];})).filter(function(t,i,a){return a.indexOf(t)===i && !t.startsWith("_icon:");});
 
-  // Recent tags: from pins sorted by created_at desc, deduplicated, max 4
   var BASE_LAYERS = [
-    {id:"osm",       label:t("layer_standard", "Standard"),  icon:"🗺", url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                  attr:"© MapTiler © OpenStreetMap contributors"},
-    {id:"topo",      label:t("layer_topo", "Topo"),      icon:"▲",  url:"https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                      attr:"© MapTiler © OpenStreetMap contributors"},
-    {id:"satellite", label:t("layer_satellite", "Satellite"), icon:"🛰",  url:"https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=" + MAPTILER_KEY,                                        attr:"© MapTiler © Esri"},
-    {id:"trails",    label:t("layer_trails", "Trails"),    icon:"🥾",  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
-    {id:"seamap",    label:t("layer_sea", "Sea"),       icon:"⚓",  url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                    attr:"© MapTiler © OpenStreetMap contributors",    overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"}
+    {id:"osm",       label:t("layer_standard", "Standard"),  iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
+      e("polygon",{points:"3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"}),
+      e("line",{x1:9,y1:3,x2:9,y2:18}),
+      e("line",{x1:15,y1:6,x2:15,y2:21})
+    ), url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                  attr:"© MapTiler © OpenStreetMap contributors"},
+    {id:"topo",      label:t("layer_topo", "Topo"),      iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
+      e("path",{d:"M2 20h20"}),
+      e("path",{d:"M21 20L12 4 3 20"}),
+      e("path",{d:"M17 20l-5-8.8-5 8.8"})
+    ),  url:"https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                      attr:"© MapTiler © OpenStreetMap contributors"},
+    {id:"satellite", label:t("layer_satellite", "Satellite"), iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
+      e("circle",{cx:12,cy:12,r:10}),
+      e("path",{d:"M2 12h20"}),
+      e("path",{d:"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"})
+    ),  url:"https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=" + MAPTILER_KEY,                                        attr:"© MapTiler © Esri"},
+    {id:"trails",    label:t("layer_trails", "Trails"),    iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
+      e("path",{d:"M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"}),
+      e("circle",{cx:12,cy:10,r:3})
+    ),  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"}
   ];
 
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
@@ -3537,7 +3535,7 @@ function App() {
               style:{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,border:"none",
                 background:active?T.forest:"transparent",cursor:"pointer",textAlign:"left",width:"100%"}
             },
-              e("span",{style:{fontSize:18,width:22,textAlign:"center",flexShrink:0}},layer.icon),
+              e("span",{style:{width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:active?T.paper:T.ink2}},layer.iconSvg),
               e("div",null,
                 e("div",{style:{fontSize:13,fontWeight:active?600:400,color:active?T.paper:T.ink}},(layer.label||layer.name)),
                 active&&e("div",{style:{fontSize:10,color:"rgba(246,241,228,0.7)",fontFamily:T.mono,letterSpacing:"0.06em"}},t("layer_active"))
