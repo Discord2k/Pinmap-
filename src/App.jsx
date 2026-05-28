@@ -1321,51 +1321,37 @@ function App() {
           map.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
         }
         if (baseLayerRef.current === "satellite") {
-          // Add 3D building extrusions on hybrid satellite layer
+          // The hybrid style is raster-based — no vector building data is embedded.
+          // We explicitly add the MapTiler planet vector source and draw extrusions from it.
           try {
-            var allLayers = map.getStyle().layers;
-            var allSources = map.getStyle().sources;
-
-            // Find the source used for buildings in this style
-            var buildingLayer = null;
-            for (var bi = 0; bi < allLayers.length; bi++) {
-              var bl = allLayers[bi];
-              if (bl['source-layer'] === 'building' || bl['source-layer'] === 'buildings') {
-                buildingLayer = bl;
-                break;
-              }
+            // Add the planet vector source if not already present
+            if (!map.getSource('pm-planet')) {
+              map.addSource('pm-planet', {
+                type: 'vector',
+                url: 'https://api.maptiler.com/tiles/v3/tiles.json?key=' + MAPTILER_KEY
+              });
             }
 
-            // Find first symbol layer to insert buildings beneath labels
-            var labelLayerId;
-            for (var li = 0; li < allLayers.length; li++) {
-              var ll = allLayers[li];
-              if (ll.type === 'symbol' && ll.layout && ll.layout['text-field']) {
-                labelLayerId = ll.id;
-                break;
+            if (!map.getLayer('pm-3d-buildings')) {
+              // Insert below any label/symbol layers so labels stay on top
+              var allLayers = map.getStyle().layers;
+              var labelLayerId;
+              for (var li = 0; li < allLayers.length; li++) {
+                var ll = allLayers[li];
+                if (ll.type === 'symbol' && ll.layout && ll.layout['text-field']) {
+                  labelLayerId = ll.id;
+                  break;
+                }
               }
-            }
-
-            if (buildingLayer && !map.getLayer('pm-3d-buildings')) {
-              var bSource = buildingLayer.source;
-              var bSourceLayer = buildingLayer['source-layer'];
-
-              // MapTiler hybrid uses render_height; standard OSM uses height
-              var heightExpr = [
-                'coalesce', ['get', 'render_height'], ['get', 'height'], 5
-              ];
-              var baseExpr = [
-                'coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0
-              ];
 
               map.addLayer({
                 id: 'pm-3d-buildings',
                 type: 'fill-extrusion',
-                source: bSource,
-                'source-layer': bSourceLayer,
+                source: 'pm-planet',
+                'source-layer': 'building',
                 minzoom: 14,
-                // No extrude filter — show all buildings that have geometry
                 paint: {
+                  // Warm stone gradient by height; default 6m for untagged buildings
                   'fill-extrusion-color': [
                     'interpolate', ['linear'],
                     ['coalesce', ['get', 'render_height'], ['get', 'height'], 0],
@@ -1374,28 +1360,27 @@ function App() {
                     100, '#a89e94',
                     300, '#988f84'
                   ],
+                  // Fade buildings in between zoom 14–14.5 so they don't pop
                   'fill-extrusion-height': [
                     'interpolate', ['linear'], ['zoom'],
                     14, 0,
-                    14.5, heightExpr
+                    14.5, ['coalesce', ['get', 'render_height'], ['get', 'height'], 6]
                   ],
                   'fill-extrusion-base': [
                     'interpolate', ['linear'], ['zoom'],
                     14, 0,
-                    14.5, baseExpr
+                    14.5, ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0]
                   ],
-                  'fill-extrusion-opacity': 0.8,
-                  'fill-extrusion-ambient-occlusion-intensity': 0.35,
+                  'fill-extrusion-opacity': 0.82,
+                  'fill-extrusion-ambient-occlusion-intensity': 0.4,
                   'fill-extrusion-ambient-occlusion-radius': 3
                 }
               }, labelLayerId);
 
-              console.log('[PINMAP] 3D buildings added from source:', bSource, '/', bSourceLayer);
-            } else if (!buildingLayer) {
-              console.warn('[PINMAP] No building source-layer found in style. Available layers:', allLayers.map(function(l){ return l.id + '(' + (l['source-layer'] || '-') + ')'; }).join(', '));
+              console.log('[PINMAP] 3D buildings layer added via pm-planet source');
             }
           } catch(e) {
-            console.warn('[PINMAP] 3D buildings layer error:', e.message);
+            console.warn('[PINMAP] 3D buildings error:', e.message);
           }
         }
         if (baseLayerRef.current === "trails") {
