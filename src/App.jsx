@@ -3093,7 +3093,7 @@ function App() {
 
   return e("div",{style:{position:"relative",height:"100vh",width:"100%",overflow:"hidden"}},
 
-    e("div",{ref:mapDiv,style:{position:"absolute",top:0,left:0,right:0,bottom:"calc(60px + env(safe-area-inset-bottom,0px))",width:"100%",height:"100%",zIndex:0}}),
+    e("div",{ref:mapDiv,className:"pm-map-container"+(baseLayer==="satellite"?" pm-map-satellite":""),style:{position:"absolute",top:0,left:0,right:0,bottom:"calc(60px + env(safe-area-inset-bottom,0px))",width:"100%",height:"100%",zIndex:0}}),
 
     activeMapPack && e("div", {
       style: {
