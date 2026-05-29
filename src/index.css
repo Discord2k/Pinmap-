@@ -23,12 +23,12 @@ html, body, #root {
   touch-action:none;
 }
 body { position:fixed; inset:0; }
-#root { height:100%; width:100%; position:fixed; top:0; left:0; background:#f0e8d0; }
+#root { height:100%; width:100%; position:fixed; top:0; left:0; background:var(--paper); }
 .leaflet-container { height:100%!important; width:100%!important; background:var(--paper2)!important; }
 .leaflet-pane,.leaflet-map-pane,.leaflet-tile-pane { z-index:1; }
 .leaflet-tile-pane { filter:saturate(0.55) contrast(0.92) brightness(1.03) sepia(0.04); }
 .pm-map-container .maplibregl-canvas {
-  filter: saturate(0.9) contrast(0.9) brightness(0.93) sepia(0.22);
+  filter: saturate(0.9) contrast(0.93) brightness(0.95) sepia(0.06);
   transition: filter 0.3s ease;
 }
 .pm-map-container.pm-map-satellite .maplibregl-canvas {

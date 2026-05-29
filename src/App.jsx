@@ -645,15 +645,15 @@ function App() {
       for(var x = tNW.x; x <= tSE.x; x++){
         for(var y = tNW.y; y <= tSE.y; y++){
            if(baseLayer==="osm") {
-            tiles.push("https://api.maptiler.com/maps/streets-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
-          } else if(baseLayer==="topo") {
-            tiles.push("https://api.maptiler.com/maps/topo-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
-          } else if(baseLayer==="trails") {
-            tiles.push("https://api.maptiler.com/maps/outdoor-v2/"+z+"/"+x+"/"+y+".png?key=" + MAPTILER_KEY);
-            tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
-          } else if(baseLayer==="satellite") {
-            tiles.push("https://api.maptiler.com/maps/hybrid/"+z+"/"+x+"/"+y+".jpg?key=" + MAPTILER_KEY);
-          }
+             tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
+           } else if(baseLayer==="topo") {
+             tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
+           } else if(baseLayer==="trails") {
+             tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
+             tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
+           } else if(baseLayer==="satellite") {
+             tiles.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x);
+           }
         }
       }
     }
@@ -1186,7 +1186,7 @@ function App() {
         }
         map = new window.maplibregl.Map({
           container: mapDiv.current,
-          style: "https://api.maptiler.com/maps/streets-v2/style.json?key=" + MAPTILER_KEY,
+          style: "https://tiles.openfreemap.org/styles/liberty",
           center: [-98, 39],
           zoom: 4,
           maxZoom: 19,
@@ -1281,15 +1281,15 @@ function App() {
         },
         addTo: function() { return this; }
       };
-
+ 
       mapObjRef.current = map;
-
+ 
       // Add navigation controls
       map.addControl(new window.maplibregl.NavigationControl({
         showCompass: true,
         visualizePitch: true
       }), 'bottom-left');
-
+ 
       setTimeout(function(){map.resize();},300);
       
       map.on("click",function(ev){
@@ -1314,7 +1314,8 @@ function App() {
           if (!map.getSource('maptiler-dem')) {
             map.addSource('maptiler-dem', {
               type: 'raster-dem',
-              url: "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=" + MAPTILER_KEY,
+              tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+              encoding: 'terrarium',
               tileSize: 256
             });
           }
@@ -1338,7 +1339,7 @@ function App() {
         }
         setStyleLoadCount(function(c){ return c + 1; });
       });
-
+ 
       mapObj.current=map;
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(pos) {
@@ -1550,18 +1551,103 @@ function App() {
     var def = BASE_LAYERS.find(function(b){return b.id===baseLayer;});
     if(!def) return;
     
-    var styleName = "streets-v2";
-    if (baseLayer === "topo") styleName = "topo-v2";
-    else if (baseLayer === "satellite") styleName = "hybrid";
-    else if (baseLayer === "trails") styleName = "outdoor-v2";
+    var map = mapObj.current;
+    var center = map.getCenter();
+    var zoom = map.getZoom();
+    var pitch = map.getPitch();
+    var bearing = map.getBearing();
     
     var layerMaxZoom = baseLayer === "topo" ? 17 : 19;
-    mapObj.current.setMaxZoom(layerMaxZoom);
-    if(mapObj.current.getZoom() > layerMaxZoom){
-      mapObj.current.setZoom(layerMaxZoom);
+    map.setMaxZoom(layerMaxZoom);
+    if(zoom > layerMaxZoom){
+      zoom = layerMaxZoom;
     }
     
-    mapObj.current.setStyle("https://api.maptiler.com/maps/" + styleName + "/style.json?key=" + MAPTILER_KEY);
+    if (baseLayer === "osm") {
+      try {
+        if (map.getLayer('hiking-trails-layer')) map.removeLayer('hiking-trails-layer');
+        if (map.getSource('hiking-trails')) map.removeSource('hiking-trails');
+      } catch(e){}
+      map.setStyle("https://tiles.openfreemap.org/styles/liberty");
+    } else if (baseLayer === "trails") {
+      map.setStyle("https://tiles.openfreemap.org/styles/liberty");
+      // Add trails immediately if style is already loaded (otherwise style.load handles it)
+      try {
+        if (!map.getSource('hiking-trails')) {
+          map.addSource('hiking-trails', {
+            type: 'raster',
+            tiles: ['https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png'],
+            tileSize: 256
+          });
+        }
+        if (!map.getLayer('hiking-trails-layer')) {
+          map.addLayer({
+            id: 'hiking-trails-layer',
+            type: 'raster',
+            source: 'hiking-trails',
+            paint: { 'raster-opacity': 0.85 }
+          });
+        }
+      } catch(e){}
+    } else if (baseLayer === "satellite") {
+      var satelliteStyle = {
+        "version": 8,
+        "sources": {
+          "satellite-tiles": {
+            "type": "raster",
+            "tiles": [
+              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            ],
+            "tileSize": 256,
+            "attribution": "© Esri"
+          }
+        },
+        "layers": [
+          {
+            "id": "satellite-tiles",
+            "type": "raster",
+            "source": "satellite-tiles",
+            "minzoom": 0,
+            "maxzoom": 20
+          }
+        ]
+      };
+      map.setStyle(satelliteStyle);
+    } else if (baseLayer === "topo") {
+      var topoStyle = {
+        "version": 8,
+        "sources": {
+          "topo-tiles": {
+            "type": "raster",
+            "tiles": [
+              "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+              "https://b.tile.opentopomap.org/{z}/{x}/{y}.png",
+              "https://c.tile.opentopomap.org/{z}/{x}/{y}.png"
+            ],
+            "tileSize": 256,
+            "attribution": "© OpenTopoMap"
+          }
+        },
+        "layers": [
+          {
+            "id": "topo-tiles",
+            "type": "raster",
+            "source": "topo-tiles",
+            "minzoom": 0,
+            "maxzoom": 17
+          }
+        ]
+      };
+      map.setStyle(topoStyle);
+    }
+    
+    // Preserve camera location and orientation across layer switches
+    map.jumpTo({
+      center: center,
+      zoom: zoom,
+      pitch: pitch,
+      bearing: bearing
+    });
   },[baseLayer]);
 
   // Inject 3D building extrusions whenever satellite style finishes loading.
@@ -1572,32 +1658,17 @@ function App() {
     if (!map || baseLayer !== 'satellite') return;
     try {
       var sourceId = 'pm-planet';
-      if (map.getSource('openmaptiles')) {
-        sourceId = 'openmaptiles';
-      } else if (map.getSource('maptiler')) {
-        sourceId = 'maptiler';
-      } else {
-        if (!map.getSource('pm-planet')) {
-          map.addSource('pm-planet', {
-            type: 'vector',
-            tiles: [
-              'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key=' + MAPTILER_KEY
-            ],
-            minzoom: 0,
-            maxzoom: 14
-          });
-        }
+      if (!map.getSource('pm-planet')) {
+        map.addSource('pm-planet', {
+          type: 'vector',
+          tiles: [
+            'https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf'
+          ],
+          minzoom: 0,
+          maxzoom: 14
+        });
       }
       if (!map.getLayer('pm-3d-buildings')) {
-        // Find first symbol/label layer so buildings render beneath labels
-        var styleLayers = map.getStyle().layers;
-        var insertBefore;
-        for (var i = 0; i < styleLayers.length; i++) {
-          if (styleLayers[i].type === 'symbol') {
-            insertBefore = styleLayers[i].id;
-            break;
-          }
-        }
         map.addLayer({
           id: 'pm-3d-buildings',
           type: 'fill-extrusion',
@@ -1625,7 +1696,7 @@ function App() {
             ],
             'fill-extrusion-opacity': 0.85
           }
-        }, insertBefore);
+        });
         console.log('[PINMAP] 3D buildings injected OK');
       }
     } catch(e) {
@@ -3015,21 +3086,21 @@ function App() {
       e("polygon",{points:"3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"}),
       e("line",{x1:9,y1:3,x2:9,y2:18}),
       e("line",{x1:15,y1:6,x2:15,y2:21})
-    ), url:"https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                  attr:"© MapTiler © OpenStreetMap contributors"},
+    ), url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf",                                  attr:"© OpenFreeMap © OpenStreetMap contributors"},
     {id:"topo",      label:t("layer_topo", "Topo"),      iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
       e("path",{d:"M2 20h20"}),
       e("path",{d:"M21 20L12 4 3 20"}),
       e("path",{d:"M17 20l-5-8.8-5 8.8"})
-    ),  url:"https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                      attr:"© MapTiler © OpenStreetMap contributors"},
+    ),  url:"https://a.tile.opentopomap.org/{z}/{x}/{y}.png",                                      attr:"© OpenTopoMap © OpenStreetMap contributors"},
     {id:"satellite", label:t("layer_satellite", "Satellite"), iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
       e("circle",{cx:12,cy:12,r:10}),
       e("path",{d:"M2 12h20"}),
       e("path",{d:"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"})
-    ),  url:"https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=" + MAPTILER_KEY,                                        attr:"© MapTiler © Esri"},
+    ),  url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",                  attr:"© Esri"},
     {id:"trails",    label:t("layer_trails", "Trails"),    iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
       e("path",{d:"M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"}),
       e("circle",{cx:12,cy:10,r:3})
-    ),  url:"https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=" + MAPTILER_KEY,                                     attr:"© MapTiler © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"}
+    ),  url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf",                                     attr:"© OpenFreeMap © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"}
   ];
 
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
@@ -3553,7 +3624,8 @@ function App() {
                 if (!mapObj.current.getSource('maptiler-dem')) {
                   mapObj.current.addSource('maptiler-dem', {
                     type: 'raster-dem',
-                    url: "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=" + MAPTILER_KEY,
+                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                    encoding: 'terrarium',
                     tileSize: 256
                   });
                 }
@@ -3561,8 +3633,13 @@ function App() {
                 mapObj.current.easeTo({ pitch: 55, bearing: -15, duration: 1000 });
               } else {
                 // Disable 3D Terrain
-                mapObj.current.setTerrain(null);
-                mapObj.current.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+                mapObj.current.easeTo({ pitch: 0, bearing: 0, duration: 600 });
+                setTimeout(function() {
+                  if (mapObj.current) {
+                    mapObj.current.setTerrain(null);
+                    mapObj.current.triggerRepaint();
+                  }
+                }, 600);
               }
             }
             return next;
