@@ -1337,21 +1337,7 @@ function App() {
             });
           }
         }
-        if (baseLayerRef.current === "cycling") {
-          if (!map.getSource('cycling-trails')) {
-            map.addSource('cycling-trails', {
-              type: 'raster',
-              tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'],
-              tileSize: 256
-            });
-            map.addLayer({
-              id: 'cycling-trails-layer',
-              type: 'raster',
-              source: 'cycling-trails',
-              paint: { 'raster-opacity': 0.85 }
-            });
-          }
-        }
+
         setStyleLoadCount(function(c){ return c + 1; });
       });
  
@@ -1609,25 +1595,31 @@ function App() {
         }
       } catch(e){}
     } else if (baseLayer === "cycling") {
-      map.setStyle("https://tiles.openfreemap.org/styles/liberty");
-      // Add cycling immediately if style is already loaded (otherwise style.load handles it)
-      try {
-        if (!map.getSource('cycling-trails')) {
-          map.addSource('cycling-trails', {
-            type: 'raster',
-            tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'],
-            tileSize: 256
-          });
-        }
-        if (!map.getLayer('cycling-trails-layer')) {
-          map.addLayer({
-            id: 'cycling-trails-layer',
-            type: 'raster',
-            source: 'cycling-trails',
-            paint: { 'raster-opacity': 0.85 }
-          });
-        }
-      } catch(e){}
+      var cyclingStyle = {
+        "version": 8,
+        "sources": {
+          "cycling-tiles": {
+            "type": "raster",
+            "tiles": [
+              "https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
+              "https://b.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
+              "https://c.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
+            ],
+            "tileSize": 256,
+            "attribution": "© CyclOSM © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "id": "cycling-tiles",
+            "type": "raster",
+            "source": "cycling-tiles",
+            "minzoom": 0,
+            "maxzoom": 20
+          }
+        ]
+      };
+      map.setStyle(cyclingStyle);
     } else if (baseLayer === "satellite") {
       var satelliteStyle = {
         "version": 8,
@@ -3140,7 +3132,7 @@ function App() {
       e("circle",{cx:5.5,cy:17.5,r:3.5}),
       e("circle",{cx:18.5,cy:17.5,r:3.5}),
       e("path",{d:"M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5L9 12H5M12 17.5l3.5-5.5H18m-3-6.5l-4 6.5"})
-    ),  url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf",                                     attr:"© OpenFreeMap © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png"}
+    ),  url:"https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",                                     attr:"© CyclOSM © OpenStreetMap contributors"}
   ];
 
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];

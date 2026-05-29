@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v314";
+var CACHE_NAME = "pinmap-v315";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -34,6 +34,7 @@ self.addEventListener("fetch", function(event) {
       url.includes("arcgisonline.com") ||
       url.includes("tile.openstreetmap.org") ||
       url.includes("opentopomap.org") ||
+      url.includes("tile-cyclosm.openstreetmap.fr") ||
       url.includes("tile.waymarkedtrails.org")) {
     event.respondWith(cacheTile(event.request));
     return;
