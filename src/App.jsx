@@ -1337,6 +1337,21 @@ function App() {
             });
           }
         }
+        if (baseLayerRef.current === "cycling") {
+          if (!map.getSource('cycling-trails')) {
+            map.addSource('cycling-trails', {
+              type: 'raster',
+              tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'],
+              tileSize: 256
+            });
+            map.addLayer({
+              id: 'cycling-trails-layer',
+              type: 'raster',
+              source: 'cycling-trails',
+              paint: { 'raster-opacity': 0.85 }
+            });
+          }
+        }
         setStyleLoadCount(function(c){ return c + 1; });
       });
  
@@ -1562,12 +1577,16 @@ function App() {
     if(zoom > layerMaxZoom){
       zoom = layerMaxZoom;
     }
+
+    // Clean up overlays before switching styles/adding overlays
+    try {
+      if (map.getLayer('hiking-trails-layer')) map.removeLayer('hiking-trails-layer');
+      if (map.getSource('hiking-trails')) map.removeSource('hiking-trails');
+      if (map.getLayer('cycling-trails-layer')) map.removeLayer('cycling-trails-layer');
+      if (map.getSource('cycling-trails')) map.removeSource('cycling-trails');
+    } catch(e){}
     
     if (baseLayer === "osm") {
-      try {
-        if (map.getLayer('hiking-trails-layer')) map.removeLayer('hiking-trails-layer');
-        if (map.getSource('hiking-trails')) map.removeSource('hiking-trails');
-      } catch(e){}
       map.setStyle("https://tiles.openfreemap.org/styles/liberty");
     } else if (baseLayer === "trails") {
       map.setStyle("https://tiles.openfreemap.org/styles/liberty");
@@ -1585,6 +1604,26 @@ function App() {
             id: 'hiking-trails-layer',
             type: 'raster',
             source: 'hiking-trails',
+            paint: { 'raster-opacity': 0.85 }
+          });
+        }
+      } catch(e){}
+    } else if (baseLayer === "cycling") {
+      map.setStyle("https://tiles.openfreemap.org/styles/liberty");
+      // Add cycling immediately if style is already loaded (otherwise style.load handles it)
+      try {
+        if (!map.getSource('cycling-trails')) {
+          map.addSource('cycling-trails', {
+            type: 'raster',
+            tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'],
+            tileSize: 256
+          });
+        }
+        if (!map.getLayer('cycling-trails-layer')) {
+          map.addLayer({
+            id: 'cycling-trails-layer',
+            type: 'raster',
+            source: 'cycling-trails',
             paint: { 'raster-opacity': 0.85 }
           });
         }
@@ -1685,14 +1724,10 @@ function App() {
               300, '#988f84'
             ],
             'fill-extrusion-height': [
-              'interpolate', ['linear'], ['zoom'],
-              13, 0,
-              14, ['coalesce', ['get', 'render_height'], ['get', 'height'], 6]
+              'coalesce', ['get', 'render_height'], ['get', 'height'], 6
             ],
             'fill-extrusion-base': [
-              'interpolate', ['linear'], ['zoom'],
-              13, 0,
-              14, ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0]
+              'coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0
             ],
             'fill-extrusion-opacity': 0.85
           }
@@ -3100,7 +3135,12 @@ function App() {
     {id:"trails",    label:t("layer_trails", "Trails"),    iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
       e("path",{d:"M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"}),
       e("circle",{cx:12,cy:10,r:3})
-    ),  url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf",                                     attr:"© OpenFreeMap © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"}
+    ),  url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf",                                     attr:"© OpenFreeMap © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
+    {id:"cycling",   label:t("layer_cycling", "Cycling"),   iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
+      e("circle",{cx:5.5,cy:17.5,r:3.5}),
+      e("circle",{cx:18.5,cy:17.5,r:3.5}),
+      e("path",{d:"M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5L9 12H5M12 17.5l3.5-5.5H18m-3-6.5l-4 6.5"})
+    ),  url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf",                                     attr:"© OpenFreeMap © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png"}
   ];
 
   var DEFAULT_TAGS = ["trailhead","pub","murals","geocache","hiking","overlanding","kayaking","fishingspot"];
