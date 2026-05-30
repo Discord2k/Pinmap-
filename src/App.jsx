@@ -4480,6 +4480,7 @@ function App() {
                               setActiveTrail(null);
                             } else {
                               setActiveTrail(trail);
+                              setOpen(false);
                             }
                           }
                         }, activeTrail && activeTrail.id === trail.id ? "Showing" : t("view_trail")),
@@ -4565,6 +4566,7 @@ function App() {
                                 handleSelectMapPack(null);
                               } else {
                                 handleSelectMapPack(pack);
+                                setOpen(false);
                               }
                             }
                           }, isActive ? "Showing" : "View on Map")
