@@ -2882,7 +2882,20 @@ function App() {
     if(!addrSearch.trim()) return;
     setAddrLoading(true);
     setAddrResults([]);
-    fetch("https://nominatim.openstreetmap.org/search?format=json&limit=5&q="+encodeURIComponent(addrSearch),{
+    var url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch);
+    if(mapObj.current){
+      try {
+        var bounds = mapObj.current.getBounds();
+        var west = bounds.getWest();
+        var south = bounds.getSouth();
+        var east = bounds.getEast();
+        var north = bounds.getNorth();
+        url += "&viewbox=" + west + "," + north + "," + east + "," + south;
+      } catch(e) {
+        console.error("Error getting map bounds for search biasing:", e);
+      }
+    }
+    fetch(url,{
       headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}
     }).then(function(r){return r.json();}).then(function(data){
       setAddrResults(data||[]);
@@ -4096,7 +4109,7 @@ function App() {
               placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar guías...":"Search guides..."):searchMode==="activity"?(lang==="es"?"Filtrar activity...":"Filter activity..."):t("search_placeholder_places_detail"),
               value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch,
               onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else if(searchMode==="mappacks")setMapPackSearch(ev.target.value);else if(searchMode==="activity")setActivitySearch(ev.target.value);else setAddrSearch(ev.target.value);},
-              onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places"){if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);});}}}
+              onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places")doAddrSearch();}}
             }),
             (function(){
               var val = searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch;
@@ -4131,7 +4144,7 @@ function App() {
           ),
           (searchMode!=="quests" && searchMode!=="activity" && searchMode!=="mappacks") && e("button",{
             style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:8},
-            onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else{if(!addrSearch.trim())return;setAddrLoading(true);setAddrResults([]);fetch("https://nominatim.openstreetmap.org/search?format=json&limit=6&q="+encodeURIComponent(addrSearch),{headers:{"Accept-Language":"en","User-Agent":"PINMAP-App"}}).then(function(r){return r.json();}).then(function(d){setAddrResults(d||[]);setAddrLoading(false);}).catch(function(){setAddrLoading(false);flash(t("toast_tiles_error"));});}}
+            onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else doAddrSearch();}
           },t("search_btn")),
           e("div",{style:{position:"relative",display:"flex",alignItems:"center"}},
             e("div",{style:{position:"absolute",left:0,top:0,bottom:0,width:20,background:"linear-gradient(to right, "+T.paper+" 50%, transparent)",display:"flex",alignItems:"center",paddingLeft:2,pointerEvents:"none",color:T.ink3,zIndex:2,fontSize:12,fontWeight:"bold"}},"⟨"),
