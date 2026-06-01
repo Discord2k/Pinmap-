@@ -222,13 +222,13 @@ function App() {
   var [expeditionLog, setExpeditionLog] = useState([]);
   var [expeditionLogLoading, setExpeditionLogLoading] = useState(false);
   var s11=useState(null);    var activeFilter=s11[0];  var setActiveFilter=s11[1];
-  var s12=useState({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,trail_id:""}); var form=s12[0]; var setForm=s12[1];
+  var s12=useState({name:"",description:"",url:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,trail_id:""}); var form=s12[0]; var setForm=s12[1];
   var s13=useState(null);    var pendingLL=s13[0];     var setPendingLL=s13[1];
   var s14=useState(null);    var selPin=s14[0];        var setSelPin=s14[1];
   var [selPinOwnerProfile, setSelPinOwnerProfile] = useState(null);
   var s21=useState(null);    var editPin=s21[0];       var setEditPin=s21[1];
   var [fullscreenPhoto, setFullscreenPhoto] = useState(null);
-  var s22=useState({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
+  var s22=useState({name:"",description:"",url:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,trail_id:""}); var editForm=s22[0]; var setEditForm=s22[1];
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
   var s16=useState(null);    var userLL=s16[0];        var setUserLL=s16[1];
   var s17=useState(false);   var locating=s17[0];      var setLocating=s17[1];
@@ -2574,9 +2574,24 @@ function App() {
     setEditPin(pin);
     var customIcon = (pin.tags || []).find(function(t) { return t.startsWith("_icon:"); });
     var customIconChar = customIcon ? customIcon.split(":")[1] : "";
+    
+    var desc = pin.description || "";
+    var url = "";
+    var lines = desc.split("\n");
+    if (lines.length > 0) {
+      var lastLine = lines[lines.length - 1].trim();
+      var urlRegex = /^(https?:\/\/[^\s]+|www\.[^\s]+)$/i;
+      if (urlRegex.test(lastLine)) {
+        url = lastLine;
+        lines.pop();
+        desc = lines.join("\n").trim();
+      }
+    }
+
     setEditForm({
       name:pin.name,
-      description:pin.description||"",
+      description:desc,
+      url:url,
       tags:(pin.tags||[]).filter(function(t){return !t.startsWith("_icon:");}).join(" "),
       privacy:pin.privacy||"public",
       color:pin.color||"#2a5d3c",
@@ -2625,9 +2640,18 @@ function App() {
       var urls = {};
       results.forEach(function(r) { urls[r.key] = r.url; });
       
+      var finalDesc = editForm.description.trim();
+      if (editForm.url && editForm.url.trim()) {
+        var formattedUrl = editForm.url.trim();
+        if (!/^https?:\/\//i.test(formattedUrl) && !/^www\./i.test(formattedUrl)) {
+          formattedUrl = "https://" + formattedUrl;
+        }
+        finalDesc = finalDesc ? finalDesc + "\n" + formattedUrl : formattedUrl;
+      }
+
       var patch = {
         name: editForm.name.trim(),
-        description: editForm.description.trim(),
+        description: finalDesc,
         tags: finalTags,
         privacy: editForm.privacy,
         color: editForm.color,
@@ -2679,11 +2703,20 @@ function App() {
         finalTags.push("_icon:" + form.icon);
       }
 
+      var finalDesc = form.description.trim();
+      if (form.url && form.url.trim()) {
+        var formattedUrl = form.url.trim();
+        if (!/^https?:\/\//i.test(formattedUrl) && !/^www\./i.test(formattedUrl)) {
+          formattedUrl = "https://" + formattedUrl;
+        }
+        finalDesc = finalDesc ? finalDesc + "\n" + formattedUrl : formattedUrl;
+      }
+
       var pin={
         id:uid(),
         owner:uname,
         name:form.name.trim(),
-        description:form.description.trim(),
+        description:finalDesc,
         tags:finalTags,
         privacy:form.privacy,
         lat:pendingLL.lat,
@@ -2712,7 +2745,7 @@ function App() {
         dbPut("pins", Object.assign({}, pin, {_offline:true})).then(function(){
           setPins(function(p){return [Object.assign({},pin,{_offline:true})].concat(p);});
           setQueueCount(function(c){return c+1;});
-          setForm({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,expires_at:"",trail_id:""});
+          setForm({name:"",description:"",url:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,expires_at:"",trail_id:""});
           setPendingLL(null);setTab("mine");
           flash("📡 Offline — pin saved locally, will sync when online");
         });
@@ -2751,7 +2784,7 @@ function App() {
                 });
             }
 
-            setForm({name:"",description:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,expires_at:"",trail_id:""});
+            setForm({name:"",description:"",url:"",tags:"",privacy:"public",color:"#2a5d3c",icon:"",photo:null,photo_2:null,photo_3:null,expires_at:"",trail_id:""});
             setPendingLL(null);setTab("mine");flash("Pin saved!");
             if(pinToSave.privacy==="public") {
               callEdgeFunction("new_pin", {pinOwner:uname, pinName:pinToSave.name, pinId:pinToSave.id});
@@ -4934,6 +4967,8 @@ function App() {
         e("textarea",{style:Object.assign({},S.input,{resize:"vertical",minHeight:70}),
           placeholder:t("form_placeholder_desc_optional"),value:form.description,
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
+        e("input",{style:S.input,placeholder:"URL / Link (optional)",value:form.url || "",
+          onChange:function(ev){setForm(function(f){return Object.assign({},f,{url:ev.target.value});});}}),
         e("input",{style:S.input,placeholder:t("form_placeholder_tags_hint"),value:form.tags,
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         renderTagSuggestions(form.tags, function(newTags) {
@@ -5142,49 +5177,52 @@ function App() {
 
     
 
-    selPin && !open && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"12%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:12,padding:"14px 15px",overflowY:"auto",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
-      e("button",{
-      style:{position:"absolute",top:10,right:10,width:36,height:36,borderRadius:"50%",
-        background:"rgba(26,32,28,0.72)",border:"2px solid rgba(246,241,228,0.6)",
-        cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
-        zIndex:10,boxShadow:"0 2px 8px rgba(0,0,0,0.25)"},
-      onClick:function(){setSelPin(null);}
-    },
-      e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},
-        e("path",{d:"M18 6L6 18M6 6l12 12",stroke:"#f6f1e4",strokeWidth:2.5,strokeLinecap:"round"})
-      )
-    ),
-      (selPin.photo || selPin.photo_2 || selPin.photo_3) && (function() {
-        var activePhotos = [selPin.photo, selPin.photo_2, selPin.photo_3].filter(Boolean);
-        if (activePhotos.length === 1) {
-          return e("img",{src:activePhotos[0],style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover",cursor:"pointer",flexShrink:0},onClick:function(){setFullscreenPhoto(activePhotos[0]);}});
-        }
-        return e("div",{style:{display:"flex",gap:8,overflowX:"auto",marginBottom:8,paddingBottom:6,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",flexShrink:0}},
-          activePhotos.map(function(url, idx) {
-            return e("img",{
-              key:idx,
-              src:url,
-              style:{width:"85%",height:150,borderRadius:8,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start",cursor:"pointer"},
-              onClick:function(){setFullscreenPhoto(url);}
-            });
-          })
-        );
-      })(),
-      e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:2,paddingRight:20}},
-      e("span",{style:{width:12,height:12,borderRadius:"50%",background:selPin.color||tagColor(selPin.tags&&selPin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
-      e("span",{style:{fontSize:20,lineHeight:1}},getPinIcon(selPin.tags)),
-      e("span",{style:{fontWeight:700,fontSize:20,color:"#1a201c"}},selPin.name,
-      selPin.expires_at&&e("span",{style:{fontSize:11,marginLeft:6,padding:"2px 6px",borderRadius:4,
-        background:new Date(selPin.expires_at)<new Date()?"#ffebee":"#fff8e1",
-        color:new Date(selPin.expires_at)<new Date()?"#c62828":"#e65100",
-        border:"1px solid "+(new Date(selPin.expires_at)<new Date()?"#ef9a9a":"#ffe082")
-      }},new Date(selPin.expires_at)<new Date()?"Expired":(function(){
-        var diff=new Date(selPin.expires_at)-new Date();
-        var days=Math.floor(diff/864e5);
-        var hrs=Math.floor((diff%864e5)/36e5);
-        return "⏰ "+(days>0?days+"d ":"")+hrs+"h";
-      })()))
-    ),
+    selPin && !open && e("div",{className:"detail pm-detail",style:{position:"absolute",top:"12%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:12,padding:"14px 15px",overflow:"hidden",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
+      // Frozen Header
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",paddingBottom:"10px",borderBottom:"1px solid #e8dcc4",marginBottom:"10px",flexShrink:0}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:7,minWidth:0,flex:1,paddingRight:12}},
+          e("span",{style:{width:12,height:12,borderRadius:"50%",background:selPin.color||tagColor(selPin.tags&&selPin.tags[0]||"x"),display:"inline-block",flexShrink:0}}),
+          e("span",{style:{fontSize:20,lineHeight:1}},getPinIcon(selPin.tags)),
+          e("span",{style:{fontWeight:700,fontSize:18,color:"#1a201c",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}},selPin.name),
+          selPin.expires_at&&e("span",{style:{fontSize:11,padding:"2px 6px",borderRadius:4,
+            background:new Date(selPin.expires_at)<new Date()?"#ffebee":"#fff8e1",
+            color:new Date(selPin.expires_at)<new Date()?"#c62828":"#e65100",
+            border:"1px solid "+(new Date(selPin.expires_at)<new Date()?"#ef9a9a":"#ffe082"),
+            flexShrink:0
+          }},new Date(selPin.expires_at)<new Date()?"Expired":(function(){
+            var diff=new Date(selPin.expires_at)-new Date();
+            var days=Math.floor(diff/864e5);
+            var hrs=Math.floor((diff%864e5)/36e5);
+            return "⏰ "+(days>0?days+"d ":"")+hrs+"h";
+          })())
+        ),
+        e("button",{
+          style:{width:28,height:28,borderRadius:"50%",background:"rgba(26,32,28,0.08)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+          onClick:function(){setSelPin(null);}
+        },
+          e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none"},
+            e("path",{d:"M18 6L6 18M6 6l12 12",stroke:"#1a201c",strokeWidth:2.5,strokeLinecap:"round"})
+          )
+        )
+      ),
+      // Scrollable Body
+      e("div",{style:{overflowY:"auto",flex:1,display:"flex",flexDirection:"column",paddingRight:"4px"}},
+        (selPin.photo || selPin.photo_2 || selPin.photo_3) && (function() {
+          var activePhotos = [selPin.photo, selPin.photo_2, selPin.photo_3].filter(Boolean);
+          if (activePhotos.length === 1) {
+            return e("img",{src:activePhotos[0],style:{width:"100%",borderRadius:8,marginBottom:8,maxHeight:150,objectFit:"cover",cursor:"pointer",flexShrink:0},onClick:function(){setFullscreenPhoto(activePhotos[0]);}});
+          }
+          return e("div",{style:{display:"flex",gap:8,overflowX:"auto",marginBottom:8,paddingBottom:6,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",flexShrink:0}},
+            activePhotos.map(function(url, idx) {
+              return e("img",{
+                key:idx,
+                src:url,
+                style:{width:"85%",height:150,borderRadius:8,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start",cursor:"pointer"},
+                onClick:function(){setFullscreenPhoto(url);}
+              });
+            })
+          );
+        })(),
       e("div",{style:{fontSize:13,color:"#6f786f",marginBottom:6}},
         e("span",{
           style:{color:"#2a5d3c",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted",display:"inline-flex",alignItems:"center",gap:4},
@@ -5203,7 +5241,21 @@ function App() {
         }, userFollows.some(function(f){return f.following===selPin.owner;})?"Following":"+ Follow"),
         selPin.saved_from&&e("span",{style:{color:"#e65100"}}," - saved from @"+selPin.saved_from)
       ),
-      selPin.description&&e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8,lineHeight:1.6}},selPin.description),
+      selPin.description&&e("div",{style:{fontSize:13,color:"#5a4a30",marginBottom:8,lineHeight:1.6,whiteSpace:"pre-wrap",userSelect:"text",WebkitUserSelect:"text"}},
+        (function(text) {
+          if (!text) return "";
+          var urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+          var parts = text.split(urlRegex);
+          return parts.map(function(part, i) {
+            if (/^https?:\/\//i.test(part)) {
+              return e("a",{key:i,href:part,target:"_blank",rel:"noopener noreferrer",style:{color:"#2a5d3c",textDecoration:"underline",wordBreak:"break-all",userSelect:"text",WebkitUserSelect:"text"},onClick:function(ev){ev.stopPropagation();}},part);
+            } else if (/^www\./i.test(part)) {
+              return e("a",{key:i,href:"https://"+part,target:"_blank",rel:"noopener noreferrer",style:{color:"#2a5d3c",textDecoration:"underline",wordBreak:"break-all",userSelect:"text",WebkitUserSelect:"text"},onClick:function(ev){ev.stopPropagation();}},part);
+            }
+            return part;
+          });
+        })(selPin.description)
+      ),
       e("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}},
         (selPin.tags||[]).filter(function(t){return !t.startsWith("_icon:");}).map(function(t){
           return e("span",{key:t,style:{fontSize:12,padding:"2px 7px",borderRadius:10,background:tagColor(t)+"18",color:tagColor(t),border:"1px solid "+tagColor(t)+"40"}},"#"+t);
@@ -5407,6 +5459,7 @@ function App() {
         },"📖 Add to Guide")
       ),
       e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash,lang:lang,t:t})
+      )
     ),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
@@ -5889,6 +5942,7 @@ function App() {
         e("div",{style:{fontSize:15,fontWeight:700,color:"#1a201c",marginBottom:14}},t("form_title_edit")),
         e("input",{style:Object.assign({},S.input),placeholder:t("form_placeholder_name"),value:editForm.name,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
         e("textarea",{style:Object.assign({},S.input,{height:60,resize:"none"}),placeholder:t("form_placeholder_desc_optional"),value:editForm.description,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
+        e("input",{style:Object.assign({},S.input),placeholder:"URL / Link (optional)",value:editForm.url || "",onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{url:ev.target.value});});}}),
         e("input",{style:Object.assign({},S.input),placeholder:t("form_label_tags"),value:editForm.tags,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         renderTagSuggestions(editForm.tags, function(newTags) {
           setEditForm(function(f){return Object.assign({},f,{tags:newTags});});
