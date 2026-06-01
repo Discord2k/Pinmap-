@@ -4682,7 +4682,7 @@ function App() {
                             nodes.push('"');
                             parts.forEach(function(part, idx) {
                               if (part.match(urlRegex)) {
-                                nodes.push(e("a",{key:idx,href:part,target:"_blank",rel:"noopener noreferrer",style:{color:T.forest,textDecoration:"underline",wordBreak:"break-all"},onClick:function(ev){ev.stopPropagation();}},part));
+                                nodes.push(e("a",{key:idx,href:part,target:"_blank",rel:"noopener noreferrer",style:{color:T.forest,textDecoration:"underline",wordBreak:"break-all"},onClick:function(ev){ev.preventDefault(); ev.stopPropagation(); window.open(part, "_blank");}},part));
                               } else {
                                 nodes.push(part);
                               }

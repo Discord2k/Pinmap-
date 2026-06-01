@@ -175,7 +175,7 @@ export function Comments(props) {
               var parts = text.split(urlRegex);
               return parts.map(function(part, i) {
                 if (part.match(urlRegex)) {
-                  return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all"}} onClick={function(ev){ev.stopPropagation();}}>{part}</a>;
+                  return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all"}} onClick={function(ev){ev.preventDefault(); ev.stopPropagation(); window.open(part, "_blank");}}>{part}</a>;
                 }
                 return part;
               });
