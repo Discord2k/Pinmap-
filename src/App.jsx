@@ -4681,7 +4681,7 @@ function App() {
                             var nodes = [];
                             nodes.push('"');
                             parts.forEach(function(part, idx) {
-                              if (part.match(urlRegex)) {
+                              if (part.startsWith("http://") || part.startsWith("https://")) {
                                 nodes.push(e("a",{key:idx,href:part,target:"_blank",rel:"noopener noreferrer",style:{color:T.forest,textDecoration:"underline",wordBreak:"break-all",userSelect:"text",WebkitUserSelect:"text"},onClick:function(ev){ev.preventDefault(); ev.stopPropagation(); window.open(part, "_blank");}},part));
                               } else {
                                 nodes.push(part);

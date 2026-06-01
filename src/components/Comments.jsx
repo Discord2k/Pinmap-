@@ -174,7 +174,7 @@ export function Comments(props) {
               var urlRegex = /(https?:\/\/[^\s]+)/g;
               var parts = text.split(urlRegex);
               return parts.map(function(part, i) {
-                if (part.match(urlRegex)) {
+                if (part.startsWith("http://") || part.startsWith("https://")) {
                   return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all", userSelect: "text", WebkitUserSelect: "text"}} onClick={function(ev){ev.preventDefault(); ev.stopPropagation(); window.open(part, "_blank");}}>{part}</a>;
                 }
                 return part;
