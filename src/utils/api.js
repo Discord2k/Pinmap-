@@ -301,7 +301,17 @@ export const api = {
       );
     }
     
-    // 3. Fetch all public trails (always visible in feed)
+    // 3. Fetch all recent public pins (so feed has all new pins)
+    queries.push(
+      sb.from("pins").select("*").eq("privacy", "public").order("created_at", {ascending: false}).limit(20)
+        .then(function(r) {
+          return (r.data || []).map(function(item) {
+            return Object.assign({}, item, {type: "pin"});
+          });
+        })
+    );
+    
+    // 4. Fetch all public trails (always visible in feed)
     queries.push(
       sb.from("trails").select("*").eq("is_public", true).order("created_at", {ascending: false}).limit(20)
         .then(function(r) {
@@ -311,7 +321,7 @@ export const api = {
         })
     );
     
-    // 4. Fetch comments (journals) from followed users
+    // 5. Fetch comments (journals) from followed users
     if (followedUsers.length > 0) {
       queries.push(
         sb.from("comments").select("*, pins(name)").in("owner", followedUsers).order("created_at", {ascending: false}).limit(20)
