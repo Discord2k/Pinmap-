@@ -241,7 +241,7 @@ export const api = {
     });
   },
   searchTrails: function(query) {
-    var baseQuery = sb.from("trails").select("*").eq("is_public", true);
+    var baseQuery = sb.from("trails").select("*").eq("is_public", true).order("created_at", {ascending: false});
     if (!query) {
       return baseQuery.limit(50).then(function(r) {
         if (r.error) throw r.error;

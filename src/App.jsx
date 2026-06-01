@@ -4166,12 +4166,17 @@ function App() {
                 e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),e("circle",{cx:"12",cy:"10",r:"3"})),
                 t("search_mode_places")
               ),
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="activity"?T.forest:T.ink3,borderBottom:searchMode==="activity"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("activity");}
+              },
+                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"}),e("circle",{cx:"5",cy:"19",r:"1",fill:"currentColor"})),
+                t("search_mode_activity")
+              ),
               e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.forest:T.ink3,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("quests");}
               },
                 e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2a4 4 0 0 0-4 4v5c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V6a4 4 0 0 0-4-4z"})),
                 t("search_mode_quests")
               ),
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("trails");}
+              e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("trails"); doTrailSearch();}
               },
                 e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M3 17l4-8 4 4 4-6 4 10"})),
                 t("search_mode_trails")
@@ -4180,11 +4185,6 @@ function App() {
               },
                 e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"})),
                 t("search_mode_mappacks")
-              ),
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="activity"?T.forest:T.ink3,borderBottom:searchMode==="activity"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("activity");}
-              },
-                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"}),e("circle",{cx:"5",cy:"19",r:"1",fill:"currentColor"})),
-                t("search_mode_activity")
               )
             ),
             e("div",{style:{position:"absolute",right:0,top:0,bottom:0,width:20,background:"linear-gradient(to left, "+T.paper+" 50%, transparent)",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:2,pointerEvents:"none",color:T.ink3,zIndex:2,fontSize:12,fontWeight:"bold"}},"⟩")
@@ -4427,7 +4427,26 @@ function App() {
             ? e("div",null,
                 trailSearchLoading&&e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}},t("searching_loading")),
                 !trailSearchLoading&&trailSearchResults.length>0&&e("div",{style:{padding:"10px 0"}},
-                  trailSearchResults.map(function(trail){
+                  (function() {
+                    var sorted = trailSearchResults.slice();
+                    if (userLL && userLL.lat && userLL.lng) {
+                      sorted = sorted.map(function(t) {
+                        var minDist = Infinity;
+                        if (t.coordinates && t.coordinates.length > 0) {
+                          for (var i = 0; i < t.coordinates.length; i++) {
+                            var pt = t.coordinates[i];
+                            var d = distKm(userLL.lat, userLL.lng, pt[0], pt[1]);
+                            if (d < minDist) minDist = d;
+                          }
+                        }
+                        return Object.assign({}, t, { _distToUser: minDist });
+                      });
+                      sorted.sort(function(a, b) {
+                        return a._distToUser - b._distToUser;
+                      });
+                    }
+                    return sorted;
+                  })().map(function(trail){
                     return e("div", {
                       key: trail.id,
                       style: {
