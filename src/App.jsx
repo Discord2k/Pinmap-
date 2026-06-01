@@ -4673,7 +4673,22 @@ function App() {
                             e("span",{style:{fontSize:11,fontWeight:700,color:T.forest,fontFamily:T.mono}},"📝 JOURNAL ENTRY"),
                             e("span",{style:{fontSize:10,color:T.ink3}},timeLabel)
                           ),
-                          e("div",{style:{fontSize:13,color:T.ink,fontStyle:"italic",marginTop:4,whiteSpace:"pre-wrap"}},'"'+item.body+'"'),
+                          (function(){
+                            var text = item.body || "";
+                            var urlRegex = /(https?:\/\/[^\s]+)/g;
+                            var parts = text.split(urlRegex);
+                            var nodes = [];
+                            nodes.push('"');
+                            parts.forEach(function(part, idx) {
+                              if (part.match(urlRegex)) {
+                                nodes.push(e("a",{key:idx,href:part,target:"_blank",rel:"noopener noreferrer",style:{color:T.forest,textDecoration:"underline",wordBreak:"break-all"},onClick:function(ev){ev.stopPropagation();}},part));
+                              } else {
+                                nodes.push(part);
+                              }
+                            });
+                            nodes.push('"');
+                            return e("div",{style:{fontSize:13,color:T.ink,fontStyle:"italic",marginTop:4,whiteSpace:"pre-wrap"}},nodes);
+                          })(),
                           e("div",{style:{fontSize:11.5,color:T.ink2,marginTop:6}},"on pin: ",e("span",{style:{fontWeight:600}},item.pins?item.pins.name:"Location")),
                           item.photo_url && e("img",{src:item.photo_url,style:{width:"100%",maxHeight:140,objectFit:"cover",borderRadius:6,marginTop:8,cursor:"pointer"},onClick:function(){window.open(item.photo_url,"_blank");}}),
                           e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
