@@ -168,14 +168,14 @@ export function Comments(props) {
             <div style={{fontSize:13,fontWeight:700,color:"#2a5d3c"}}>{"@"+c.owner}</div>
             <div style={{fontSize:10,color:"#9a8f74",fontFamily:"monospace"}}>{timeStr}</div>
           </div>
-          <div style={{fontSize:14,color:"#1a201c",lineHeight:1.5,paddingRight:20,whiteSpace:"pre-wrap"}}>
+          <div style={{fontSize:14,color:"#1a201c",lineHeight:1.5,paddingRight:20,whiteSpace:"pre-wrap",userSelect:"text",WebkitUserSelect:"text"}}>
             {(function(text) {
               if (!text) return "";
               var urlRegex = /(https?:\/\/[^\s]+)/g;
               var parts = text.split(urlRegex);
               return parts.map(function(part, i) {
                 if (part.match(urlRegex)) {
-                  return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all"}} onClick={function(ev){ev.preventDefault(); ev.stopPropagation(); window.open(part, "_blank");}}>{part}</a>;
+                  return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all", userSelect: "text", WebkitUserSelect: "text"}} onClick={function(ev){ev.preventDefault(); ev.stopPropagation(); window.open(part, "_blank");}}>{part}</a>;
                 }
                 return part;
               });
