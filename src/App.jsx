@@ -253,6 +253,7 @@ function App() {
   var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
   var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
   var sShowCompass=useState(false); var showCompass=sShowCompass[0]; var setShowCompass=sShowCompass[1];
+  var sShowAddToGuidesMenu=useState(false); var showAddToGuidesMenu=sShowAddToGuidesMenu[0]; var setShowAddToGuidesMenu=sShowAddToGuidesMenu[1];
   var s80=useState([]); var followers=s80[0]; var setFollowers=s80[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var sReadyToShowBanner=useState(false); var readyToShowBanner=sReadyToShowBanner[0]; var setReadyToShowBanner=sReadyToShowBanner[1];
@@ -5209,80 +5210,7 @@ function App() {
         })
       ),
 
-      uname && uname !== "guest" && e("div", {
-        style: {
-          marginTop: 6,
-          marginBottom: 10,
-          background: "rgba(42, 93, 60, 0.04)",
-          border: "1px solid " + T.borderSoft,
-          borderRadius: 10,
-          padding: "8px 10px"
-        }
-      },
-        e("div", {style: {fontSize: 10.5, color: T.forest, fontWeight: 700, fontFamily: T.mono, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6}}, "Add to Guides"),
-        e("div", {style: {display: "flex", gap: 6, flexWrap: "wrap"}},
-          (function() {
-            var myPacks = mapPacks.filter(function(g){ return g.owner === uname || collabPackIds.indexOf(g.id) >= 0; });
-            if (myPacks.length === 0) {
-              return e("div", {style: {fontSize: 12, color: T.ink3}},
-                "No guides yet. ",
-                e("span", {
-                  style: {color: T.forest, textDecoration: "underline", cursor: "pointer", fontWeight: 700},
-                  onClick: function() {
-                    var name = prompt("Enter a name for your new guide:");
-                    if (name && name.trim()) {
-                      handleCreateMapPack({
-                        id: Math.random().toString(36).slice(2, 10),
-                        name: name.trim(),
-                        description: "",
-                        is_public: false,
-                        owner: uname
-                      });
-                    }
-                  }
-                }, "Create one")
-              );
-            }
-            return myPacks.map(function(g) {
-              var isInPack = selPinMapPackIds.indexOf(g.id) >= 0;
-              return e("div", {
-                key: g.id,
-                style: {
-                  fontSize: 11.5,
-                  padding: "4px 10px",
-                  borderRadius: 14,
-                  cursor: "pointer",
-                  background: isInPack ? T.forestPale : "transparent",
-                  color: isInPack ? T.forest : T.ink3,
-                  border: "1px solid " + (isInPack ? T.forest : T.border),
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4
-                },
-                onClick: function() {
-                  if (isInPack) {
-                    api.removePinFromMapPack(g.id, selPin.id).then(function() {
-                      setSelPinMapPackIds(function(prev) { return prev.filter(function(id) { return id !== g.id; }); });
-                      if (activeMapPack && activeMapPack.id === g.id) {
-                        setActiveMapPackPinIds(function(prev) { return prev.filter(function(id) { return id !== selPin.id; }); });
-                      }
-                      flash("Removed from " + g.name);
-                    });
-                  } else {
-                    api.addPinToMapPack(g.id, selPin.id).then(function() {
-                      setSelPinMapPackIds(function(prev) { return prev.concat([g.id]); });
-                      if (activeMapPack && activeMapPack.id === g.id) {
-                        setActiveMapPackPinIds(function(prev) { return prev.concat([selPin.id]); });
-                      }
-                      flash("Added to " + g.name);
-                    });
-                  }
-                }
-              }, (isInPack ? "✓ " : "＋ ") + g.name + (g.owner !== uname ? " 👥" : ""));
-            });
-          })()
-        )
-      ),
+      null,
 
       selPinTrail && e("div", {
         style: {
@@ -5472,13 +5400,98 @@ function App() {
         e("button",{
           style:{background:"none",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},
           onClick:function(){setShowCompass(true);}
-        },"🧭 Compass")
+        },"🧭 Compass"),
+        (uname && uname !== "guest") && e("button",{
+          style:{background:"none",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},
+          onClick:function(){setShowAddToGuidesMenu(true);}
+        },"📖 Add to Guide")
       ),
       e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash,lang:lang,t:t})
     ),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
     showCompass&&e(CompassModal,{pin:selPin,onClose:function(){setShowCompass(false);},flash:flash,lang:lang,t:t}),
+    showAddToGuidesMenu && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
+      e("div",{style:{background:"#f6f1e4",border:"none",borderRadius:16,padding:"24px 22px",maxWidth:400,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",maxHeight:"80vh",display:"flex",flexDirection:"column"}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}},
+          e("div",null,
+            e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}}, "Add to Guides"),
+            e("div",{style:{fontSize:12,color:"#6f786f"}}, "Add \"" + selPin.name + "\" to your collections")
+          ),
+          e("button",{style:{background:"none",border:"none",fontSize:22,color:"#6f786f",cursor:"pointer"},onClick:function(){setShowAddToGuidesMenu(false);}},"×")
+        ),
+        e("div",{style:{overflowY:"auto",flex:1,marginBottom:16,display:"flex",flexDirection:"column",gap:10}},
+          (function() {
+            var myPacks = mapPacks.filter(function(g){ return g.owner === uname || collabPackIds.indexOf(g.id) >= 0; });
+            if (myPacks.length === 0) {
+              return e("div", {style: {fontSize: 13, color: T.ink3, padding: "20px 0", textAlign: "center"}}, "No guides yet.");
+            }
+            return myPacks.map(function(g) {
+              var isInPack = selPinMapPackIds.indexOf(g.id) >= 0;
+              return e("div", {
+                key: g.id,
+                style: {
+                  fontSize: 14,
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  background: isInPack ? T.forestPale : "transparent",
+                  color: isInPack ? T.forest : T.ink3,
+                  border: "1px solid " + (isInPack ? T.forest : T.border),
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                },
+                onClick: function() {
+                  if (isInPack) {
+                    api.removePinFromMapPack(g.id, selPin.id).then(function() {
+                      setSelPinMapPackIds(function(prev) { return prev.filter(function(id) { return id !== g.id; }); });
+                      if (activeMapPack && activeMapPack.id === g.id) {
+                        setActiveMapPackPinIds(function(prev) { return prev.filter(function(id) { return id !== selPin.id; }); });
+                      }
+                      flash("Removed from " + g.name);
+                    });
+                  } else {
+                    api.addPinToMapPack(g.id, selPin.id).then(function() {
+                      setSelPinMapPackIds(function(prev) { return prev.concat([g.id]); });
+                      if (activeMapPack && activeMapPack.id === g.id) {
+                        setActiveMapPackPinIds(function(prev) { return prev.concat([selPin.id]); });
+                      }
+                      flash("Added to " + g.name);
+                    });
+                  }
+                }
+              }, 
+                e("span", null, g.name + (g.owner !== uname ? " 👥" : "")),
+                e("span", {style:{fontSize:16}}, isInPack ? "✓" : "＋")
+              );
+            });
+          })()
+        ),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{
+            style:{flex:1,padding:"12px",background:"transparent",border:"1px solid #2a5d3c",borderRadius:10,color:"#2a5d3c",fontSize:13,fontWeight:700,cursor:"pointer"},
+            onClick: function() {
+              var name = prompt("Enter a name for your new guide:");
+              if (name && name.trim()) {
+                handleCreateMapPack({
+                  id: Math.random().toString(36).slice(2, 10),
+                  name: name.trim(),
+                  description: "",
+                  is_public: false,
+                  owner: uname
+                });
+              }
+            }
+          }, "＋ Create Guide"),
+          e("button",{
+            style:{padding:"12px 20px",background:"#2a5d3c",border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"},
+            onClick:function(){setShowAddToGuidesMenu(false);}
+          },"Close")
+        )
+      )
+    ),
 
     showImport&&e("div",{style:{position:"fixed",top:0,left:0,right:0,bottom:"calc(60px + env(safe-area-inset-bottom,0px))",background:T.paper,zIndex:2000,display:"flex",flexDirection:"column",overflow:"hidden"}},
       // Header
