@@ -13,6 +13,8 @@ export function Comments(props) {
   var [comments, setComments] = useState([]);
   var [cLoading, setCLoading] = useState(true);
   var [draft, setDraft] = useState("");
+  var [urlDraft, setUrlDraft] = useState("");
+  var [urlDraftActive, setUrlDraftActive] = useState(false);
   var [sending, setSending] = useState(false);
   var [replyTo, setReplyTo] = useState(null);
   var [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -72,7 +74,9 @@ export function Comments(props) {
   }
 
   async function submit(){
-    if(!draft.trim() && !selectedPhoto) return;
+    var trimmedDraft = draft.trim();
+    var trimmedUrl = urlDraft.trim();
+    if(!trimmedDraft && !trimmedUrl && !selectedPhoto) return;
     if(!uname){api.signInGoogle();return;}
     setSending(true);
     
@@ -86,7 +90,16 @@ export function Comments(props) {
         }
       }
 
-      var c={id:uid(),pin_id:pinId,owner:uname,body:draft.trim(),
+      var finalBody = trimmedDraft;
+      if (trimmedUrl) {
+        var formattedUrl = trimmedUrl;
+        if (!/^https?:\/\//i.test(formattedUrl) && !/^www\./i.test(formattedUrl)) {
+          formattedUrl = "https://" + formattedUrl;
+        }
+        finalBody = finalBody ? finalBody + "\n" + formattedUrl : formattedUrl;
+      }
+
+      var c={id:uid(),pin_id:pinId,owner:uname,body:finalBody,
         reply_to:replyTo?replyTo.id:null,
         photo_url:photoUrl,
         upvotes:[],
@@ -94,13 +107,13 @@ export function Comments(props) {
       if(!navigator.onLine){
         dbPut("comments", Object.assign({},c,{_offline:true})).then(function(){
           setComments(function(prev){return prev.concat([Object.assign({},c,{_offline:true})]);});
-          setDraft(""); setSelectedPhoto(null); setReplyTo(null); setSending(false);
+          setDraft(""); setUrlDraft(""); setUrlDraftActive(false); setSelectedPhoto(null); setReplyTo(null); setSending(false);
           if(props.flash) props.flash(t('toast_comment_posted_offline'));
         });
       } else {
         api.addComment(c).then(function(){
           setComments(function(prev){return prev.concat([c]);});
-          setDraft(""); setSelectedPhoto(null); setReplyTo(null); setSending(false);
+          setDraft(""); setUrlDraft(""); setUrlDraftActive(false); setSelectedPhoto(null); setReplyTo(null); setSending(false);
           if(props.pinOwner && props.pinOwner !== props.uname) {
             api.callEdgeFunction("new_comment", {
               pinOwner: props.pinOwner,
@@ -171,11 +184,13 @@ export function Comments(props) {
           <div style={{fontSize:14,color:"#1a201c",lineHeight:1.5,paddingRight:20,whiteSpace:"pre-wrap",userSelect:"text",WebkitUserSelect:"text"}}>
             {(function(text) {
               if (!text) return "";
-              var urlRegex = /(https?:\/\/[^\s]+)/g;
+              var urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
               var parts = text.split(urlRegex);
               return parts.map(function(part, i) {
-                if (part.startsWith("http://") || part.startsWith("https://")) {
-                  return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all", userSelect: "text", WebkitUserSelect: "text"}} onClick={function(ev){ev.preventDefault(); ev.stopPropagation(); window.open(part, "_blank");}}>{part}</a>;
+                if (/^https?:\/\//i.test(part)) {
+                  return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all", userSelect: "text", WebkitUserSelect: "text"}} onClick={function(ev){ev.stopPropagation();}}>{part}</a>;
+                } else if (/^www\./i.test(part)) {
+                  return <a key={i} href={"https://" + part} target="_blank" rel="noopener noreferrer" style={{color: "#2a5d3c", textDecoration: "underline", wordBreak: "break-all", userSelect: "text", WebkitUserSelect: "text"}} onClick={function(ev){ev.stopPropagation();}}>{part}</a>;
                 }
                 return part;
               });
@@ -289,39 +304,68 @@ export function Comments(props) {
             </div>
           )}
 
-          <div style={{display:"flex",gap:6,marginTop:8,alignItems:"center"}}>
-            {uname && (
-              <>
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:8}}>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {uname && (
+                <>
+                  <button 
+                    style={{background:"#efe9d8",border:"1px solid #d8cfb8",height:34,width:34,fontSize:15,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,color:"#6f786f"}}
+                    onClick={() => setShowPhotoSourcePrompt(true)}
+                    title={t('attach_photo_title')}
+                  >
+                    <svg width={16} height={16} viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy={13} r="4" stroke="currentColor" strokeWidth={2.2}/></svg>
+                  </button>
+                  <input 
+                    id="journal-file-input"
+                    type="file"
+                    accept="image/*"
+                    style={{display:"none"}}
+                    onChange={handleFileChange}
+                  />
+                </>
+              )}
+              <input 
+                style={{flex:1,background:"#efe9d8",border:"1px solid #d8cfb8",color:"#1a201c",padding:"8px 10px",fontSize:13,borderRadius:6,outline:"none",height:34,boxSizing:"border-box"}}
+                placeholder={replyTo ? t('reply_placeholder', {owner: replyTo.owner}) : (uname ? t('write_log_placeholder') : t('signin_to_log_placeholder'))}
+                value={draft}
+                onChange={(ev) => setDraft(ev.target.value)}
+                onKeyDown={(ev) => {if(ev.key==="Enter")submit();}}
+              />
+              {!urlDraftActive && uname && (
                 <button 
-                  style={{background:"#efe9d8",border:"1px solid #d8cfb8",height:34,width:34,fontSize:15,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,color:"#6f786f"}}
-                  onClick={() => setShowPhotoSourcePrompt(true)}
-                  title={t('attach_photo_title')}
+                  style={{background:"#efe9d8",border:"1px solid #d8cfb8",padding:"0 8px",height:34,fontSize:12,fontWeight:600,cursor:"pointer",borderRadius:6,color:"#2a5d3c"}}
+                  onClick={() => setUrlDraftActive(true)}
+                  title="Add Link / URL"
                 >
-                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy={13} r="4" stroke="currentColor" strokeWidth={2.2}/></svg>
+                  🔗 Link
                 </button>
+              )}
+              <button 
+                style={{background:"#2a5d3c",color:"#fff",border:"none",padding:"0 14px",height:34,fontSize:13,fontWeight:700,cursor:"pointer",borderRadius:6,opacity:sending?0.6:1}}
+                onClick={submit}
+                disabled={sending}
+              >
+                {sending?"...":t('post_btn')}
+              </button>
+            </div>
+            {urlDraftActive && uname && (
+              <div style={{display:"flex",gap:6,alignItems:"center",animation:"fadeIn 0.2s ease-out"}}>
+                <span style={{fontSize:12,color:"#6f786f",fontFamily:"monospace"}}>URL:</span>
                 <input 
-                  id="journal-file-input"
-                  type="file"
-                  accept="image/*"
-                  style={{display:"none"}}
-                  onChange={handleFileChange}
+                  style={{flex:1,background:"#efe9d8",border:"1px solid #d8cfb8",color:"#1a201c",padding:"8px 10px",fontSize:13,borderRadius:6,outline:"none",height:34,boxSizing:"border-box"}}
+                  placeholder="https://example.com"
+                  value={urlDraft}
+                  onChange={(ev) => setUrlDraft(ev.target.value)}
+                  onKeyDown={(ev) => {if(ev.key==="Enter")submit();}}
                 />
-              </>
+                <button 
+                  style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:"0 8px",fontSize:14}}
+                  onClick={() => {setUrlDraft(""); setUrlDraftActive(false);}}
+                >
+                  ✕
+                </button>
+              </div>
             )}
-            <input 
-              style={{flex:1,background:"#efe9d8",border:"1px solid #d8cfb8",color:"#1a201c",padding:"8px 10px",fontSize:13,borderRadius:6,outline:"none",height:34,boxSizing:"border-box"}}
-              placeholder={replyTo ? t('reply_placeholder', {owner: replyTo.owner}) : (uname ? t('write_log_placeholder') : t('signin_to_log_placeholder'))}
-              value={draft}
-              onChange={(ev) => setDraft(ev.target.value)}
-              onKeyDown={(ev) => {if(ev.key==="Enter")submit();}}
-            />
-            <button 
-              style={{background:"#2a5d3c",color:"#fff",border:"none",padding:"0 14px",height:34,fontSize:13,fontWeight:700,cursor:"pointer",borderRadius:6,opacity:sending?0.6:1}}
-              onClick={submit}
-              disabled={sending}
-            >
-              {sending?"...":t('post_btn')}
-            </button>
           </div>
         </div>
       )}
