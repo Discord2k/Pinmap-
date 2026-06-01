@@ -129,9 +129,13 @@ function ActivitySection(props) {
   function handleRowClick(row) {
     var pin = pinById[row.pin_id];
     if (!pin) return;
-    if (mapObj && mapObj.current) mapObj.current.setView([pin.lat, pin.lng], 14);
-    setSelPin(pin);
-    if (setOpen) setOpen(false);
+    if (props.focusPin) {
+      props.focusPin(pin);
+    } else {
+      if (mapObj && mapObj.current) mapObj.current.setView([pin.lat, pin.lng], 14);
+      setSelPin(pin);
+      if (setOpen) setOpen(false);
+    }
     if (markCommentsSeen) markCommentsSeen();
   }
 
@@ -397,9 +401,13 @@ export function MineTab(props) {
         return next;
       });
     } else {
-      if(mapObj&&mapObj.current)mapObj.current.setView([p.lat,p.lng],14);
-      setSelPin(p);
-      setOpen(false);
+      if (props.focusPin) {
+        props.focusPin(p);
+      } else {
+        if(mapObj&&mapObj.current)mapObj.current.setView([p.lat,p.lng],14);
+        setSelPin(p);
+        setOpen(false);
+      }
       if(props.markCommentsSeen)props.markCommentsSeen();
     }
   }
@@ -509,6 +517,7 @@ export function MineTab(props) {
                 mapObj={mapObj}
                 markCommentsSeen={props.markCommentsSeen}
                 t={t}
+                focusPin={props.focusPin}
               />
 
               {/* ── Tag groups ──────────────────────────────────────────────────── */}

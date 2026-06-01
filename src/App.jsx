@@ -2908,12 +2908,19 @@ function App() {
     if(mapObj.current){
       mapObj.current.setView([lat,lng],15);
       if(window.L){
-        if(window._addrMarker) window._addrMarker.remove();
         window._addrMarker=window.L.marker([lat,lng],{
           icon:window.L.divIcon({
             className:"pm-pin",
-            html:'<div style="background:#1565c0;color:#fff;border-radius:8px;padding:4px 8px;font-size:11px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif">'+result.display_name.split(",")[0]+'</div>',
-            iconAnchor:[0,0]
+            html:'<div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center">' +
+                 '  <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(41,121,255,0.25);border:2px solid #2979ff;box-shadow:0 0 8px rgba(41,121,255,0.5);animation:pmpulse 1.8s infinite;top:0;left:0;"></div>' +
+                 '  <svg width="24" height="30" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:8px;left:8px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">' +
+                 '    <path d="M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z" fill="#2979ff" stroke="#ffffff" stroke-width="2"/>' +
+                 '    <circle cx="14" cy="14" r="5" fill="#ffffff"/>' +
+                 '  </svg>' +
+                 '  <div style="position:absolute;top:-28px;background:#1565c0;color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;font-weight:600">' + result.display_name.split(",")[0] + '</div>' +
+                 '</div>',
+            iconSize:[40,40],
+            iconAnchor:[20,32]
           })
         }).addTo(mapObj.current);
         setTimeout(function(){if(window._addrMarker)window._addrMarker.remove();},5000);
@@ -4431,7 +4438,12 @@ function App() {
                         marginBottom: 10,
                         display: "flex",
                         flexDirection: "column",
-                        gap: 8
+                        gap: 8,
+                        cursor: "pointer"
+                      },
+                      onClick: function() {
+                        setActiveTrail(trail);
+                        setOpen(false);
                       }
                     },
                       e("div", {style: {display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8}},
@@ -4441,7 +4453,7 @@ function App() {
                             "by ",
                             e("span", {
                               style: {cursor: "pointer", textDecoration: "underline", color: T.forest, fontWeight: 500},
-                              onClick: function() { loadUserProfile(trail.owner); }
+                              onClick: function(ev) { ev.stopPropagation(); loadUserProfile(trail.owner); }
                             }, "@" + trail.owner),
                             " · " + Number((trail.distance_km || 0) * 0.621371).toFixed(2) + " mi" +
                             (trail.duration_seconds ? " · " + (function(sec){
@@ -4488,7 +4500,8 @@ function App() {
                             border: "1px solid " + T.forest,
                             fontWeight: 600
                           },
-                          onClick: function() {
+                          onClick: function(ev) {
+                            ev.stopPropagation();
                             if (activeTrail && activeTrail.id === trail.id) {
                               setActiveTrail(null);
                             } else {
@@ -4511,7 +4524,8 @@ function App() {
                               border: "1px solid " + (isSaved ? T.forest : T.border),
                               fontWeight: 600
                             },
-                            onClick: function() {
+                            onClick: function(ev) {
+                              ev.stopPropagation();
                               if (isSaved) {
                                 api.unsaveTrail(trail.id, uname).then(function() {
                                   setSavedTrailIds(function(prev) { return prev.filter(function(id) { return id !== trail.id; }); });
@@ -4550,7 +4564,7 @@ function App() {
                   return e("div",{style:{padding:"10px 0"}},
                     filtered.map(function(pack){
                       var isActive = activeMapPack && activeMapPack.id === pack.id;
-                      return e("div",{key:pack.id,style:{padding:14,background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:10}},
+                      return e("div",{key:pack.id,style:{padding:14,background:T.paper2,border:"1px solid "+T.borderSoft,borderRadius:10,marginBottom:10,cursor:"pointer"},onClick:function(){handleSelectMapPack(pack);setOpen(false);}},
                         e("div",{style:{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:4}},
                           e("span",{style:{fontWeight:700,fontSize:15,color:T.ink}},pack.name),
                           !pack.is_public && e("span",{style:{fontSize:10,background:T.borderSoft,color:T.ink3,padding:"1px 5px",borderRadius:4}}, t('private_badge')),
@@ -4559,7 +4573,7 @@ function App() {
                         pack.description && e("div",{style:{fontSize:12.5,color:T.ink2,marginTop:4,lineHeight:1.4}},pack.description),
                         e("div",{style:{fontSize:11,color:T.ink3,marginTop:6}},
                           "by ",
-                          e("span",{style:{cursor:"pointer",textDecoration:"underline"},onClick:function(){loadUserProfile(pack.owner);}},"@"+pack.owner)
+                          e("span",{style:{cursor:"pointer",textDecoration:"underline"},onClick:function(ev){ev.stopPropagation();loadUserProfile(pack.owner);}},"@"+pack.owner)
                         ),
                         e("div",{style:{display:"flex",gap:8,marginTop:8}},
                           e("button",{
@@ -4574,7 +4588,8 @@ function App() {
                               border: "1px solid " + T.forest,
                               fontWeight: 600
                             },
-                            onClick:function(){
+                            onClick:function(ev){
+                              ev.stopPropagation();
                               if (isActive) {
                                 handleSelectMapPack(null);
                               } else {
@@ -4753,7 +4768,7 @@ function App() {
                         );
                       })(),
                       searchResults.results.map(function(p){
-                        return e("div",{key:p.id,style:{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],13);setSelPin(p);setOpen(false);}},
+                        return e("div",{key:p.id,style:{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){focusPin(p);}},
                           e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0,marginTop:2}},e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})),
                           e("div",{style:{flex:1,minWidth:0}},
                             e("div",{style:{fontSize:16,fontWeight:600,color:T.ink,marginBottom:2}},p.name),
@@ -4789,7 +4804,7 @@ function App() {
                             var distMi=dist!==null?dist*0.621371:null;
                             var isFar=distMi!==null&&distMi>10;
                             var distLabel=distMi===null?"":distMi<1.0?"nearby":distMi.toFixed(1)+" mi";
-                            return e("div",{key:p.id,style:{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){if(mapObj.current)mapObj.current.setView([p.lat,p.lng],14);setSelPin(p);setOpen(false);}},
+                            return e("div",{key:p.id,style:{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){focusPin(p);}},
                               e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0}},e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})),
                               e("div",{style:{flex:1,minWidth:0}},
                                 e("div",{style:{fontWeight:600,fontSize:15,color:T.ink,marginBottom:1}},p.name),
@@ -4828,7 +4843,8 @@ function App() {
           markCommentsSeen:markCommentsSeen,
           myActivity:myActivity, pins:pins,
           setPins:setPins, flash:flash,
-          lang:lang, t:t
+          lang:lang, t:t,
+          focusPin:focusPin
         })
       ),
 
