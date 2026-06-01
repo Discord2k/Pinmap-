@@ -4786,18 +4786,35 @@ function App() {
                           })
                         );
                       })(),
-                      searchResults.results.map(function(p){
-                        return e("div",{key:p.id,style:{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){focusPin(p);}},
-                          e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0,marginTop:2}},e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})),
-                          e("div",{style:{flex:1,minWidth:0}},
-                            e("div",{style:{fontSize:16,fontWeight:600,color:T.ink,marginBottom:2}},p.name),
-                            p.description&&e("div",{style:{fontSize:13,color:T.ink2,marginBottom:6,lineHeight:1.4}},p.description),
-                            e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},(p.tags||[]).slice(0,3).map(function(t){return e("span",{key:t,style:{fontSize:10.5,color:T.forest,background:T.forestPale,padding:"1px 6px",borderRadius:3,fontFamily:T.mono}},"#"+t);})),
-                            p.owner&&e("span",{style:{fontSize:11,color:T.ink3,cursor:"pointer",textDecoration:"underline"},onClick:function(ev){ev.stopPropagation();loadUserProfile(p.owner);}
-                            },"@"+p.owner)
-                          )
-                        );
-                      })
+                      (function() {
+                        var list = searchResults.results.slice();
+                        if (userLL && userLL.lat && userLL.lng) {
+                          list.sort(function(a, b) {
+                            var distA = distKm(userLL.lat, userLL.lng, a.lat, a.lng);
+                            var distB = distKm(userLL.lat, userLL.lng, b.lat, b.lng);
+                            return distA - distB;
+                          });
+                        }
+                        return list.map(function(p){
+                          var dist=userLL?distKm(userLL.lat,userLL.lng,p.lat,p.lng):null;
+                          var distMi=dist!==null?dist*0.621371:null;
+                          var distLabel=distMi===null?"":distMi<1.0?"nearby":distMi.toFixed(1)+" mi";
+                          
+                          return e("div",{key:p.id,style:{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"},onClick:function(){focusPin(p);}},
+                            e("svg",{width:14,height:18,viewBox:"0 0 28 36",style:{flexShrink:0,marginTop:2}},e("path",{d:"M14 0 C 6.27 0 0 6.27 0 14 c 0 9.5 14 22 14 22 s 14 -12.5 14 -22 C 28 6.27 21.73 0 14 0 z",fill:p.color||T.forest}),e("circle",{cx:"14",cy:"14",r:"5",fill:T.paper})),
+                            e("div",{style:{flex:1,minWidth:0}},
+                              e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}},
+                                e("div",{style:{fontSize:16,fontWeight:600,color:T.ink,marginBottom:2}},p.name),
+                                dist!==null&&e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono,flexShrink:0,marginTop:4}},distLabel)
+                              ),
+                              p.description&&e("div",{style:{fontSize:13,color:T.ink2,marginBottom:6,lineHeight:1.4}},p.description),
+                              e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}},(p.tags||[]).slice(0,3).map(function(t){return e("span",{key:t,style:{fontSize:10.5,color:T.forest,background:T.forestPale,padding:"1px 6px",borderRadius:3,fontFamily:T.mono}},"#"+t);})),
+                              p.owner&&e("span",{style:{fontSize:11,color:T.ink3,cursor:"pointer",textDecoration:"underline"},onClick:function(ev){ev.stopPropagation();loadUserProfile(p.owner);}
+                              },"@"+p.owner)
+                            )
+                          );
+                        });
+                      })()
                     )
                   : e("div",null,
                       trending.length>0&&e("div",{style:{paddingTop:16,marginBottom:20}},
