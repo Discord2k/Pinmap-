@@ -5938,7 +5938,7 @@ function App() {
     ),
 
     editPin&&e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
-      e("div",{style:{background:"#f6f1e4",border:"none",boxShadow:"0 -4px 40px rgba(0,0,0,0.12)",borderRadius:14,padding:"22px 20px",width:"100%",maxWidth:420,boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}},
+      e("div",{style:{background:"#f6f1e4",border:"none",boxShadow:"0 -4px 40px rgba(0,0,0,0.12)",borderRadius:14,padding:"22px 20px",width:"100%",maxWidth:420,boxShadow:"0 8px 40px rgba(0,0,0,0.25)",maxHeight:"90vh",overflowY:"auto",boxSizing:"border-box"}},
         e("div",{style:{fontSize:15,fontWeight:700,color:"#1a201c",marginBottom:14}},t("form_title_edit")),
         e("input",{style:Object.assign({},S.input),placeholder:t("form_placeholder_name"),value:editForm.name,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{name:ev.target.value});});}}),
         e("textarea",{style:Object.assign({},S.input,{height:60,resize:"none"}),placeholder:t("form_placeholder_desc_optional"),value:editForm.description,onChange:function(ev){setEditForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
