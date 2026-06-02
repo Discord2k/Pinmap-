@@ -164,7 +164,7 @@ function ActivitySection(props) {
         >
           ⚡ {t ? t('recent_activity') : 'Recent Activity'}
         </div>
-        {unreadCount > 0 && (
+        {(props.hasUnread || unreadCount > 0) && (
           <button
             onClick={function(ev) {
               ev.stopPropagation();
@@ -547,6 +547,7 @@ export function MineTab(props) {
                 t={t}
                 focusPin={props.focusPin}
                 uname={uname}
+                hasUnread={unreadPinIds.length > 0 || newUpvotePinIds.length > 0}
               />
 
               {/* ── Tag groups ──────────────────────────────────────────────────── */}
