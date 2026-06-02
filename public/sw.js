@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v339";
+var CACHE_NAME = "pinmap-v340";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -116,7 +116,16 @@ function cacheTile(request) {
         }
         return response;
       }).catch(function() {
-        // Offline and not cached - return a valid 1x1 transparent PNG
+        var url = request.url;
+        // If it's a vector tile (.pbf), return a 204 No Content response so MapLibre handles it gracefully
+        if (url.includes(".pbf")) {
+          return new Response(null, { status: 204 });
+        }
+        // If it's style JSON or style assets, propagate the fetch failure (return 503)
+        if (url.includes("/styles/") || url.includes(".json") || url.includes("/glyphs/")) {
+          return new Response("Offline", { status: 503, statusText: "Offline" });
+        }
+        // Offline and not cached (raster tiles) - return a valid 1x1 transparent PNG
         var transparentPng = new Uint8Array([
           137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,
           8,6,0,0,0,31,21,196,137,0,0,0,10,73,68,65,84,120,156,98,0,1,0,0,
