@@ -4130,14 +4130,25 @@ function App() {
       },
         unreadCount>0 && e("div",{
           className: "pm-unread-banner",
-          onClick:function(){setTab("mine");},
-          style:{background:"#fffbf0",border:"1px solid #ffc107",borderRadius:8,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:8}
+          style:{background:"#fffbf0",border:"1px solid #ffc107",borderRadius:8,padding:"10px 12px",display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}
         },
-          e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#c62828",flexShrink:0}}),
-          e("div",null,
-            e("div",{style:{fontSize:17,fontWeight:700,color:"#1a201c"}},"New comments on your pins"),
-            e("div",{style:{fontSize:11,color:"#3c4540"}},"Tap to view your pins")
-          )
+          e("div",{
+            onClick:function(){setTab("mine");},
+            style:{cursor:"pointer",display:"flex",alignItems:"center",gap:8,flex:1}
+          },
+            e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#c62828",flexShrink:0}}),
+            e("div",null,
+              e("div",{style:{fontSize:17,fontWeight:700,color:"#1a201c"}},"New comments on your pins"),
+              e("div",{style:{fontSize:11,color:"#3c4540"}},"Tap to view your pins")
+            )
+          ),
+          e("button",{
+            onClick:function(ev){
+              ev.stopPropagation();
+              markCommentsSeen();
+            },
+            style:{background:"none",border:"none",color:"#7a6a50",cursor:"pointer",fontSize:18,fontWeight:"bold",padding:"4px 8px"}
+          },"×")
         ),
 
         tab==="search" && e("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
@@ -4922,7 +4933,7 @@ function App() {
           activeFilter:activeFilter, setActiveFilter:setActiveFilter,
           mapObj:mapObj, setSelPin:setSelPin, setOpen:setOpen,
           unreadPinIds:unreadPinIds, commentCounts:commentCounts,
-          newUpvotePinIds:newUpvotePinIds,
+          newUpvotePinIds:newUpvotePinIds, unreadCount:unreadCount,
           deletePin:deletePin, toggleUpvote:toggleUpvote,
           saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
           markCommentsSeen:markCommentsSeen,

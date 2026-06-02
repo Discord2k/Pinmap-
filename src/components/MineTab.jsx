@@ -34,7 +34,7 @@ function AvatarDot({ name, size }) {
 }
 
 // ─── Activity row ─────────────────────────────────────────────────────────────
-function ActivityRow({ item, pinName, onClick, t }) {
+function ActivityRow({ item, pinName, onClick, t, isNew }) {
   var isJournal = item.type === 'journal';
   var isUpvote  = item.type === 'upvote';
 
@@ -56,9 +56,12 @@ function ActivityRow({ item, pinName, onClick, t }) {
         padding: '11px 18px', cursor: onClick ? 'pointer' : 'default',
         borderBottom: '1px solid ' + T.borderSoft,
         transition: 'background 0.12s',
+        background: isNew ? 'rgba(184, 92, 42, 0.05)' : 'transparent',
+        borderLeft: isNew ? '3px solid #b85c2a' : 'none',
+        paddingLeft: isNew ? 15 : 18
       }}
-      onMouseEnter={function(e){ e.currentTarget.style.background = T.paper3; }}
-      onMouseLeave={function(e){ e.currentTarget.style.background = 'transparent'; }}
+      onMouseEnter={function(e){ e.currentTarget.style.background = isNew ? 'rgba(184, 92, 42, 0.08)' : T.paper3; }}
+      onMouseLeave={function(e){ e.currentTarget.style.background = isNew ? 'rgba(184, 92, 42, 0.05)' : 'transparent'; }}
     >
       <AvatarDot name={item.owner} size={30} />
       <div style={{ flex: 1, minWidth: 0, paddingTop: 1 }}>
@@ -66,6 +69,7 @@ function ActivityRow({ item, pinName, onClick, t }) {
           <span style={{ fontWeight: 700, color: T.forest }}>@{item.owner}</span>
           {' '}{verb}{' '}
           <span style={{ fontWeight: 600, color: T.ink2 }}>{pinName || 'a pin'}</span>
+          {isNew && <span style={{ marginLeft: 6, background: '#b85c2a', color: '#fff', borderRadius: 10, padding: '1px 6px', fontSize: 9, fontWeight: 700, letterSpacing: '0.04em' }}>NEW</span>}
         </div>
         {preview && (
           <div style={{
@@ -99,27 +103,32 @@ function ActivitySection(props) {
   var pinById = {};
   pins.forEach(function(p) { pinById[p.id] = p; });
 
+  var lastSeen = props.uname ? localStorage.getItem("pm-comments-seen-" + props.uname) : null;
+  var lastSeenTime = lastSeen ? new Date(lastSeen) : new Date(0);
+
   // Build upvote activity rows from newUpvotePinIds
   var upvoteRows = newUpvotePinIds.map(function(pid) {
     var p = pinById[pid];
     var upvoters = (p && Array.isArray(p.upvotes)) ? p.upvotes : [];
     if (upvoters.length) {
       return upvoters.map(function(owner) {
-        return { type: 'upvote', pin_id: pid, owner: owner, created_at: null };
+        return { type: 'upvote', pin_id: pid, owner: owner, created_at: null, isNew: true };
       });
     }
-    return [{ type: 'upvote', pin_id: pid, owner: '?', created_at: null }];
+    return [{ type: 'upvote', pin_id: pid, owner: '?', created_at: null, isNew: true }];
   }).reduce(function(acc, arr) { return acc.concat(arr); }, []);
 
   // Annotate comment rows with type
   var commentRows = myActivity.map(function(r) {
-    return Object.assign({}, r, { type: r.photo_url ? 'journal' : 'comment' });
+    var isNew = r.created_at && new Date(r.created_at) > lastSeenTime;
+    return Object.assign({}, r, { type: r.photo_url ? 'journal' : 'comment', isNew: isNew });
   });
 
   // Merge: upvote rows first (they're derived from current state), then comment rows
   var allRows = upvoteRows.concat(commentRows);
 
   var total = allRows.length;
+  var unreadCount = allRows.filter(function(r){ return r.isNew; }).length;
 
   var hasNew = newUpvotePinIds.length > 0 || myActivity.length > 0;
   var [open, setOpen2] = React.useState(hasNew);
@@ -143,16 +152,34 @@ function ActivitySection(props) {
     <div style={{ borderBottom: '2px solid ' + T.border, background: T.paper2, flexShrink: 0 }}>
       {/* Section header / toggle */}
       <div
-        onClick={function() { setOpen2(function(v){ return !v; }); }}
         style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '12px 18px', cursor: 'pointer',
+          padding: '12px 18px',
           userSelect: 'none',
         }}
       >
-        <div style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, fontFamily: T.mono, color: T.ink3, flex: 1 }}>
+        <div 
+          onClick={function() { setOpen2(function(v){ return !v; }); }}
+          style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, fontFamily: T.mono, color: T.ink3, flex: 1, cursor: 'pointer' }}
+        >
           ⚡ {t ? t('recent_activity') : 'Recent Activity'}
         </div>
+        {unreadCount > 0 && (
+          <button
+            onClick={function(ev) {
+              ev.stopPropagation();
+              if (markCommentsSeen) markCommentsSeen();
+            }}
+            style={{
+              background: 'none', border: '1px solid ' + T.border,
+              color: T.ink2, fontSize: 11, cursor: 'pointer',
+              padding: '2px 8px', borderRadius: 4, marginRight: 8,
+              fontWeight: 600, fontFamily: T.font
+            }}
+          >
+            Clear All
+          </button>
+        )}
         {!open && (
           <div style={{
             background: T.forest, color: T.paper, fontSize: 11,
@@ -180,6 +207,7 @@ function ActivitySection(props) {
                 pinName={pinName}
                 onClick={pin ? function() { handleRowClick(row); } : null}
                 t={t}
+                isNew={row.isNew}
               />
             );
           })}
@@ -518,6 +546,7 @@ export function MineTab(props) {
                 markCommentsSeen={props.markCommentsSeen}
                 t={t}
                 focusPin={props.focusPin}
+                uname={uname}
               />
 
               {/* ── Tag groups ──────────────────────────────────────────────────── */}
