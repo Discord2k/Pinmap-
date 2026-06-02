@@ -1,0 +1,715 @@
+export const COLORS = [
+	"#2a5d3c",
+	"#e65100",
+	"#1565c0",
+	"#ad1457",
+	"#6a1599",
+	"#00695c",
+	"#c62828",
+	"#4e342e"
+];
+export const ONBOARD_KEY = "pm-onboarded-v8";
+export const WHATSNEW_KEY = "pm-whatsnew-v15";
+export const APP_VERSION = "2.5.0";
+export const WHATSNEW_EN = [
+	{
+		emoji: "⏺️",
+		title: "Interactive GPX Trails",
+		body: "Record your outdoor routes in real-time or import GPX trail files! Features include automatic screen wake-lock while recording, advanced GPS drift and app-resumption spike filtering, and a public trail search and bookmarking system so trails don't automatically appear for others unless saved."
+	},
+	{
+		emoji: "🧭",
+		title: "Guides & Map Packs",
+		body: "Curate and publish custom map packs! Group your favorite spots into custom guides (e.g. 'Coffee Shops' or 'Weekend Hikes') from your profile. Select a map pack to filter the map view to just those spots."
+	},
+	{
+		emoji: "🏆",
+		title: "Explorer Quests",
+		body: "Embark on location-based challenges! Design custom quests with target tags (e.g. check in to 3 #waterfalls) and see progress update in real time as you and other explorers check in to matching spots."
+	},
+	{
+		emoji: "📷",
+		title: "Field Journals (Logbooks)",
+		body: "Turn pin log entries into a travel scrapbook! Attach photos to comments (taken live on camera or chosen from gallery). Logs are styled as vintage cards with fullscreen lightbox zooms. Full offline caching supported."
+	},
+	{
+		emoji: "🧭",
+		title: "Off-Grid Compass Mode",
+		body: "Need offline navigation guidance? Tap the 🧭 Compass button on any pin to open a full-screen rotating compass dial. It computes real-time bearings and distance using device orientation sensors completely offline."
+	},
+	{
+		emoji: "⚜️",
+		title: "Badges & Check-ins",
+		body: "Earn achievements as you explore! Check in to other users' pins when you are physically close (within 30m) to unlock milestone badges. View all your locked and unlocked badges in your Profile tab."
+	},
+	{
+		emoji: "🚲",
+		title: "CycleOSM Layer",
+		body: "A new high-contrast cycling map layer has been added. Switch to it via the Layers menu to view bike trails, routes, and topographic contours, optimized for outdoor exploring."
+	},
+	{
+		emoji: "🎨",
+		title: "New look — Atlas edition",
+		body: "PINMAP has a completely new design. Warm paper tones, clean typography, and a fullscreen panel layout inspired by a field atlas. Everything is easier to read and navigate."
+	},
+	{
+		emoji: "🗺",
+		title: "Redesigned map screen",
+		body: "The map now has a floating search bar at the top, a layers button, and a locate button. Touch anywhere on the map to place a pin — a hint tells you where to tap."
+	},
+	{
+		emoji: "📋",
+		title: "Mine is now your Field Log",
+		body: "Your pins are presented as numbered log entries with coordinates, italic descriptions, and stamped tag chips. Scroll through your personal atlas of places."
+	},
+	{
+		emoji: "🔍",
+		title: "Search redesigned",
+		body: "Trending tags are now ranked 01–06 with counts. Nearby shows real public pins sorted by your actual distance. Switch between # Tags and 📍 Places."
+	},
+	{
+		emoji: "👤",
+		title: "Profile redesigned",
+		body: "Clean settings list with stats grid — Pins, Public, Saved, Upvotes. Following list with avatar initials. Push notifications, Tutorial and About in one place."
+	},
+	{
+		emoji: "📡",
+		title: "Offline mode",
+		body: "Drop pins and comments without a connection. They sync automatically when you're back online. Visited map tiles are cached for offline viewing."
+	}
+];
+export const WHATSNEW_ES = [
+	{
+		emoji: "⏺️",
+		title: "Senderos GPX Interactivos",
+		body: "¡Graba tus rutas en tiempo real o importa archivos GPX! Incluye bloqueo automático de pantalla encendida, filtrado de deriva GPS y picos al reanudar la app, y un sistema de búsqueda y guardado de senderos públicos para que no aparezcan automáticamente a otros a menos que decidan agregarlos."
+	},
+	{
+		emoji: "🧭",
+		title: "Guías y Paquetes de Mapas",
+		body: "¡Crea y publica paquetes de mapas personalizados! Agrupa tus lugares favoritos en guías personalizadas (ej. 'Cafeterías' o 'Caminatas de Fin de Semana') desde tu perfil. Selecciona un paquete de mapas para filtrar la vista del mapa a solo esos puntos."
+	},
+	{
+		emoji: "🏆",
+		title: "Búsquedas de Explorador",
+		body: "¡Embárcate en desafíos basados en la ubicación! Diseña búsquedas personalizadas con etiquetas objetivo (ej. registrar visita en 3 #cascadas) y mira el progreso actualizarse en tiempo real a medida que tú y otros exploradores registran visitas en lugares coincidentes."
+	},
+	{
+		emoji: "📷",
+		title: "Bitácoras de Campo (Diarios)",
+		body: "¡Convierte las entradas de registro de pines en un álbum de recortes de viaje! Adjunta fotos a los comentarios (tomadas en vivo con la cámara o elegidas de la galería). Los registros tienen el estilo de tarjetas vintage con zoom de caja de luz a pantalla completa. Soporte completo de caché sin conexión."
+	},
+	{
+		emoji: "🧭",
+		title: "Modo Brújula Sin Red",
+		body: "¿Necesitas guía de navegación sin conexión? Toca el botón de la 🧭 Brújula en cualquier pin para abrir un dial de brújula giratorio a pantalla completa. Calcula rumbos y distancias en tiempo real utilizando los sensores de orientación del dispositivo completamente sin conexión."
+	},
+	{
+		emoji: "⚜️",
+		title: "Insignias y Visitas",
+		body: "¡Gana logros mientras exploras! Registra visitas en los pines de otros usuarios cuando estés físicamente cerca (dentro de 30m) para desbloquear insignias de hitos. Mira todas tus insignias bloqueadas y desbloqueadas en tu pestaña de Perfil."
+	},
+	{
+		emoji: "🚲",
+		title: "Capa CycleOSM",
+		body: "Se ha añadido una nueva capa de mapa de ciclismo de alto contraste. Cambia a ella a través del menú de Capas para ver senderos para bicicletas, rutas y contornos topográficos, optimizados para la exploración al aire libre."
+	},
+	{
+		emoji: "🎨",
+		title: "Nueva apariencia — Edición Atlas",
+		body: "PINMAP tiene un diseño completamente nuevo. Tonos de papel cálidos, tipografía limpia y un diseño de panel a pantalla completa inspirado en un atlas de campo. Todo es más fácil de leer y navegar."
+	},
+	{
+		emoji: "🗺",
+		title: "Pantalla de mapa rediseñada",
+		body: "El mapa ahora tiene una barra de búsqueda flotante en la parte superior, un botón de capas y un botón de ubicación. Toca en cualquier lugar del mapa para colocar un pin — una sugerencia te indica dónde tocar."
+	},
+	{
+		emoji: "📋",
+		title: "La pestaña Bitácora es tu Registro de Campo",
+		body: "Tus pines se presentan como entradas de registro numeradas con coordenadas, descripciones en cursiva y chips de etiquetas estampadas. Desplázate por tu atlas personal de lugares."
+	},
+	{
+		emoji: "🔍",
+		title: "Búsqueda rediseñada",
+		body: "Las etiquetas de tendencia ahora están clasificadas del 01 al 06 con recuentos. La pestaña Cercanos muestra pines públicos reales ordenados por tu distancia real. Cambia entre # Hashtags y 📍 Lugares."
+	},
+	{
+		emoji: "👤",
+		title: "Perfil rediseñado",
+		body: "Lista de configuración limpia con cuadrícula de estadísticas — Pines, Públicos, Guardados, Votos. Lista de seguidos con iniciales de avatar. Notificaciones push, Tutorial y Acerca de en un solo lugar."
+	},
+	{
+		emoji: "📡",
+		title: "Modo sin conexión",
+		body: "Coloca pines y comentarios sin conexión. Se sincronizan automáticamente cuando vuelves a estar en línea. Las imágenes del mapa visitado se guardan en caché para visualizarlas sin conexión."
+	}
+];
+export const ALL_FEATURES_EN = [
+	{
+		emoji: "⏺️",
+		title: "Interactive GPX Trails",
+		body: "Record your outdoor routes in real-time or import GPX trail files! Features include automatic screen wake-lock while recording, advanced GPS drift and app-resumption spike filtering, and a public trail search and bookmarking system so trails don't automatically appear for others unless saved."
+	},
+	{
+		emoji: "🧭",
+		title: "Collections",
+		body: "Design, publish, and view custom collections! Group your favorite pins into collections in your Profile, filter the map to see only those spots, and share collections with fellow explorers."
+	},
+	{
+		emoji: "🏆",
+		title: "Explorer Quests",
+		body: "Create and join custom location challenges! Challenge yourself or other users by setting requirements like checking in to 3 spots tagged #viewpoint. Track quest completion status dynamically."
+	},
+	{
+		emoji: "📍",
+		title: "Drop pins",
+		body: "Tap anywhere on the map to place a pin. Add a name, description, hashtags, colour, photo and optional expiry date."
+	},
+	{
+		emoji: "🎨",
+		title: "Pin colours & icons",
+		body: "Choose from 9 colours for your pin. Icons are automatically assigned based on hashtags — 🍺 for #pub, 🥾 for #hiking, 🎣 for #fishingspot and more."
+	},
+	{
+		emoji: "⚜️",
+		title: "Badges & Check-ins",
+		body: "Earn badges for placing pins (1, 10, 50, 100 milestone achievements) and checking in to other users' pins within 30m (1, 5, 15, 35 milestone achievements)."
+	},
+	{
+		emoji: "🕵️",
+		title: "Insider pins",
+		body: "Pins can be public (visible to all), private (only you), or insider (hidden unless someone searches for its exact hashtag)."
+	},
+	{
+		emoji: "⏰",
+		title: "Expiring pins",
+		body: "Set a date and time when adding a pin. It counts down and auto-deletes when expired — perfect for events and pop-up spots."
+	},
+	{
+		emoji: "🔖",
+		title: "Pin saves",
+		body: "Tap 🔖 Save on any public pin to bookmark it to your collection. Find saved pins in your Profile tab."
+	},
+	{
+		emoji: "💬",
+		title: "Comments & replies",
+		body: "Tap any pin to leave a comment. Reply to comments with ↩ Reply. Threaded conversations keep discussions organised."
+	},
+	{
+		emoji: "📷",
+		title: "Field Journals (Logbooks)",
+		body: "Attach photos to comments, compressed client-side. Logs render as travel scrapbook entries with polaroid cards and fullscreen lightboxes."
+	},
+	{
+		emoji: "🧭",
+		title: "Off-Grid Compass Mode",
+		body: "Navigate using your phone's magnetometer and GPS completely offline. A retro dial indicates your heading and points directly to the pin."
+	},
+	{
+		emoji: "👍",
+		title: "Upvotes",
+		body: "Upvote pins and comments with 👍. Tap again to remove your upvote."
+	},
+	{
+		emoji: "🔍",
+		title: "Dual search",
+		body: "Tap # Tags to search pins by hashtag or 📍 Places to search any address worldwide. Results update the map automatically."
+	},
+	{
+		emoji: "🔥",
+		title: "Trending hashtags",
+		body: "The Search tab shows the most active hashtags from the last 7 days. Follow tags to track your favourite topics."
+	},
+	{
+		emoji: "⏰",
+		title: "Expiring soon",
+		body: "The Search tab shows public pins expiring in the next 7 days. Tap Show on map to filter the map to only those pins."
+	},
+	{
+		emoji: "🗺",
+		title: "Map layers",
+		body: "Switch between Standard, Topographic, Satellite, Hiking Trails, Nautical chart, and CycleOSM views using the Layers button."
+	},
+	{
+		emoji: "🔵",
+		title: "Pin clustering",
+		body: "When zoomed out, nearby pins group into a circle. Tap the cluster to zoom in and separate them."
+	},
+	{
+		emoji: "📡",
+		title: "Nearby pins",
+		body: "The Nearby tab shows public pins within a set radius of your current location."
+	},
+	{
+		emoji: "👤",
+		title: "User profiles",
+		body: "Tap any username to see their public profile — bio, socials, location and all their public pins on the map."
+	},
+	{
+		emoji: "👥",
+		title: "Follow users",
+		body: "Follow users from their profile or any pin. Get push notifications when they post new public pins."
+	},
+	{
+		emoji: "❤️",
+		title: "Follow hashtags",
+		body: "Follow hashtags in the Search tab to stay updated on topics you care about."
+	},
+	{
+		emoji: "🔔",
+		title: "Push notifications",
+		body: "Enable in your Profile tab to receive alerts for new comments and pins from users you follow — even when the app is closed."
+	},
+	{
+		emoji: "📋",
+		title: "Mine tab",
+		body: "View all your pins grouped by hashtag. Drill into each tag to see individual pins, comment counts and new activity badges."
+	},
+	{
+		emoji: "📤",
+		title: "Export data",
+		body: "Export all your pins as GeoJSON or GPX files from the Profile tab — compatible with Google Maps, QGIS and most mapping tools."
+	},
+	{
+		emoji: "👤",
+		title: "Custom profile",
+		body: "Set up your profile with a bio, location, website, social links and a custom photo uploaded from your device."
+	},
+	{
+		emoji: "📡",
+		title: "Offline mode",
+		body: "Drop pins and comments without a connection. They queue locally and sync automatically when you come back online. Visited map tiles are cached too."
+	},
+	{
+		emoji: "🛡",
+		title: "Admin dashboard",
+		body: "Visible only to the app owner. Shows active users, top pins, trending tags, push subscribers and live usage stats."
+	}
+];
+export const ALL_FEATURES_ES = [
+	{
+		emoji: "⏺️",
+		title: "Senderos GPX Interactivos",
+		body: "¡Graba tus rutas en tiempo real o importa archivos GPX! Incluye bloqueo automático de pantalla encendida, filtrado de deriva GPS y picos al reanudar la app, y un sistema de búsqueda y guardado de senderos públicos para que no aparezcan automáticamente a otros a menos que decidan agregarlos."
+	},
+	{
+		emoji: "🧭",
+		title: "Colecciones",
+		body: "¡Diseña, publica y visualiza colecciones personalizadas! Agrupa tus pines favoritos en colecciones en tu Perfil, filtra el mapa para ver solo esos puntos y comparte colecciones con otros exploradores."
+	},
+	{
+		emoji: "🏆",
+		title: "Búsquedas de Explorador",
+		body: "¡Crea y únete a desafíos de ubicación personalizados! Desafíate a ti mismo o a otros usuarios configurando requisitos como registrar visitas en 3 lugares con la etiqueta #mirador. Realiza el seguimiento del estado de finalización de forma dinámica."
+	},
+	{
+		emoji: "📍",
+		title: "Colocar pines",
+		body: "Toca en cualquier lugar del mapa para colocar un pin. Añade un nombre, descripción, hashtags, color, foto y fecha de expiración opcional."
+	},
+	{
+		emoji: "🎨",
+		title: "Colores e iconos de pines",
+		body: "Elige entre 9 colores para tu pin. Los iconos se asignan automáticamente según los hashtags: 🍺 para #bar, 🥾 para #senderismo, 🎣 para #pesca y más."
+	},
+	{
+		emoji: "⚜️",
+		title: "Insignias y Visitas",
+		body: "Gana insignias por colocar pines (hitos de 1, 10, 50, 100) y por registrar visitas en los pines de otros usuarios a menos de 30m (hitos de 1, 5, 15, 35)."
+	},
+	{
+		emoji: "🕵️",
+		title: "Pines ocultos (Insider)",
+		body: "Los pines pueden ser públicos (visibles para todos), privados (solo tú) u ocultos (insider, invisibles a menos que se busque su hashtag exacto)."
+	},
+	{
+		emoji: "⏰",
+		title: "Pines que expiran",
+		body: "Establece una fecha y hora al añadir un pin. Cuenta de forma regresiva y se elimina automáticamente al expirar — perfecto para eventos y lugares temporales."
+	},
+	{
+		emoji: "🔖",
+		title: "Guardar pines",
+		body: "Toca 🔖 Guardar en cualquier pin público para guardarlo en tus marcadores. Encuentra tus pines guardados en la pestaña Perfil."
+	},
+	{
+		emoji: "💬",
+		title: "Comentarios y respuestas",
+		body: "Toca cualquier pin para dejar un comentario. Responde a comentarios con ↩ Responder. Las conversaciones en hilos mantienen los comentarios organizados."
+	},
+	{
+		emoji: "📷",
+		title: "Diarios de Campo (Bitácoras)",
+		body: "Adjunta fotos a los comentarios, comprimidas en el cliente. Los registros se muestran como entradas de álbum de viajes con tarjetas polaroid y vista ampliada a pantalla completa."
+	},
+	{
+		emoji: "🧭",
+		title: "Modo Brújula Sin Red",
+		body: "Navega usando el magnetómetro y GPS de tu teléfono completamente sin conexión. Un dial retro indica tu rumbo y apunta directamente al pin."
+	},
+	{
+		emoji: "👍",
+		title: "Votos de apoyo",
+		body: "Vota pines y comentarios con 👍. Toca de nuevo para retirar tu voto."
+	},
+	{
+		emoji: "🔍",
+		title: "Búsqueda dual",
+		body: "Toca # Hashtags para buscar pines por etiqueta o 📍 Lugares para buscar cualquier dirección en el mundo. Los resultados actualizan el mapa automáticamente."
+	},
+	{
+		emoji: "🔥",
+		title: "Hashtags en tendencia",
+		body: "La pestaña Buscar muestra los hashtags más activos de los últimos 7 días. Sigue etiquetas para estar al tanto de tus temas favoritos."
+	},
+	{
+		emoji: "⏰",
+		title: "Próximos a expirar",
+		body: "La pestaña Buscar muestra los pines públicos que expiran en los próximos 7 días. Toca Mostrar en el mapa para ver solo esos pines."
+	},
+	{
+		emoji: "🗺",
+		title: "Capas del mapa",
+		body: "Cambia entre las vistas Estándar, Topográfica, Satélite, Senderos, Carta Náutica y CycleOSM usando el botón de Capas."
+	},
+	{
+		emoji: "🔵",
+		title: "Agrupamiento de pines",
+		body: "Al alejar el mapa, los pines cercanos se agrupan en un círculo. Toca el grupo para acercar y separarlos."
+	},
+	{
+		emoji: "📡",
+		title: "Pines cercanos",
+		body: "La pestaña Cercanos muestra pines públicos dentro de un radio establecido desde tu ubicación actual."
+	},
+	{
+		emoji: "👤",
+		title: "Perfiles de usuario",
+		body: "Toca cualquier nombre de usuario para ver su perfil público: biografía, redes sociales, ubicación y todos sus pines públicos en el mapa."
+	},
+	{
+		emoji: "👥",
+		title: "Seguir usuarios",
+		body: "Sigue a otros usuarios desde su perfil o desde cualquier pin. Recibe notificaciones push cuando publiquen nuevos pines públicos."
+	},
+	{
+		emoji: "❤️",
+		title: "Seguir hashtags",
+		body: "Sigue hashtags en la pestaña Buscar para mantenerte al día sobre los temas que te interesan."
+	},
+	{
+		emoji: "🔔",
+		title: "Notificaciones push",
+		body: "Actívalas en tu pestaña de Perfil para recibir alertas de nuevos comentarios y pines de los usuarios que sigues — incluso con la app cerrada."
+	},
+	{
+		emoji: "📋",
+		title: "Pestaña Bitácora",
+		body: "Ver todos tus pines agrupados por hashtag. Entra en cada etiqueta para ver pines individuales, conteo de comentarios e insignias de actividad nueva."
+	},
+	{
+		emoji: "📤",
+		title: "Exportar datos",
+		body: "Exporta todos tus pines como archivos GeoJSON o GPX desde la pestaña Perfil — compatible con Google Maps, QGIS y la mayoría de herramientas de mapas."
+	},
+	{
+		emoji: "👤",
+		title: "Perfil personalizado",
+		body: "Configura tu perfil con biografía, ubicación, sitio web, enlaces sociales y una foto personalizada subida desde tu dispositivo."
+	},
+	{
+		emoji: "📡",
+		title: "Modo sin conexión",
+		body: "Coloca pines y comentarios sin conexión. Se encolan localmente y se sincronizan automáticamente cuando vuelves a estar en línea. Las imágenes del mapa visitado también se guardan en caché."
+	},
+	{
+		emoji: "🛡",
+		title: "Panel de administración",
+		body: "Visible solo para el propietario de la aplicación. Muestra usuarios activos, pines principales, hashtags de tendencia, suscriptores push y estadísticas de uso en vivo."
+	}
+];
+export const ONBOARD_STEPS_EN = [
+	{
+		title: "Welcome to PINMAP!",
+		body: "PINMAP is a privacy-first mapping platform for saving, organizing, and sharing the places that matter. Drop pins, follow explorers, and map your adventures.",
+		target: "welcome"
+	},
+	{
+		title: "Explore & Search",
+		body: "Search pins worldwide by #hashtag, follow trending tags, or find any address globally. Tap here to open the search bar.",
+		target: "btn-tab-search"
+	},
+	{
+		title: "Place Your First Pin",
+		body: "Touch and hold (or tap) anywhere on the map to place a pin. Customize it with a name, description, tags, custom color, photos, or an optional expiry timer.",
+		target: "map-center"
+	},
+	{
+		title: "Record Your Routes",
+		body: "Click here to toggle the Trails & Quests panel. Start recording your path in real-time or import external GPX files.",
+		target: "btn-trail-quest"
+	},
+	{
+		title: "Quests, Collections & Badges",
+		body: "Manage your profile, view custom collections, track active quests, check your exploration badges, and export your data.",
+		target: "btn-tab-profile"
+	},
+	{
+		title: "Ready to Explore!",
+		body: "Look for (?) help icons across screens for quick tips. You can repeat this tour at any time from your Settings in the Profile tab.",
+		target: "wrap-up"
+	}
+];
+export const ONBOARD_STEPS_ES = [
+	{
+		title: "¡Bienvenido a PINMAP!",
+		body: "PINMAP es una plataforma cartográfica que prioriza la privacidad para guardar, organizar y compartir los lugares que te importan. Coloca pines, sigue exploradores y traza tus aventuras.",
+		target: "welcome"
+	},
+	{
+		title: "Explora y Busca",
+		body: "Busca pines globales por #hashtag, sigue tendencias o localiza direcciones en el mundo. Toca aquí para abrir la barra de búsqueda.",
+		target: "btn-tab-search"
+	},
+	{
+		title: "Coloca tu Primer Pin",
+		body: "Mantén presionado (o toca) en cualquier parte del mapa para añadir un pin. Ponle etiquetas, colores, fotos o un temporizador de expiración.",
+		target: "map-center"
+	},
+	{
+		title: "Graba tus Rutas",
+		body: "Toca aquí para abrir el panel de Rutas y Desafíos. Graba tu recorrido en tiempo real o importa archivos GPX.",
+		target: "btn-trail-quest"
+	},
+	{
+		title: "Desafíos, Colecciones e Insignias",
+		body: "Administra tu perfil, organiza colecciones, haz el seguimiento de tus desafíos, revisa tus insignias y exporta tus datos.",
+		target: "btn-tab-profile"
+	},
+	{
+		title: "¡Todo Listo!",
+		body: "Busca los iconos de ayuda (?) en la app para ver consejos rápidos. Puedes repetir este recorrido en la pestaña Perfil.",
+		target: "wrap-up"
+	}
+];
+// Fallback arrays for backwards compatibility
+export const WHATSNEW = WHATSNEW_EN;
+export const ALL_FEATURES = ALL_FEATURES_EN;
+export const ONBOARD_STEPS = ONBOARD_STEPS_EN;
+export function getOnboardSteps(lang) {
+	return lang === "es" ? ONBOARD_STEPS_ES : ONBOARD_STEPS_EN;
+}
+export function getWhatsNewList(lang) {
+	return lang === "es" ? WHATSNEW_ES : WHATSNEW_EN;
+}
+export function getAllFeatures(lang) {
+	return lang === "es" ? ALL_FEATURES_ES : ALL_FEATURES_EN;
+}
+export function uid() {
+	return Math.random().toString(36).slice(2, 10);
+}
+export function formatLL(lat, lng, prec) {
+	prec = prec || 2;
+	return Math.abs(lat).toFixed(prec) + "°" + (lat >= 0 ? "N" : "S") + " " + Math.abs(lng).toFixed(prec) + "°" + (lng >= 0 ? "E" : "W");
+}
+const DB_NAME = "pinmap-offline", DB_VER = 1;
+let offlineDB = null;
+export function openDB() {
+	if (offlineDB) return Promise.resolve(offlineDB);
+	return new Promise(function(res, rej) {
+		var req = indexedDB.open(DB_NAME, DB_VER);
+		req.onupgradeneeded = function(e) {
+			var db = e.target.result;
+			if (!db.objectStoreNames.contains("pins")) db.createObjectStore("pins", { keyPath: "id" });
+			if (!db.objectStoreNames.contains("comments")) db.createObjectStore("comments", { keyPath: "id" });
+		};
+		req.onsuccess = function(e) {
+			offlineDB = e.target.result;
+			res(offlineDB);
+		};
+		req.onerror = function(e) {
+			rej(e);
+		};
+	});
+}
+export function dbGetAll(store) {
+	return openDB().then(function(db) {
+		return new Promise(function(res, rej) {
+			var tx = db.transaction(store, "readonly");
+			var req = tx.objectStore(store).getAll();
+			req.onsuccess = function() {
+				res(req.result || []);
+			};
+			req.onerror = rej;
+		});
+	});
+}
+export function dbPut(store, item) {
+	return openDB().then(function(db) {
+		return new Promise(function(res, rej) {
+			var tx = db.transaction(store, "readwrite");
+			var req = tx.objectStore(store).put(item);
+			req.onsuccess = res;
+			req.onerror = rej;
+		});
+	});
+}
+export function dbDelete(store, id) {
+	return openDB().then(function(db) {
+		return new Promise(function(res, rej) {
+			var tx = db.transaction(store, "readwrite");
+			var req = tx.objectStore(store).delete(id);
+			req.onsuccess = res;
+			req.onerror = rej;
+		});
+	});
+}
+const BANNED_TAGS = [
+	"porn",
+	"pornography",
+	"xxx",
+	"sex",
+	"nsfw",
+	"nude",
+	"nudity",
+	"naked",
+	"adult",
+	"cocaine",
+	"heroin",
+	"meth",
+	"drugs",
+	"weed",
+	"marijuana",
+	"cannabis",
+	"crack",
+	"kill",
+	"murder",
+	"rape",
+	"assault",
+	"bomb",
+	"explosive",
+	"weapon",
+	"gun",
+	"shoot",
+	"nazi",
+	"racist",
+	"racism",
+	"terrorist",
+	"terrorism",
+	"jihad",
+	"isis",
+	"hate",
+	"slur",
+	"nigger",
+	"faggot",
+	"chink",
+	"spic",
+	"kike",
+	"illegal",
+	"stolen",
+	"trafficking",
+	"prostitute",
+	"escort",
+	"gambling",
+	"casino",
+	"betting",
+	"scam",
+	"fraud",
+	"hack",
+	"phishing"
+];
+const BANNED_PATTERNS = [
+	/^cp$/i,
+	/child.*porn/i,
+	/drug.*deal/i,
+	/buy.*gun/i
+];
+export function checkBannedTags(tags) {
+	var found = [];
+	tags.forEach(function(tag) {
+		var t = tag.toLowerCase();
+		if (BANNED_TAGS.indexOf(t) >= 0) {
+			found.push(tag);
+			return;
+		}
+		BANNED_PATTERNS.forEach(function(pat) {
+			if (pat.test(t) && found.indexOf(tag) < 0) found.push(tag);
+		});
+	});
+	return found;
+}
+export function getPinIcon(tags) {
+	var t = (tags || []).join(" ").toLowerCase();
+	if (/pub|bar|brewery|beer|tavern|cerveceria|cervecería|cerveza|taberna/.test(t)) return "🍺";
+	if (/trail|hike|hiking|trailhead|trek|sendero|caminata|caminar|excursion|excursión|trekking|senderismo/.test(t)) return "🥾";
+	if (/flower|wildflower|flora|bloom|garden|flor|flores|silvestre|jardin|jardín|florecer/.test(t)) return "🌸";
+	if (/mural|art|graffiti|street art|arte|graffiti|arte callejero/.test(t)) return "🎨";
+	if (/fish|fishing|fishingspot|angling|pesca|pescar|pescando/.test(t)) return "🎣";
+	if (/geocache|cache|geocaching/.test(t)) return "📦";
+	if (/kayak|canoe|paddle|rowing|kayak|canoa|remo|remar/.test(t)) return "🚣";
+	if (/camp|camping|campsite|acampar|campamento|camping/.test(t)) return "⛺";
+	if (/photo|viewpoint|vista|lookout|foto|fotografia|fotografía|mirador|vista|observatorio/.test(t)) return "📷";
+	if (/waterfall|lake|river|creek|swim|cascada|salto|lago|rio|río|arroyo|nadar/.test(t)) return "💧";
+	if (/bike|cycling|mtb|cycle|bici|bicicleta|ciclismo/.test(t)) return "🚴";
+	if (/climb|boulder|crag|escalar|escalada/.test(t)) return "🧗";
+	if (/coffee|cafe|bakery|cafe|café|cafeteria|cafetería|panaderia|panadería/.test(t)) return "☕";
+	if (/food|restaurant|eat|diner|comida|restaurante|comer/.test(t)) return "🍽";
+	if (/museum|gallery|history|heritage|museo|galeria|galería|historia|patrimonio/.test(t)) return "🏛";
+	if (/beach|coast|sea|ocean|surf|playa|costa|mar|oceano|océano|surf/.test(t)) return "🏖";
+	if (/urban|urbex|abandoned|urbano|abandonado|abandonada/.test(t)) return "🏚";
+	if (/bird|wildlife|nature|animal|ave|pajaro|pájaro|fauna|naturaleza|animal|animales/.test(t)) return "🦜";
+	if (/snow|ski|winter|mountain|nieve|esqui|esquí|invierno|montaña/.test(t)) return "🏔";
+	if (/overlanding|4wd|offroad|todoterreno|4x4/.test(t)) return "🚙";
+	return "📍";
+}
+export function tagColor(tag) {
+	var h = 0;
+	for (var i = 0; i < tag.length; i++) h = h * 31 + tag.charCodeAt(i) >>> 0;
+	return COLORS[h % COLORS.length];
+}
+export function distKm(a, b, c, d) {
+	var R = 6371, dL = (c - a) * Math.PI / 180, dl = (d - b) * Math.PI / 180, x = Math.sin(dL / 2) * Math.sin(dL / 2) + Math.cos(a * Math.PI / 180) * Math.cos(c * Math.PI / 180) * Math.sin(dl / 2) * Math.sin(dl / 2);
+	return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+export function dlFile(content, name, type) {
+	var a = document.createElement("a");
+	a.href = URL.createObjectURL(new Blob([content], { type }));
+	a.download = name;
+	a.click();
+}
+export function toGeoJSON(pins) {
+	return JSON.stringify({
+		type: "FeatureCollection",
+		features: pins.map(function(p) {
+			return {
+				type: "Feature",
+				geometry: {
+					type: "Point",
+					coordinates: [p.lng, p.lat]
+				},
+				properties: {
+					name: p.name,
+					description: p.description,
+					tags: p.tags,
+					owner: p.owner
+				}
+			};
+		})
+	}, null, 2);
+}
+export function toGPX(pins) {
+	return "<?xml version=\"1.0\"?><gpx version=\"1.1\" creator=\"PINMAP\">" + pins.map(function(p) {
+		return "<wpt lat=\"" + p.lat + "\" lon=\"" + p.lng + "\"><name>" + p.name + "</name><desc>" + (p.description || "") + " " + (p.tags || []).map(function(t) {
+			return "#" + t;
+		}).join(" ") + "</desc></wpt>";
+	}).join("") + "</gpx>";
+}
+export function userName(u) {
+	return u ? u.user_metadata && u.user_metadata.full_name ? u.user_metadata.full_name : u.email.split("@")[0] : "guest";
+}
+export function userAvatar(u) {
+	return u && u.user_metadata && u.user_metadata.avatar_url ? u.user_metadata.avatar_url : null;
+}
+
+//# sourceMappingURL=data:application/json;base64,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RUFBQyxFQUFNLE1BQUssQ0FBQyxDQUFDO0NBQzNELEVBQUUsV0FBUztDQUNYLEVBQUUsT0FBTzs7QUFHWCxPQUFPLFNBQVMsVUFBVSxNQUFNO0NBQzlCLE9BQU8sS0FBSyxVQUFVO0VBQUMsTUFBSztFQUFvQixVQUFTLEtBQUssSUFBSSxTQUFTLEdBQUU7R0FBQyxPQUFPO0lBQUMsTUFBSztJQUFVLFVBQVM7S0FBQyxNQUFLO0tBQVEsYUFBWSxDQUFDLEVBQUUsS0FBSSxFQUFFLElBQUk7S0FBQztJQUFDLFlBQVc7S0FBQyxNQUFLLEVBQUU7S0FBSyxhQUFZLEVBQUU7S0FBWSxNQUFLLEVBQUU7S0FBSyxPQUFNLEVBQUU7S0FBTTtJQUFDO0lBQUc7RUFBQyxFQUFDLE1BQUssRUFBRTs7QUFHbFAsT0FBTyxTQUFTLE1BQU0sTUFBTTtDQUMxQixPQUFPLG9FQUE0RCxLQUFLLElBQUksU0FBUyxHQUFFO0VBQUMsT0FBTyxnQkFBYSxFQUFFLE1BQUksY0FBVSxFQUFFLE1BQUksY0FBVyxFQUFFLE9BQUssbUJBQWlCLEVBQUUsZUFBYSxNQUFJLE9BQUssRUFBRSxRQUFNLEVBQUUsRUFBRSxJQUFJLFNBQVMsR0FBRTtHQUFDLE9BQU8sTUFBSTtJQUFJLENBQUMsS0FBSyxJQUFJLEdBQUM7R0FBa0IsQ0FBQyxLQUFLLEdBQUcsR0FBQzs7QUFHalIsT0FBTyxTQUFTLFNBQVMsR0FBRztDQUMxQixPQUFPLElBQUcsRUFBRSxpQkFBZSxFQUFFLGNBQWMsWUFBVSxFQUFFLGNBQWMsWUFBVSxFQUFFLE1BQU0sTUFBTSxJQUFJLENBQUMsS0FBSTs7QUFHeEcsT0FBTyxTQUFTLFdBQVcsR0FBRztDQUM1QixPQUFPLEtBQUcsRUFBRSxpQkFBZSxFQUFFLGNBQWMsYUFBVyxFQUFFLGNBQWMsYUFBVyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyJoZWxwZXJzLmpzIl0sInZlcnNpb24iOjMsInNvdXJjZXNDb250ZW50IjpbImV4cG9ydCBjb25zdCBDT0xPUlMgPSBbXCIjMmE1ZDNjXCIsXCIjZTY1MTAwXCIsXCIjMTU2NWMwXCIsXCIjYWQxNDU3XCIsXCIjNmExNTk5XCIsXCIjMDA2OTVjXCIsXCIjYzYyODI4XCIsXCIjNGUzNDJlXCJdO1xuZXhwb3J0IGNvbnN0IE9OQk9BUkRfS0VZID0gXCJwbS1vbmJvYXJkZWQtdjhcIjtcbmV4cG9ydCBjb25zdCBXSEFUU05FV19LRVkgPSBcInBtLXdoYXRzbmV3LXYxNVwiO1xuZXhwb3J0IGNvbnN0IEFQUF9WRVJTSU9OID0gXCIyLjUuMFwiO1xuXG5leHBvcnQgY29uc3QgV0hBVFNORVdfRU4gPSBbXG4gIHtlbW9qaTpcIuKPuu+4j1wiLCB0aXRsZTpcIkludGVyYWN0aXZlIEdQWCBUcmFpbHNcIiwgYm9keTpcIlJlY29yZCB5b3VyIG91dGRvb3Igcm91dGVzIGluIHJlYWwtdGltZSBvciBpbXBvcnQgR1BYIHRyYWlsIGZpbGVzISBGZWF0dXJlcyBpbmNsdWRlIGF1dG9tYXRpYyBzY3JlZW4gd2FrZS1sb2NrIHdoaWxlIHJlY29yZGluZywgYWR2YW5jZWQgR1BTIGRyaWZ0IGFuZCBhcHAtcmVzdW1wdGlvbiBzcGlrZSBmaWx0ZXJpbmcsIGFuZCBhIHB1YmxpYyB0cmFpbCBzZWFyY2ggYW5kIGJvb2ttYXJraW5nIHN5c3RlbSBzbyB0cmFpbHMgZG9uJ3QgYXV0b21hdGljYWxseSBhcHBlYXIgZm9yIG90aGVycyB1bmxlc3Mgc2F2ZWQuXCJ9LFxuICB7ZW1vamk6XCLwn6etXCIsIHRpdGxlOlwiR3VpZGVzICYgTWFwIFBhY2tzXCIsIGJvZHk6XCJDdXJhdGUgYW5kIHB1Ymxpc2ggY3VzdG9tIG1hcCBwYWNrcyEgR3JvdXAgeW91ciBmYXZvcml0ZSBzcG90cyBpbnRvIGN1c3RvbSBndWlkZXMgKGUuZy4gJ0NvZmZlZSBTaG9wcycgb3IgJ1dlZWtlbmQgSGlrZXMnKSBmcm9tIHlvdXIgcHJvZmlsZS4gU2VsZWN0IGEgbWFwIHBhY2sgdG8gZmlsdGVyIHRoZSBtYXAgdmlldyB0byBqdXN0IHRob3NlIHNwb3RzLlwifSxcbiAge2Vtb2ppOlwi8J+PhlwiLCB0aXRsZTpcIkV4cGxvcmVyIFF1ZXN0c1wiLCBib2R5OlwiRW1iYXJrIG9uIGxvY2F0aW9uLWJhc2VkIGNoYWxsZW5nZXMhIERlc2lnbiBjdXN0b20gcXVlc3RzIHdpdGggdGFyZ2V0IHRhZ3MgKGUuZy4gY2hlY2sgaW4gdG8gMyAjd2F0ZXJmYWxscykgYW5kIHNlZSBwcm9ncmVzcyB1cGRhdGUgaW4gcmVhbCB0aW1lIGFzIHlvdSBhbmQgb3RoZXIgZXhwbG9yZXJzIGNoZWNrIGluIHRvIG1hdGNoaW5nIHNwb3RzLlwifSxcbiAge2Vtb2ppOlwi8J+Tt1wiLCB0aXRsZTpcIkZpZWxkIEpvdXJuYWxzIChMb2dib29rcylcIiwgYm9keTpcIlR1cm4gcGluIGxvZyBlbnRyaWVzIGludG8gYSB0cmF2ZWwgc2NyYXBib29rISBBdHRhY2ggcGhvdG9zIHRvIGNvbW1lbnRzICh0YWtlbiBsaXZlIG9uIGNhbWVyYSBvciBjaG9zZW4gZnJvbSBnYWxsZXJ5KS4gTG9ncyBhcmUgc3R5bGVkIGFzIHZpbnRhZ2UgY2FyZHMgd2l0aCBmdWxsc2NyZWVuIGxpZ2h0Ym94IHpvb21zLiBGdWxsIG9mZmxpbmUgY2FjaGluZyBzdXBwb3J0ZWQuXCJ9LFxuICB7ZW1vamk6XCLwn6etXCIsIHRpdGxlOlwiT2ZmLUdyaWQgQ29tcGFzcyBNb2RlXCIsIGJvZHk6XCJOZWVkIG9mZmxpbmUgbmF2aWdhdGlvbiBndWlkYW5jZT8gVGFwIHRoZSDwn6etIENvbXBhc3MgYnV0dG9uIG9uIGFueSBwaW4gdG8gb3BlbiBhIGZ1bGwtc2NyZWVuIHJvdGF0aW5nIGNvbXBhc3MgZGlhbC4gSXQgY29tcHV0ZXMgcmVhbC10aW1lIGJlYXJpbmdzIGFuZCBkaXN0YW5jZSB1c2luZyBkZXZpY2Ugb3JpZW50YXRpb24gc2Vuc29ycyBjb21wbGV0ZWx5IG9mZmxpbmUuXCJ9LFxuICB7ZW1vamk6XCLimpzvuI9cIiwgdGl0bGU6XCJCYWRnZXMgJiBDaGVjay1pbnNcIiwgYm9keTpcIkVhcm4gYWNoaWV2ZW1lbnRzIGFzIHlvdSBleHBsb3JlISBDaGVjayBpbiB0byBvdGhlciB1c2VycycgcGlucyB3aGVuIHlvdSBhcmUgcGh5c2ljYWxseSBjbG9zZSAod2l0aGluIDMwbSkgdG8gdW5sb2NrIG1pbGVzdG9uZSBiYWRnZXMuIFZpZXcgYWxsIHlvdXIgbG9ja2VkIGFuZCB1bmxvY2tlZCBiYWRnZXMgaW4geW91ciBQcm9maWxlIHRhYi5cIn0sXG4gIHtlbW9qaTpcIvCfmrJcIiwgdGl0bGU6XCJDeWNsZU9TTSBMYXllclwiLCBib2R5OlwiQSBuZXcgaGlnaC1jb250cmFzdCBjeWNsaW5nIG1hcCBsYXllciBoYXMgYmVlbiBhZGRlZC4gU3dpdGNoIHRvIGl0IHZpYSB0aGUgTGF5ZXJzIG1lbnUgdG8gdmlldyBiaWtlIHRyYWlscywgcm91dGVzLCBhbmQgdG9wb2dyYXBoaWMgY29udG91cnMsIG9wdGltaXplZCBmb3Igb3V0ZG9vciBleHBsb3JpbmcuXCJ9LFxuICB7ZW1vamk6XCLwn46oXCIsIHRpdGxlOlwiTmV3IGxvb2sg4oCUIEF0bGFzIGVkaXRpb25cIiwgYm9keTpcIlBJTk1BUCBoYXMgYSBjb21wbGV0ZWx5IG5ldyBkZXNpZ24uIFdhcm0gcGFwZXIgdG9uZXMsIGNsZWFuIHR5cG9ncmFwaHksIGFuZCBhIGZ1bGxzY3JlZW4gcGFuZWwgbGF5b3V0IGluc3BpcmVkIGJ5IGEgZmllbGQgYXRsYXMuIEV2ZXJ5dGhpbmcgaXMgZWFzaWVyIHRvIHJlYWQgYW5kIG5hdmlnYXRlLlwifSxcbiAge2Vtb2ppOlwi8J+XulwiLCB0aXRsZTpcIlJlZGVzaWduZWQgbWFwIHNjcmVlblwiLCBib2R5OlwiVGhlIG1hcCBub3cgaGFzIGEgZmxvYXRpbmcgc2VhcmNoIGJhciBhdCB0aGUgdG9wLCBhIGxheWVycyBidXR0b24sIGFuZCBhIGxvY2F0ZSBidXR0b24uIFRvdWNoIGFueXdoZXJlIG9uIHRoZSBtYXAgdG8gcGxhY2UgYSBwaW4g4oCUIGEgaGludCB0ZWxscyB5b3Ugd2hlcmUgdG8gdGFwLlwifSxcbiAge2Vtb2ppOlwi8J+Ti1wiLCB0aXRsZTpcIk1pbmUgaXMgbm93IHlvdXIgRmllbGQgTG9nXCIsIGJvZHk6XCJZb3VyIHBpbnMgYXJlIHByZXNlbnRlZCBhcyBudW1iZXJlZCBsb2cgZW50cmllcyB3aXRoIGNvb3JkaW5hdGVzLCBpdGFsaWMgZGVzY3JpcHRpb25zLCBhbmQgc3RhbXBlZCB0YWcgY2hpcHMuIFNjcm9sbCB0aHJvdWdoIHlvdXIgcGVyc29uYWwgYXRsYXMgb2YgcGxhY2VzLlwifSxcbiAge2Vtb2ppOlwi8J+UjVwiLCB0aXRsZTpcIlNlYXJjaCByZWRlc2lnbmVkXCIsIGJvZHk6XCJUcmVuZGluZyB0YWdzIGFyZSBub3cgcmFua2VkIDAx4oCTMDYgd2l0aCBjb3VudHMuIE5lYXJieSBzaG93cyByZWFsIHB1YmxpYyBwaW5zIHNvcnRlZCBieSB5b3VyIGFjdHVhbCBkaXN0YW5jZS4gU3dpdGNoIGJldHdlZW4gIyBUYWdzIGFuZCDwn5ONIFBsYWNlcy5cIn0sXG4gIHtlbW9qaTpcIvCfkaRcIiwgdGl0bGU6XCJQcm9maWxlIHJlZGVzaWduZWRcIiwgYm9keTpcIkNsZWFuIHNldHRpbmdzIGxpc3Qgd2l0aCBzdGF0cyBncmlkIOKAlCBQaW5zLCBQdWJsaWMsIFNhdmVkLCBVcHZvdGVzLiBGb2xsb3dpbmcgbGlzdCB3aXRoIGF2YXRhciBpbml0aWFscy4gUHVzaCBub3RpZmljYXRpb25zLCBUdXRvcmlhbCBhbmQgQWJvdXQgaW4gb25lIHBsYWNlLlwifSxcbiAge2Vtb2ppOlwi8J+ToVwiLCB0aXRsZTpcIk9mZmxpbmUgbW9kZVwiLCBib2R5OlwiRHJvcCBwaW5zIGFuZCBjb21tZW50cyB3aXRob3V0IGEgY29ubmVjdGlvbi4gVGhleSBzeW5jIGF1dG9tYXRpY2FsbHkgd2hlbiB5b3UncmUgYmFjayBvbmxpbmUuIFZpc2l0ZWQgbWFwIHRpbGVzIGFyZSBjYWNoZWQgZm9yIG9mZmxpbmUgdmlld2luZy5cIn1cbl07XG5cbmV4cG9ydCBjb25zdCBXSEFUU05FV19FUyA9IFtcbiAge2Vtb2ppOlwi4o+677iPXCIsIHRpdGxlOlwiU2VuZGVyb3MgR1BYIEludGVyYWN0aXZvc1wiLCBib2R5OlwiwqFHcmFiYSB0dXMgcnV0YXMgZW4gdGllbXBvIHJlYWwgbyBpbXBvcnRhIGFyY2hpdm9zIEdQWCEgSW5jbHV5ZSBibG9xdWVvIGF1dG9tw6F0aWNvIGRlIHBhbnRhbGxhIGVuY2VuZGlkYSwgZmlsdHJhZG8gZGUgZGVyaXZhIEdQUyB5IHBpY29zIGFsIHJlYW51ZGFyIGxhIGFwcCwgeSB1biBzaXN0ZW1hIGRlIGLDunNxdWVkYSB5IGd1YXJkYWRvIGRlIHNlbmRlcm9zIHDDumJsaWNvcyBwYXJhIHF1ZSBubyBhcGFyZXpjYW4gYXV0b23DoXRpY2FtZW50ZSBhIG90cm9zIGEgbWVub3MgcXVlIGRlY2lkYW4gYWdyZWdhcmxvcy5cIn0sXG4gIHtlbW9qaTpcIvCfp61cIiwgdGl0bGU6XCJHdcOtYXMgeSBQYXF1ZXRlcyBkZSBNYXBhc1wiLCBib2R5OlwiwqFDcmVhIHkgcHVibGljYSBwYXF1ZXRlcyBkZSBtYXBhcyBwZXJzb25hbGl6YWRvcyEgQWdydXBhIHR1cyBsdWdhcmVzIGZhdm9yaXRvcyBlbiBndcOtYXMgcGVyc29uYWxpemFkYXMgKGVqLiAnQ2FmZXRlcsOtYXMnIG8gJ0NhbWluYXRhcyBkZSBGaW4gZGUgU2VtYW5hJykgZGVzZGUgdHUgcGVyZmlsLiBTZWxlY2Npb25hIHVuIHBhcXVldGUgZGUgbWFwYXMgcGFyYSBmaWx0cmFyIGxhIHZpc3RhIGRlbCBtYXBhIGEgc29sbyBlc29zIHB1bnRvcy5cIn0sXG4gIHtlbW9qaTpcIvCfj4ZcIiwgdGl0bGU6XCJCw7pzcXVlZGFzIGRlIEV4cGxvcmFkb3JcIiwgYm9keTpcIsKhRW1iw6FyY2F0ZSBlbiBkZXNhZsOtb3MgYmFzYWRvcyBlbiBsYSB1YmljYWNpw7NuISBEaXNlw7FhIGLDunNxdWVkYXMgcGVyc29uYWxpemFkYXMgY29uIGV0aXF1ZXRhcyBvYmpldGl2byAoZWouIHJlZ2lzdHJhciB2aXNpdGEgZW4gMyAjY2FzY2FkYXMpIHkgbWlyYSBlbCBwcm9ncmVzbyBhY3R1YWxpemFyc2UgZW4gdGllbXBvIHJlYWwgYSBtZWRpZGEgcXVlIHTDuiB5IG90cm9zIGV4cGxvcmFkb3JlcyByZWdpc3RyYW4gdmlzaXRhcyBlbiBsdWdhcmVzIGNvaW5jaWRlbnRlcy5cIn0sXG4gIHtlbW9qaTpcIvCfk7dcIiwgdGl0bGU6XCJCaXTDoWNvcmFzIGRlIENhbXBvIChEaWFyaW9zKVwiLCBib2R5OlwiwqFDb252aWVydGUgbGFzIGVudHJhZGFzIGRlIHJlZ2lzdHJvIGRlIHBpbmVzIGVuIHVuIMOhbGJ1bSBkZSByZWNvcnRlcyBkZSB2aWFqZSEgQWRqdW50YSBmb3RvcyBhIGxvcyBjb21lbnRhcmlvcyAodG9tYWRhcyBlbiB2aXZvIGNvbiBsYSBjw6FtYXJhIG8gZWxlZ2lkYXMgZGUgbGEgZ2FsZXLDrWEpLiBMb3MgcmVnaXN0cm9zIHRpZW5lbiBlbCBlc3RpbG8gZGUgdGFyamV0YXMgdmludGFnZSBjb24gem9vbSBkZSBjYWphIGRlIGx1eiBhIHBhbnRhbGxhIGNvbXBsZXRhLiBTb3BvcnRlIGNvbXBsZXRvIGRlIGNhY2jDqSBzaW4gY29uZXhpw7NuLlwifSxcbiAge2Vtb2ppOlwi8J+nrVwiLCB0aXRsZTpcIk1vZG8gQnLDump1bGEgU2luIFJlZFwiLCBib2R5Olwiwr9OZWNlc2l0YXMgZ3XDrWEgZGUgbmF2ZWdhY2nDs24gc2luIGNvbmV4acOzbj8gVG9jYSBlbCBib3TDs24gZGUgbGEg8J+nrSBCcsO6anVsYSBlbiBjdWFscXVpZXIgcGluIHBhcmEgYWJyaXIgdW4gZGlhbCBkZSBicsO6anVsYSBnaXJhdG9yaW8gYSBwYW50YWxsYSBjb21wbGV0YS4gQ2FsY3VsYSBydW1ib3MgeSBkaXN0YW5jaWFzIGVuIHRpZW1wbyByZWFsIHV0aWxpemFuZG8gbG9zIHNlbnNvcmVzIGRlIG9yaWVudGFjacOzbiBkZWwgZGlzcG9zaXRpdm8gY29tcGxldGFtZW50ZSBzaW4gY29uZXhpw7NuLlwifSxcbiAge2Vtb2ppOlwi4pqc77iPXCIsIHRpdGxlOlwiSW5zaWduaWFzIHkgVmlzaXRhc1wiLCBib2R5OlwiwqFHYW5hIGxvZ3JvcyBtaWVudHJhcyBleHBsb3JhcyEgUmVnaXN0cmEgdmlzaXRhcyBlbiBsb3MgcGluZXMgZGUgb3Ryb3MgdXN1YXJpb3MgY3VhbmRvIGVzdMOpcyBmw61zaWNhbWVudGUgY2VyY2EgKGRlbnRybyBkZSAzMG0pIHBhcmEgZGVzYmxvcXVlYXIgaW5zaWduaWFzIGRlIGhpdG9zLiBNaXJhIHRvZGFzIHR1cyBpbnNpZ25pYXMgYmxvcXVlYWRhcyB5IGRlc2Jsb3F1ZWFkYXMgZW4gdHUgcGVzdGHDsWEgZGUgUGVyZmlsLlwifSxcbiAge2Vtb2ppOlwi8J+aslwiLCB0aXRsZTpcIkNhcGEgQ3ljbGVPU01cIiwgYm9keTpcIlNlIGhhIGHDsWFkaWRvIHVuYSBudWV2YSBjYXBhIGRlIG1hcGEgZGUgY2ljbGlzbW8gZGUgYWx0byBjb250cmFzdGUuIENhbWJpYSBhIGVsbGEgYSB0cmF2w6lzIGRlbCBtZW7DuiBkZSBDYXBhcyBwYXJhIHZlciBzZW5kZXJvcyBwYXJhIGJpY2ljbGV0YXMsIHJ1dGFzIHkgY29udG9ybm9zIHRvcG9ncsOhZmljb3MsIG9wdGltaXphZG9zIHBhcmEgbGEgZXhwbG9yYWNpw7NuIGFsIGFpcmUgbGlicmUuXCJ9LFxuICB7ZW1vamk6XCLwn46oXCIsIHRpdGxlOlwiTnVldmEgYXBhcmllbmNpYSDigJQgRWRpY2nDs24gQXRsYXNcIiwgYm9keTpcIlBJTk1BUCB0aWVuZSB1biBkaXNlw7FvIGNvbXBsZXRhbWVudGUgbnVldm8uIFRvbm9zIGRlIHBhcGVsIGPDoWxpZG9zLCB0aXBvZ3JhZsOtYSBsaW1waWEgeSB1biBkaXNlw7FvIGRlIHBhbmVsIGEgcGFudGFsbGEgY29tcGxldGEgaW5zcGlyYWRvIGVuIHVuIGF0bGFzIGRlIGNhbXBvLiBUb2RvIGVzIG3DoXMgZsOhY2lsIGRlIGxlZXIgeSBuYXZlZ2FyLlwifSxcbiAge2Vtb2ppOlwi8J+XulwiLCB0aXRsZTpcIlBhbnRhbGxhIGRlIG1hcGEgcmVkaXNlw7FhZGFcIiwgYm9keTpcIkVsIG1hcGEgYWhvcmEgdGllbmUgdW5hIGJhcnJhIGRlIGLDunNxdWVkYSBmbG90YW50ZSBlbiBsYSBwYXJ0ZSBzdXBlcmlvciwgdW4gYm90w7NuIGRlIGNhcGFzIHkgdW4gYm90w7NuIGRlIHViaWNhY2nDs24uIFRvY2EgZW4gY3VhbHF1aWVyIGx1Z2FyIGRlbCBtYXBhIHBhcmEgY29sb2NhciB1biBwaW4g4oCUIHVuYSBzdWdlcmVuY2lhIHRlIGluZGljYSBkw7NuZGUgdG9jYXIuXCJ9LFxuICB7ZW1vamk6XCLwn5OLXCIsIHRpdGxlOlwiTGEgcGVzdGHDsWEgQml0w6Fjb3JhIGVzIHR1IFJlZ2lzdHJvIGRlIENhbXBvXCIsIGJvZHk6XCJUdXMgcGluZXMgc2UgcHJlc2VudGFuIGNvbW8gZW50cmFkYXMgZGUgcmVnaXN0cm8gbnVtZXJhZGFzIGNvbiBjb29yZGVuYWRhcywgZGVzY3JpcGNpb25lcyBlbiBjdXJzaXZhIHkgY2hpcHMgZGUgZXRpcXVldGFzIGVzdGFtcGFkYXMuIERlc3Bsw6F6YXRlIHBvciB0dSBhdGxhcyBwZXJzb25hbCBkZSBsdWdhcmVzLlwifSxcbiAge2Vtb2ppOlwi8J+UjVwiLCB0aXRsZTpcIkLDunNxdWVkYSByZWRpc2XDsWFkYVwiLCBib2R5OlwiTGFzIGV0aXF1ZXRhcyBkZSB0ZW5kZW5jaWEgYWhvcmEgZXN0w6FuIGNsYXNpZmljYWRhcyBkZWwgMDEgYWwgMDYgY29uIHJlY3VlbnRvcy4gTGEgcGVzdGHDsWEgQ2VyY2Fub3MgbXVlc3RyYSBwaW5lcyBww7pibGljb3MgcmVhbGVzIG9yZGVuYWRvcyBwb3IgdHUgZGlzdGFuY2lhIHJlYWwuIENhbWJpYSBlbnRyZSAjIEhhc2h0YWdzIHkg8J+TjSBMdWdhcmVzLlwifSxcbiAge2Vtb2ppOlwi8J+RpFwiLCB0aXRsZTpcIlBlcmZpbCByZWRpc2XDsWFkb1wiLCBib2R5OlwiTGlzdGEgZGUgY29uZmlndXJhY2nDs24gbGltcGlhIGNvbiBjdWFkcsOtY3VsYSBkZSBlc3RhZMOtc3RpY2FzIOKAlCBQaW5lcywgUMO6YmxpY29zLCBHdWFyZGFkb3MsIFZvdG9zLiBMaXN0YSBkZSBzZWd1aWRvcyBjb24gaW5pY2lhbGVzIGRlIGF2YXRhci4gTm90aWZpY2FjaW9uZXMgcHVzaCwgVHV0b3JpYWwgeSBBY2VyY2EgZGUgZW4gdW4gc29sbyBsdWdhci5cIn0sXG4gIHtlbW9qaTpcIvCfk6FcIiwgdGl0bGU6XCJNb2RvIHNpbiBjb25leGnDs25cIiwgYm9keTpcIkNvbG9jYSBwaW5lcyB5IGNvbWVudGFyaW9zIHNpbiBjb25leGnDs24uIFNlIHNpbmNyb25pemFuIGF1dG9tw6F0aWNhbWVudGUgY3VhbmRvIHZ1ZWx2ZXMgYSBlc3RhciBlbiBsw61uZWEuIExhcyBpbcOhZ2VuZXMgZGVsIG1hcGEgdmlzaXRhZG8gc2UgZ3VhcmRhbiBlbiBjYWNow6kgcGFyYSB2aXN1YWxpemFybGFzIHNpbiBjb25leGnDs24uXCJ9XG5dO1xuXG5leHBvcnQgY29uc3QgQUxMX0ZFQVRVUkVTX0VOID0gW1xuICB7ZW1vamk6XCLij7rvuI9cIiwgdGl0bGU6XCJJbnRlcmFjdGl2ZSBHUFggVHJhaWxzXCIsIGJvZHk6XCJSZWNvcmQgeW91ciBvdXRkb29yIHJvdXRlcyBpbiByZWFsLXRpbWUgb3IgaW1wb3J0IEdQWCB0cmFpbCBmaWxlcyEgRmVhdHVyZXMgaW5jbHVkZSBhdXRvbWF0aWMgc2NyZWVuIHdha2UtbG9jayB3aGlsZSByZWNvcmRpbmcsIGFkdmFuY2VkIEdQUyBkcmlmdCBhbmQgYXBwLXJlc3VtcHRpb24gc3Bpa2UgZmlsdGVyaW5nLCBhbmQgYSBwdWJsaWMgdHJhaWwgc2VhcmNoIGFuZCBib29rbWFya2luZyBzeXN0ZW0gc28gdHJhaWxzIGRvbid0IGF1dG9tYXRpY2FsbHkgYXBwZWFyIGZvciBvdGhlcnMgdW5sZXNzIHNhdmVkLlwifSxcbiAge2Vtb2ppOlwi8J+nrVwiLCB0aXRsZTpcIkNvbGxlY3Rpb25zXCIsIGJvZHk6XCJEZXNpZ24sIHB1Ymxpc2gsIGFuZCB2aWV3IGN1c3RvbSBjb2xsZWN0aW9ucyEgR3JvdXAgeW91ciBmYXZvcml0ZSBwaW5zIGludG8gY29sbGVjdGlvbnMgaW4geW91ciBQcm9maWxlLCBmaWx0ZXIgdGhlIG1hcCB0byBzZWUgb25seSB0aG9zZSBzcG90cywgYW5kIHNoYXJlIGNvbGxlY3Rpb25zIHdpdGggZmVsbG93IGV4cGxvcmVycy5cIn0sXG4gIHtlbW9qaTpcIvCfj4ZcIiwgdGl0bGU6XCJFeHBsb3JlciBRdWVzdHNcIiwgYm9keTpcIkNyZWF0ZSBhbmQgam9pbiBjdXN0b20gbG9jYXRpb24gY2hhbGxlbmdlcyEgQ2hhbGxlbmdlIHlvdXJzZWxmIG9yIG90aGVyIHVzZXJzIGJ5IHNldHRpbmcgcmVxdWlyZW1lbnRzIGxpa2UgY2hlY2tpbmcgaW4gdG8gMyBzcG90cyB0YWdnZWQgI3ZpZXdwb2ludC4gVHJhY2sgcXVlc3QgY29tcGxldGlvbiBzdGF0dXMgZHluYW1pY2FsbHkuXCJ9LFxuICB7ZW1vamk6XCLwn5ONXCIsIHRpdGxlOlwiRHJvcCBwaW5zXCIsIGJvZHk6XCJUYXAgYW55d2hlcmUgb24gdGhlIG1hcCB0byBwbGFjZSBhIHBpbi4gQWRkIGEgbmFtZSwgZGVzY3JpcHRpb24sIGhhc2h0YWdzLCBjb2xvdXIsIHBob3RvIGFuZCBvcHRpb25hbCBleHBpcnkgZGF0ZS5cIn0sXG4gIHtlbW9qaTpcIvCfjqhcIiwgdGl0bGU6XCJQaW4gY29sb3VycyAmIGljb25zXCIsIGJvZHk6XCJDaG9vc2UgZnJvbSA5IGNvbG91cnMgZm9yIHlvdXIgcGluLiBJY29ucyBhcmUgYXV0b21hdGljYWxseSBhc3NpZ25lZCBiYXNlZCBvbiBoYXNodGFncyDigJQg8J+NuiBmb3IgI3B1Yiwg8J+lviBmb3IgI2hpa2luZywg8J+OoyBmb3IgI2Zpc2hpbmdzcG90IGFuZCBtb3JlLlwifSxcbiAge2Vtb2ppOlwi4pqc77iPXCIsIHRpdGxlOlwiQmFkZ2VzICYgQ2hlY2staW5zXCIsIGJvZHk6XCJFYXJuIGJhZGdlcyBmb3IgcGxhY2luZyBwaW5zICgxLCAxMCwgNTAsIDEwMCBtaWxlc3RvbmUgYWNoaWV2ZW1lbnRzKSBhbmQgY2hlY2tpbmcgaW4gdG8gb3RoZXIgdXNlcnMnIHBpbnMgd2l0aGluIDMwbSAoMSwgNSwgMTUsIDM1IG1pbGVzdG9uZSBhY2hpZXZlbWVudHMpLlwifSxcbiAge2Vtb2ppOlwi8J+Vte+4j1wiLCB0aXRsZTpcIkluc2lkZXIgcGluc1wiLCBib2R5OlwiUGlucyBjYW4gYmUgcHVibGljICh2aXNpYmxlIHRvIGFsbCksIHByaXZhdGUgKG9ubHkgeW91KSwgb3IgaW5zaWRlciAoaGlkZGVuIHVubGVzcyBzb21lb25lIHNlYXJjaGVzIGZvciBpdHMgZXhhY3QgaGFzaHRhZykuXCJ9LFxuICB7ZW1vamk6XCLij7BcIiwgdGl0bGU6XCJFeHBpcmluZyBwaW5zXCIsIGJvZHk6XCJTZXQgYSBkYXRlIGFuZCB0aW1lIHdoZW4gYWRkaW5nIGEgcGluLiBJdCBjb3VudHMgZG93biBhbmQgYXV0by1kZWxldGVzIHdoZW4gZXhwaXJlZCDigJQgcGVyZmVjdCBmb3IgZXZlbnRzIGFuZCBwb3AtdXAgc3BvdHMuXCJ9LFxuICB7ZW1vamk6XCLwn5SWXCIsIHRpdGxlOlwiUGluIHNhdmVzXCIsIGJvZHk6XCJUYXAg8J+UliBTYXZlIG9uIGFueSBwdWJsaWMgcGluIHRvIGJvb2ttYXJrIGl0IHRvIHlvdXIgY29sbGVjdGlvbi4gRmluZCBzYXZlZCBwaW5zIGluIHlvdXIgUHJvZmlsZSB0YWIuXCJ9LFxuICB7ZW1vamk6XCLwn5KsXCIsIHRpdGxlOlwiQ29tbWVudHMgJiByZXBsaWVzXCIsIGJvZHk6XCJUYXAgYW55IHBpbiB0byBsZWF2ZSBhIGNvbW1lbnQuIFJlcGx5IHRvIGNvbW1lbnRzIHdpdGgg4oapIFJlcGx5LiBUaHJlYWRlZCBjb252ZXJzYXRpb25zIGtlZXAgZGlzY3Vzc2lvbnMgb3JnYW5pc2VkLlwifSxcbiAge2Vtb2ppOlwi8J+Tt1wiLCB0aXRsZTpcIkZpZWxkIEpvdXJuYWxzIChMb2dib29rcylcIiwgYm9keTpcIkF0dGFjaCBwaG90b3MgdG8gY29tbWVudHMsIGNvbXByZXNzZWQgY2xpZW50LXNpZGUuIExvZ3MgcmVuZGVyIGFzIHRyYXZlbCBzY3JhcGJvb2sgZW50cmllcyB3aXRoIHBvbGFyb2lkIGNhcmRzIGFuZCBmdWxsc2NyZWVuIGxpZ2h0Ym94ZXMuXCJ9LFxuICB7ZW1vamk6XCLwn6etXCIsIHRpdGxlOlwiT2ZmLUdyaWQgQ29tcGFzcyBNb2RlXCIsIGJvZHk6XCJOYXZpZ2F0ZSB1c2luZyB5b3VyIHBob25lJ3MgbWFnbmV0b21ldGVyIGFuZCBHUFMgY29tcGxldGVseSBvZmZsaW5lLiBBIHJldHJvIGRpYWwgaW5kaWNhdGVzIHlvdXIgaGVhZGluZyBhbmQgcG9pbnRzIGRpcmVjdGx5IHRvIHRoZSBwaW4uXCJ9LFxuICB7ZW1vamk6XCLwn5GNXCIsIHRpdGxlOlwiVXB2b3Rlc1wiLCBib2R5OlwiVXB2b3RlIHBpbnMgYW5kIGNvbW1lbnRzIHdpdGgg8J+RjS4gVGFwIGFnYWluIHRvIHJlbW92ZSB5b3VyIHVwdm90ZS5cIn0sXG4gIHtlbW9qaTpcIvCflI1cIiwgdGl0bGU6XCJEdWFsIHNlYXJjaFwiLCBib2R5OlwiVGFwICMgVGFncyB0byBzZWFyY2ggcGlucyBieSBoYXNodGFnIG9yIPCfk40gUGxhY2VzIHRvIHNlYXJjaCBhbnkgYWRkcmVzcyB3b3JsZHdpZGUuIFJlc3VsdHMgdXBkYXRlIHRoZSBtYXAgYXV0b21hdGljYWxseS5cIn0sXG4gIHtlbW9qaTpcIvCflKVcIiwgdGl0bGU6XCJUcmVuZGluZyBoYXNodGFnc1wiLCBib2R5OlwiVGhlIFNlYXJjaCB0YWIgc2hvd3MgdGhlIG1vc3QgYWN0aXZlIGhhc2h0YWdzIGZyb20gdGhlIGxhc3QgNyBkYXlzLiBGb2xsb3cgdGFncyB0byB0cmFjayB5b3VyIGZhdm91cml0ZSB0b3BpY3MuXCJ9LFxuICB7ZW1vamk6XCLij7BcIiwgdGl0bGU6XCJFeHBpcmluZyBzb29uXCIsIGJvZHk6XCJUaGUgU2VhcmNoIHRhYiBzaG93cyBwdWJsaWMgcGlucyBleHBpcmluZyBpbiB0aGUgbmV4dCA3IGRheXMuIFRhcCBTaG93IG9uIG1hcCB0byBmaWx0ZXIgdGhlIG1hcCB0byBvbmx5IHRob3NlIHBpbnMuXCJ9LFxuICB7ZW1vamk6XCLwn5e6XCIsIHRpdGxlOlwiTWFwIGxheWVyc1wiLCBib2R5OlwiU3dpdGNoIGJldHdlZW4gU3RhbmRhcmQsIFRvcG9ncmFwaGljLCBTYXRlbGxpdGUsIEhpa2luZyBUcmFpbHMsIE5hdXRpY2FsIGNoYXJ0LCBhbmQgQ3ljbGVPU00gdmlld3MgdXNpbmcgdGhlIExheWVycyBidXR0b24uXCJ9LFxuICB7ZW1vamk6XCLwn5S1XCIsIHRpdGxlOlwiUGluIGNsdXN0ZXJpbmdcIiwgYm9keTpcIldoZW4gem9vbWVkIG91dCwgbmVhcmJ5IHBpbnMgZ3JvdXAgaW50byBhIGNpcmNsZS4gVGFwIHRoZSBjbHVzdGVyIHRvIHpvb20gaW4gYW5kIHNlcGFyYXRlIHRoZW0uXCJ9LFxuICB7ZW1vamk6XCLwn5OhXCIsIHRpdGxlOlwiTmVhcmJ5IHBpbnNcIiwgYm9keTpcIlRoZSBOZWFyYnkgdGFiIHNob3dzIHB1YmxpYyBwaW5zIHdpdGhpbiBhIHNldCByYWRpdXMgb2YgeW91ciBjdXJyZW50IGxvY2F0aW9uLlwifSxcbiAge2Vtb2ppOlwi8J+RpFwiLCB0aXRsZTpcIlVzZXIgcHJvZmlsZXNcIiwgYm9keTpcIlRhcCBhbnkgdXNlcm5hbWUgdG8gc2VlIHRoZWlyIHB1YmxpYyBwcm9maWxlIOKAlCBiaW8sIHNvY2lhbHMsIGxvY2F0aW9uIGFuZCBhbGwgdGhlaXIgcHVibGljIHBpbnMgb24gdGhlIG1hcC5cIn0sXG4gIHtlbW9qaTpcIvCfkaVcIiwgdGl0bGU6XCJGb2xsb3cgdXNlcnNcIiwgYm9keTpcIkZvbGxvdyB1c2VycyBmcm9tIHRoZWlyIHByb2ZpbGUgb3IgYW55IHBpbi4gR2V0IHB1c2ggbm90aWZpY2F0aW9ucyB3aGVuIHRoZXkgcG9zdCBuZXcgcHVibGljIHBpbnMuXCJ9LFxuICB7ZW1vamk6XCLinaTvuI9cIiwgdGl0bGU6XCJGb2xsb3cgaGFzaHRhZ3NcIiwgYm9keTpcIkZvbGxvdyBoYXNodGFncyBpbiB0aGUgU2VhcmNoIHRhYiB0byBzdGF5IHVwZGF0ZWQgb24gdG9waWNzIHlvdSBjYXJlIGFib3V0LlwifSxcbiAge2Vtb2ppOlwi8J+UlFwiLCB0aXRsZTpcIlB1c2ggbm90aWZpY2F0aW9uc1wiLCBib2R5OlwiRW5hYmxlIGluIHlvdXIgUHJvZmlsZSB0YWIgdG8gcmVjZWl2ZSBhbGVydHMgZm9yIG5ldyBjb21tZW50cyBhbmQgcGlucyBmcm9tIHVzZXJzIHlvdSBmb2xsb3cg4oCUIGV2ZW4gd2hlbiB0aGUgYXBwIGlzIGNsb3NlZC5cIn0sXG4gIHtlbW9qaTpcIvCfk4tcIiwgdGl0bGU6XCJNaW5lIHRhYlwiLCBib2R5OlwiVmlldyBhbGwgeW91ciBwaW5zIGdyb3VwZWQgYnkgaGFzaHRhZy4gRHJpbGwgaW50byBlYWNoIHRhZyB0byBzZWUgaW5kaXZpZHVhbCBwaW5zLCBjb21tZW50IGNvdW50cyBhbmQgbmV3IGFjdGl2aXR5IGJhZGdlcy5cIn0sXG4gIHtlbW9qaTpcIvCfk6RcIiwgdGl0bGU6XCJFeHBvcnQgZGF0YVwiLCBib2R5OlwiRXhwb3J0IGFsbCB5b3VyIHBpbnMgYXMgR2VvSlNPTiBvciBHUFggZmlsZXMgZnJvbSB0aGUgUHJvZmlsZSB0YWIg4oCUIGNvbXBhdGlibGUgd2l0aCBHb29nbGUgTWFwcywgUUdJUyBhbmQgbW9zdCBtYXBwaW5nIHRvb2xzLlwifSxcbiAge2Vtb2ppOlwi8J+RpFwiLCB0aXRsZTpcIkN1c3RvbSBwcm9maWxlXCIsIGJvZHk6XCJTZXQgdXAgeW91ciBwcm9maWxlIHdpdGggYSBiaW8sIGxvY2F0aW9uLCB3ZWJzaXRlLCBzb2NpYWwgbGlua3MgYW5kIGEgY3VzdG9tIHBob3RvIHVwbG9hZGVkIGZyb20geW91ciBkZXZpY2UuXCJ9LFxuICB7ZW1vamk6XCLwn5OhXCIsIHRpdGxlOlwiT2ZmbGluZSBtb2RlXCIsIGJvZHk6XCJEcm9wIHBpbnMgYW5kIGNvbW1lbnRzIHdpdGhvdXQgYSBjb25uZWN0aW9uLiBUaGV5IHF1ZXVlIGxvY2FsbHkgYW5kIHN5bmMgYXV0b21hdGljYWxseSB3aGVuIHlvdSBjb21lIGJhY2sgb25saW5lLiBWaXNpdGVkIG1hcCB0aWxlcyBhcmUgY2FjaGVkIHRvby5cIn0sXG4gIHtlbW9qaTpcIvCfm6FcIiwgdGl0bGU6XCJBZG1pbiBkYXNoYm9hcmRcIiwgYm9keTpcIlZpc2libGUgb25seSB0byB0aGUgYXBwIG93bmVyLiBTaG93cyBhY3RpdmUgdXNlcnMsIHRvcCBwaW5zLCB0cmVuZGluZyB0YWdzLCBwdXNoIHN1YnNjcmliZXJzIGFuZCBsaXZlIHVzYWdlIHN0YXRzLlwifVxuXTtcblxuZXhwb3J0IGNvbnN0IEFMTF9GRUFUVVJFU19FUyA9IFtcbiAge2Vtb2ppOlwi4o+677iPXCIsIHRpdGxlOlwiU2VuZGVyb3MgR1BYIEludGVyYWN0aXZvc1wiLCBib2R5OlwiwqFHcmFiYSB0dXMgcnV0YXMgZW4gdGllbXBvIHJlYWwgbyBpbXBvcnRhIGFyY2hpdm9zIEdQWCEgSW5jbHV5ZSBibG9xdWVvIGF1dG9tw6F0aWNvIGRlIHBhbnRhbGxhIGVuY2VuZGlkYSwgZmlsdHJhZG8gZGUgZGVyaXZhIEdQUyB5IHBpY29zIGFsIHJlYW51ZGFyIGxhIGFwcCwgeSB1biBzaXN0ZW1hIGRlIGLDunNxdWVkYSB5IGd1YXJkYWRvIGRlIHNlbmRlcm9zIHDDumJsaWNvcyBwYXJhIHF1ZSBubyBhcGFyZXpjYW4gYXV0b23DoXRpY2FtZW50ZSBhIG90cm9zIGEgbWVub3MgcXVlIGRlY2lkYW4gYWdyZWdhcmxvcy5cIn0sXG4gIHtlbW9qaTpcIvCfp61cIiwgdGl0bGU6XCJDb2xlY2Npb25lc1wiLCBib2R5OlwiwqFEaXNlw7FhLCBwdWJsaWNhIHkgdmlzdWFsaXphIGNvbGVjY2lvbmVzIHBlcnNvbmFsaXphZGFzISBBZ3J1cGEgdHVzIHBpbmVzIGZhdm9yaXRvcyBlbiBjb2xlY2Npb25lcyBlbiB0dSBQZXJmaWwsIGZpbHRyYSBlbCBtYXBhIHBhcmEgdmVyIHNvbG8gZXNvcyBwdW50b3MgeSBjb21wYXJ0ZSBjb2xlY2Npb25lcyBjb24gb3Ryb3MgZXhwbG9yYWRvcmVzLlwifSxcbiAge2Vtb2ppOlwi8J+PhlwiLCB0aXRsZTpcIkLDunNxdWVkYXMgZGUgRXhwbG9yYWRvclwiLCBib2R5OlwiwqFDcmVhIHkgw7puZXRlIGEgZGVzYWbDrW9zIGRlIHViaWNhY2nDs24gcGVyc29uYWxpemFkb3MhIERlc2Fmw61hdGUgYSB0aSBtaXNtbyBvIGEgb3Ryb3MgdXN1YXJpb3MgY29uZmlndXJhbmRvIHJlcXVpc2l0b3MgY29tbyByZWdpc3RyYXIgdmlzaXRhcyBlbiAzIGx1Z2FyZXMgY29uIGxhIGV0aXF1ZXRhICNtaXJhZG9yLiBSZWFsaXphIGVsIHNlZ3VpbWllbnRvIGRlbCBlc3RhZG8gZGUgZmluYWxpemFjacOzbiBkZSBmb3JtYSBkaW7DoW1pY2EuXCJ9LFxuICB7ZW1vamk6XCLwn5ONXCIsIHRpdGxlOlwiQ29sb2NhciBwaW5lc1wiLCBib2R5OlwiVG9jYSBlbiBjdWFscXVpZXIgbHVnYXIgZGVsIG1hcGEgcGFyYSBjb2xvY2FyIHVuIHBpbi4gQcOxYWRlIHVuIG5vbWJyZSwgZGVzY3JpcGNpw7NuLCBoYXNodGFncywgY29sb3IsIGZvdG8geSBmZWNoYSBkZSBleHBpcmFjacOzbiBvcGNpb25hbC5cIn0sXG4gIHtlbW9qaTpcIvCfjqhcIiwgdGl0bGU6XCJDb2xvcmVzIGUgaWNvbm9zIGRlIHBpbmVzXCIsIGJvZHk6XCJFbGlnZSBlbnRyZSA5IGNvbG9yZXMgcGFyYSB0dSBwaW4uIExvcyBpY29ub3Mgc2UgYXNpZ25hbiBhdXRvbcOhdGljYW1lbnRlIHNlZ8O6biBsb3MgaGFzaHRhZ3M6IPCfjbogcGFyYSAjYmFyLCDwn6W+IHBhcmEgI3NlbmRlcmlzbW8sIPCfjqMgcGFyYSAjcGVzY2EgeSBtw6FzLlwifSxcbiAge2Vtb2ppOlwi4pqc77iPXCIsIHRpdGxlOlwiSW5zaWduaWFzIHkgVmlzaXRhc1wiLCBib2R5OlwiR2FuYSBpbnNpZ25pYXMgcG9yIGNvbG9jYXIgcGluZXMgKGhpdG9zIGRlIDEsIDEwLCA1MCwgMTAwKSB5IHBvciByZWdpc3RyYXIgdmlzaXRhcyBlbiBsb3MgcGluZXMgZGUgb3Ryb3MgdXN1YXJpb3MgYSBtZW5vcyBkZSAzMG0gKGhpdG9zIGRlIDEsIDUsIDE1LCAzNSkuXCJ9LFxuICB7ZW1vamk6XCLwn5W177iPXCIsIHRpdGxlOlwiUGluZXMgb2N1bHRvcyAoSW5zaWRlcilcIiwgYm9keTpcIkxvcyBwaW5lcyBwdWVkZW4gc2VyIHDDumJsaWNvcyAodmlzaWJsZXMgcGFyYSB0b2RvcyksIHByaXZhZG9zIChzb2xvIHTDuikgdSBvY3VsdG9zIChpbnNpZGVyLCBpbnZpc2libGVzIGEgbWVub3MgcXVlIHNlIGJ1c3F1ZSBzdSBoYXNodGFnIGV4YWN0bykuXCJ9LFxuICB7ZW1vamk6XCLij7BcIiwgdGl0bGU6XCJQaW5lcyBxdWUgZXhwaXJhblwiLCBib2R5OlwiRXN0YWJsZWNlIHVuYSBmZWNoYSB5IGhvcmEgYWwgYcOxYWRpciB1biBwaW4uIEN1ZW50YSBkZSBmb3JtYSByZWdyZXNpdmEgeSBzZSBlbGltaW5hIGF1dG9tw6F0aWNhbWVudGUgYWwgZXhwaXJhciDigJQgcGVyZmVjdG8gcGFyYSBldmVudG9zIHkgbHVnYXJlcyB0ZW1wb3JhbGVzLlwifSxcbiAge2Vtb2ppOlwi8J+UllwiLCB0aXRsZTpcIkd1YXJkYXIgcGluZXNcIiwgYm9keTpcIlRvY2Eg8J+UliBHdWFyZGFyIGVuIGN1YWxxdWllciBwaW4gcMO6YmxpY28gcGFyYSBndWFyZGFybG8gZW4gdHVzIG1hcmNhZG9yZXMuIEVuY3VlbnRyYSB0dXMgcGluZXMgZ3VhcmRhZG9zIGVuIGxhIHBlc3Rhw7FhIFBlcmZpbC5cIn0sXG4gIHtlbW9qaTpcIvCfkqxcIiwgdGl0bGU6XCJDb21lbnRhcmlvcyB5IHJlc3B1ZXN0YXNcIiwgYm9keTpcIlRvY2EgY3VhbHF1aWVyIHBpbiBwYXJhIGRlamFyIHVuIGNvbWVudGFyaW8uIFJlc3BvbmRlIGEgY29tZW50YXJpb3MgY29uIOKGqSBSZXNwb25kZXIuIExhcyBjb252ZXJzYWNpb25lcyBlbiBoaWxvcyBtYW50aWVuZW4gbG9zIGNvbWVudGFyaW9zIG9yZ2FuaXphZG9zLlwifSxcbiAge2Vtb2ppOlwi8J+Tt1wiLCB0aXRsZTpcIkRpYXJpb3MgZGUgQ2FtcG8gKEJpdMOhY29yYXMpXCIsIGJvZHk6XCJBZGp1bnRhIGZvdG9zIGEgbG9zIGNvbWVudGFyaW9zLCBjb21wcmltaWRhcyBlbiBlbCBjbGllbnRlLiBMb3MgcmVnaXN0cm9zIHNlIG11ZXN0cmFuIGNvbW8gZW50cmFkYXMgZGUgw6FsYnVtIGRlIHZpYWplcyBjb24gdGFyamV0YXMgcG9sYXJvaWQgeSB2aXN0YSBhbXBsaWFkYSBhIHBhbnRhbGxhIGNvbXBsZXRhLlwifSxcbiAge2Vtb2ppOlwi8J+nrVwiLCB0aXRsZTpcIk1vZG8gQnLDump1bGEgU2luIFJlZFwiLCBib2R5OlwiTmF2ZWdhIHVzYW5kbyBlbCBtYWduZXTDs21ldHJvIHkgR1BTIGRlIHR1IHRlbMOpZm9ubyBjb21wbGV0YW1lbnRlIHNpbiBjb25leGnDs24uIFVuIGRpYWwgcmV0cm8gaW5kaWNhIHR1IHJ1bWJvIHkgYXB1bnRhIGRpcmVjdGFtZW50ZSBhbCBwaW4uXCJ9LFxuICB7ZW1vamk6XCLwn5GNXCIsIHRpdGxlOlwiVm90b3MgZGUgYXBveW9cIiwgYm9keTpcIlZvdGEgcGluZXMgeSBjb21lbnRhcmlvcyBjb24g8J+RjS4gVG9jYSBkZSBudWV2byBwYXJhIHJldGlyYXIgdHUgdm90by5cIn0sXG4gIHtlbW9qaTpcIvCflI1cIiwgdGl0bGU6XCJCw7pzcXVlZGEgZHVhbFwiLCBib2R5OlwiVG9jYSAjIEhhc2h0YWdzIHBhcmEgYnVzY2FyIHBpbmVzIHBvciBldGlxdWV0YSBvIPCfk40gTHVnYXJlcyBwYXJhIGJ1c2NhciBjdWFscXVpZXIgZGlyZWNjacOzbiBlbiBlbCBtdW5kby4gTG9zIHJlc3VsdGFkb3MgYWN0dWFsaXphbiBlbCBtYXBhIGF1dG9tw6F0aWNhbWVudGUuXCJ9LFxuICB7ZW1vamk6XCLwn5SlXCIsIHRpdGxlOlwiSGFzaHRhZ3MgZW4gdGVuZGVuY2lhXCIsIGJvZHk6XCJMYSBwZXN0YcOxYSBCdXNjYXIgbXVlc3RyYSBsb3MgaGFzaHRhZ3MgbcOhcyBhY3Rpdm9zIGRlIGxvcyDDumx0aW1vcyA3IGTDrWFzLiBTaWd1ZSBldGlxdWV0YXMgcGFyYSBlc3RhciBhbCB0YW50byBkZSB0dXMgdGVtYXMgZmF2b3JpdG9zLlwifSxcbiAge2Vtb2ppOlwi4o+wXCIsIHRpdGxlOlwiUHLDs3hpbW9zIGEgZXhwaXJhclwiLCBib2R5OlwiTGEgcGVzdGHDsWEgQnVzY2FyIG11ZXN0cmEgbG9zIHBpbmVzIHDDumJsaWNvcyBxdWUgZXhwaXJhbiBlbiBsb3MgcHLDs3hpbW9zIDcgZMOtYXMuIFRvY2EgTW9zdHJhciBlbiBlbCBtYXBhIHBhcmEgdmVyIHNvbG8gZXNvcyBwaW5lcy5cIn0sXG4gIHtlbW9qaTpcIvCfl7pcIiwgdGl0bGU6XCJDYXBhcyBkZWwgbWFwYVwiLCBib2R5OlwiQ2FtYmlhIGVudHJlIGxhcyB2aXN0YXMgRXN0w6FuZGFyLCBUb3BvZ3LDoWZpY2EsIFNhdMOpbGl0ZSwgU2VuZGVyb3MsIENhcnRhIE7DoXV0aWNhIHkgQ3ljbGVPU00gdXNhbmRvIGVsIGJvdMOzbiBkZSBDYXBhcy5cIn0sXG4gIHtlbW9qaTpcIvCflLVcIiwgdGl0bGU6XCJBZ3J1cGFtaWVudG8gZGUgcGluZXNcIiwgYm9keTpcIkFsIGFsZWphciBlbCBtYXBhLCBsb3MgcGluZXMgY2VyY2Fub3Mgc2UgYWdydXBhbiBlbiB1biBjw61yY3Vsby4gVG9jYSBlbCBncnVwbyBwYXJhIGFjZXJjYXIgeSBzZXBhcmFybG9zLlwifSxcbiAge2Vtb2ppOlwi8J+ToVwiLCB0aXRsZTpcIlBpbmVzIGNlcmNhbm9zXCIsIGJvZHk6XCJMYSBwZXN0YcOxYSBDZXJjYW5vcyBtdWVzdHJhIHBpbmVzIHDDumJsaWNvcyBkZW50cm8gZGUgdW4gcmFkaW8gZXN0YWJsZWNpZG8gZGVzZGUgdHUgdWJpY2FjacOzbiBhY3R1YWwuXCJ9LFxuICB7ZW1vamk6XCLwn5GkXCIsIHRpdGxlOlwiUGVyZmlsZXMgZGUgdXN1YXJpb1wiLCBib2R5OlwiVG9jYSBjdWFscXVpZXIgbm9tYnJlIGRlIHVzdWFyaW8gcGFyYSB2ZXIgc3UgcGVyZmlsIHDDumJsaWNvOiBiaW9ncmFmw61hLCByZWRlcyBzb2NpYWxlcywgdWJpY2FjacOzbiB5IHRvZG9zIHN1cyBwaW5lcyBww7pibGljb3MgZW4gZWwgbWFwYS5cIn0sXG4gIHtlbW9qaTpcIvCfkaVcIiwgdGl0bGU6XCJTZWd1aXIgdXN1YXJpb3NcIiwgYm9keTpcIlNpZ3VlIGEgb3Ryb3MgdXN1YXJpb3MgZGVzZGUgc3UgcGVyZmlsIG8gZGVzZGUgY3VhbHF1aWVyIHBpbi4gUmVjaWJlIG5vdGlmaWNhY2lvbmVzIHB1c2ggY3VhbmRvIHB1YmxpcXVlbiBudWV2b3MgcGluZXMgcMO6YmxpY29zLlwifSxcbiAge2Vtb2ppOlwi4p2k77iPXCIsIHRpdGxlOlwiU2VndWlyIGhhc2h0YWdzXCIsIGJvZHk6XCJTaWd1ZSBoYXNodGFncyBlbiBsYSBwZXN0YcOxYSBCdXNjYXIgcGFyYSBtYW50ZW5lcnRlIGFsIGTDrWEgc29icmUgbG9zIHRlbWFzIHF1ZSB0ZSBpbnRlcmVzYW4uXCJ9LFxuICB7ZW1vamk6XCLwn5SUXCIsIHRpdGxlOlwiTm90aWZpY2FjaW9uZXMgcHVzaFwiLCBib2R5OlwiQWN0w612YWxhcyBlbiB0dSBwZXN0YcOxYSBkZSBQZXJmaWwgcGFyYSByZWNpYmlyIGFsZXJ0YXMgZGUgbnVldm9zIGNvbWVudGFyaW9zIHkgcGluZXMgZGUgbG9zIHVzdWFyaW9zIHF1ZSBzaWd1ZXMg4oCUIGluY2x1c28gY29uIGxhIGFwcCBjZXJyYWRhLlwifSxcbiAge2Vtb2ppOlwi8J+Ti1wiLCB0aXRsZTpcIlBlc3Rhw7FhIEJpdMOhY29yYVwiLCBib2R5OlwiVmVyIHRvZG9zIHR1cyBwaW5lcyBhZ3J1cGFkb3MgcG9yIGhhc2h0YWcuIEVudHJhIGVuIGNhZGEgZXRpcXVldGEgcGFyYSB2ZXIgcGluZXMgaW5kaXZpZHVhbGVzLCBjb250ZW8gZGUgY29tZW50YXJpb3MgZSBpbnNpZ25pYXMgZGUgYWN0aXZpZGFkIG51ZXZhLlwifSxcbiAge2Vtb2ppOlwi8J+TpFwiLCB0aXRsZTpcIkV4cG9ydGFyIGRhdG9zXCIsIGJvZHk6XCJFeHBvcnRhIHRvZG9zIHR1cyBwaW5lcyBjb21vIGFyY2hpdm9zIEdlb0pTT04gbyBHUFggZGVzZGUgbGEgcGVzdGHDsWEgUGVyZmlsIOKAlCBjb21wYXRpYmxlIGNvbiBHb29nbGUgTWFwcywgUUdJUyB5IGxhIG1heW9yw61hIGRlIGhlcnJhbWllbnRhcyBkZSBtYXBhcy5cIn0sXG4gIHtlbW9qaTpcIvCfkaRcIiwgdGl0bGU6XCJQZXJmaWwgcGVyc29uYWxpemFkb1wiLCBib2R5OlwiQ29uZmlndXJhIHR1IHBlcmZpbCBjb24gYmlvZ3JhZsOtYSwgdWJpY2FjacOzbiwgc2l0aW8gd2ViLCBlbmxhY2VzIHNvY2lhbGVzIHkgdW5hIGZvdG8gcGVyc29uYWxpemFkYSBzdWJpZGEgZGVzZGUgdHUgZGlzcG9zaXRpdm8uXCJ9LFxuICB7ZW1vamk6XCLwn5OhXCIsIHRpdGxlOlwiTW9kbyBzaW4gY29uZXhpw7NuXCIsIGJvZHk6XCJDb2xvY2EgcGluZXMgeSBjb21lbnRhcmlvcyBzaW4gY29uZXhpw7NuLiBTZSBlbmNvbGFuIGxvY2FsbWVudGUgeSBzZSBzaW5jcm9uaXphbiBhdXRvbcOhdGljYW1lbnRlIGN1YW5kbyB2dWVsdmVzIGEgZXN0YXIgZW4gbMOtbmVhLiBMYXMgaW3DoWdlbmVzIGRlbCBtYXBhIHZpc2l0YWRvIHRhbWJpw6luIHNlIGd1YXJkYW4gZW4gY2FjaMOpLlwifSxcbiAge2Vtb2ppOlwi8J+boVwiLCB0aXRsZTpcIlBhbmVsIGRlIGFkbWluaXN0cmFjacOzblwiLCBib2R5OlwiVmlzaWJsZSBzb2xvIHBhcmEgZWwgcHJvcGlldGFyaW8gZGUgbGEgYXBsaWNhY2nDs24uIE11ZXN0cmEgdXN1YXJpb3MgYWN0aXZvcywgcGluZXMgcHJpbmNpcGFsZXMsIGhhc2h0YWdzIGRlIHRlbmRlbmNpYSwgc3VzY3JpcHRvcmVzIHB1c2ggeSBlc3RhZMOtc3RpY2FzIGRlIHVzbyBlbiB2aXZvLlwifVxuXTtcblxuZXhwb3J0IGNvbnN0IE9OQk9BUkRfU1RFUFNfRU4gPSBbXG4gIHtcbiAgICB0aXRsZTogXCJXZWxjb21lIHRvIFBJTk1BUCFcIixcbiAgICBib2R5OiBcIlBJTk1BUCBpcyBhIHByaXZhY3ktZmlyc3QgbWFwcGluZyBwbGF0Zm9ybSBmb3Igc2F2aW5nLCBvcmdhbml6aW5nLCBhbmQgc2hhcmluZyB0aGUgcGxhY2VzIHRoYXQgbWF0dGVyLiBEcm9wIHBpbnMsIGZvbGxvdyBleHBsb3JlcnMsIGFuZCBtYXAgeW91ciBhZHZlbnR1cmVzLlwiLFxuICAgIHRhcmdldDogXCJ3ZWxjb21lXCJcbiAgfSxcbiAge1xuICAgIHRpdGxlOiBcIkV4cGxvcmUgJiBTZWFyY2hcIixcbiAgICBib2R5OiBcIlNlYXJjaCBwaW5zIHdvcmxkd2lkZSBieSAjaGFzaHRhZywgZm9sbG93IHRyZW5kaW5nIHRhZ3MsIG9yIGZpbmQgYW55IGFkZHJlc3MgZ2xvYmFsbHkuIFRhcCBoZXJlIHRvIG9wZW4gdGhlIHNlYXJjaCBiYXIuXCIsXG4gICAgdGFyZ2V0OiBcImJ0bi10YWItc2VhcmNoXCJcbiAgfSxcbiAge1xuICAgIHRpdGxlOiBcIlBsYWNlIFlvdXIgRmlyc3QgUGluXCIsXG4gICAgYm9keTogXCJUb3VjaCBhbmQgaG9sZCAob3IgdGFwKSBhbnl3aGVyZSBvbiB0aGUgbWFwIHRvIHBsYWNlIGEgcGluLiBDdXN0b21pemUgaXQgd2l0aCBhIG5hbWUsIGRlc2NyaXB0aW9uLCB0YWdzLCBjdXN0b20gY29sb3IsIHBob3Rvcywgb3IgYW4gb3B0aW9uYWwgZXhwaXJ5IHRpbWVyLlwiLFxuICAgIHRhcmdldDogXCJtYXAtY2VudGVyXCJcbiAgfSxcbiAge1xuICAgIHRpdGxlOiBcIlJlY29yZCBZb3VyIFJvdXRlc1wiLFxuICAgIGJvZHk6IFwiQ2xpY2sgaGVyZSB0byB0b2dnbGUgdGhlIFRyYWlscyAmIFF1ZXN0cyBwYW5lbC4gU3RhcnQgcmVjb3JkaW5nIHlvdXIgcGF0aCBpbiByZWFsLXRpbWUgb3IgaW1wb3J0IGV4dGVybmFsIEdQWCBmaWxlcy5cIixcbiAgICB0YXJnZXQ6IFwiYnRuLXRyYWlsLXF1ZXN0XCJcbiAgfSxcbiAge1xuICAgIHRpdGxlOiBcIlF1ZXN0cywgQ29sbGVjdGlvbnMgJiBCYWRnZXNcIixcbiAgICBib2R5OiBcIk1hbmFnZSB5b3VyIHByb2ZpbGUsIHZpZXcgY3VzdG9tIGNvbGxlY3Rpb25zLCB0cmFjayBhY3RpdmUgcXVlc3RzLCBjaGVjayB5b3VyIGV4cGxvcmF0aW9uIGJhZGdlcywgYW5kIGV4cG9ydCB5b3VyIGRhdGEuXCIsXG4gICAgdGFyZ2V0OiBcImJ0bi10YWItcHJvZmlsZVwiXG4gIH0sXG4gIHtcbiAgICB0aXRsZTogXCJSZWFkeSB0byBFeHBsb3JlIVwiLFxuICAgIGJvZHk6IFwiTG9vayBmb3IgKD8pIGhlbHAgaWNvbnMgYWNyb3NzIHNjcmVlbnMgZm9yIHF1aWNrIHRpcHMuIFlvdSBjYW4gcmVwZWF0IHRoaXMgdG91ciBhdCBhbnkgdGltZSBmcm9tIHlvdXIgU2V0dGluZ3MgaW4gdGhlIFByb2ZpbGUgdGFiLlwiLFxuICAgIHRhcmdldDogXCJ3cmFwLXVwXCJcbiAgfVxuXTtcblxuZXhwb3J0IGNvbnN0IE9OQk9BUkRfU1RFUFNfRVMgPSBbXG4gIHtcbiAgICB0aXRsZTogXCLCoUJpZW52ZW5pZG8gYSBQSU5NQVAhXCIsXG4gICAgYm9keTogXCJQSU5NQVAgZXMgdW5hIHBsYXRhZm9ybWEgY2FydG9ncsOhZmljYSBxdWUgcHJpb3JpemEgbGEgcHJpdmFjaWRhZCBwYXJhIGd1YXJkYXIsIG9yZ2FuaXphciB5IGNvbXBhcnRpciBsb3MgbHVnYXJlcyBxdWUgdGUgaW1wb3J0YW4uIENvbG9jYSBwaW5lcywgc2lndWUgZXhwbG9yYWRvcmVzIHkgdHJhemEgdHVzIGF2ZW50dXJhcy5cIixcbiAgICB0YXJnZXQ6IFwid2VsY29tZVwiXG4gIH0sXG4gIHtcbiAgICB0aXRsZTogXCJFeHBsb3JhIHkgQnVzY2FcIixcbiAgICBib2R5OiBcIkJ1c2NhIHBpbmVzIGdsb2JhbGVzIHBvciAjaGFzaHRhZywgc2lndWUgdGVuZGVuY2lhcyBvIGxvY2FsaXphIGRpcmVjY2lvbmVzIGVuIGVsIG11bmRvLiBUb2NhIGFxdcOtIHBhcmEgYWJyaXIgbGEgYmFycmEgZGUgYsO6c3F1ZWRhLlwiLFxuICAgIHRhcmdldDogXCJidG4tdGFiLXNlYXJjaFwiXG4gIH0sXG4gIHtcbiAgICB0aXRsZTogXCJDb2xvY2EgdHUgUHJpbWVyIFBpblwiLFxuICAgIGJvZHk6IFwiTWFudMOpbiBwcmVzaW9uYWRvIChvIHRvY2EpIGVuIGN1YWxxdWllciBwYXJ0ZSBkZWwgbWFwYSBwYXJhIGHDsWFkaXIgdW4gcGluLiBQb25sZSBldGlxdWV0YXMsIGNvbG9yZXMsIGZvdG9zIG8gdW4gdGVtcG9yaXphZG9yIGRlIGV4cGlyYWNpw7NuLlwiLFxuICAgIHRhcmdldDogXCJtYXAtY2VudGVyXCJcbiAgfSxcbiAge1xuICAgIHRpdGxlOiBcIkdyYWJhIHR1cyBSdXRhc1wiLFxuICAgIGJvZHk6IFwiVG9jYSBhcXXDrSBwYXJhIGFicmlyIGVsIHBhbmVsIGRlIFJ1dGFzIHkgRGVzYWbDrW9zLiBHcmFiYSB0dSByZWNvcnJpZG8gZW4gdGllbXBvIHJlYWwgbyBpbXBvcnRhIGFyY2hpdm9zIEdQWC5cIixcbiAgICB0YXJnZXQ6IFwiYnRuLXRyYWlsLXF1ZXN0XCJcbiAgfSxcbiAge1xuICAgIHRpdGxlOiBcIkRlc2Fmw61vcywgQ29sZWNjaW9uZXMgZSBJbnNpZ25pYXNcIixcbiAgICBib2R5OiBcIkFkbWluaXN0cmEgdHUgcGVyZmlsLCBvcmdhbml6YSBjb2xlY2Npb25lcywgaGF6IGVsIHNlZ3VpbWllbnRvIGRlIHR1cyBkZXNhZsOtb3MsIHJldmlzYSB0dXMgaW5zaWduaWFzIHkgZXhwb3J0YSB0dXMgZGF0b3MuXCIsXG4gICAgdGFyZ2V0OiBcImJ0bi10YWItcHJvZmlsZVwiXG4gIH0sXG4gIHtcbiAgICB0aXRsZTogXCLCoVRvZG8gTGlzdG8hXCIsXG4gICAgYm9keTogXCJCdXNjYSBsb3MgaWNvbm9zIGRlIGF5dWRhICg/KSBlbiBsYSBhcHAgcGFyYSB2ZXIgY29uc2Vqb3MgcsOhcGlkb3MuIFB1ZWRlcyByZXBldGlyIGVzdGUgcmVjb3JyaWRvIGVuIGxhIHBlc3Rhw7FhIFBlcmZpbC5cIixcbiAgICB0YXJnZXQ6IFwid3JhcC11cFwiXG4gIH1cbl07XG5cbi8vIEZhbGxiYWNrIGFycmF5cyBmb3IgYmFja3dhcmRzIGNvbXBhdGliaWxpdHlcbmV4cG9ydCBjb25zdCBXSEFUU05FVyA9IFdIQVRTTkVXX0VOO1xuZXhwb3J0IGNvbnN0IEFMTF9GRUFUVVJFUyA9IEFMTF9GRUFUVVJFU19FTjtcbmV4cG9ydCBjb25zdCBPTkJPQVJEX1NURVBTID0gT05CT0FSRF9TVEVQU19FTjtcblxuZXhwb3J0IGZ1bmN0aW9uIGdldE9uYm9hcmRTdGVwcyhsYW5nKSB7XG4gIHJldHVybiBsYW5nID09PSBcImVzXCIgPyBPTkJPQVJEX1NURVBTX0VTIDogT05CT0FSRF9TVEVQU19FTjtcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIGdldFdoYXRzTmV3TGlzdChsYW5nKSB7XG4gIHJldHVybiBsYW5nID09PSBcImVzXCIgPyBXSEFUU05FV19FUyA6IFdIQVRTTkVXX0VOO1xufVxuXG5leHBvcnQgZnVuY3Rpb24gZ2V0QWxsRmVhdHVyZXMobGFuZykge1xuICByZXR1cm4gbGFuZyA9PT0gXCJlc1wiID8gQUxMX0ZFQVRVUkVTX0VTIDogQUxMX0ZFQVRVUkVTX0VOO1xufVxuXG5leHBvcnQgZnVuY3Rpb24gdWlkKCkgeyByZXR1cm4gTWF0aC5yYW5kb20oKS50b1N0cmluZygzNikuc2xpY2UoMiwxMCk7IH1cblxuZXhwb3J0IGZ1bmN0aW9uIGZvcm1hdExMKGxhdCwgbG5nLCBwcmVjKSB7IFxuICBwcmVjPXByZWN8fDI7IFxuICByZXR1cm4gTWF0aC5hYnMobGF0KS50b0ZpeGVkKHByZWMpK1wiwrBcIisobGF0Pj0wP1wiTlwiOlwiU1wiKStcIiBcIitNYXRoLmFicyhsbmcpLnRvRml4ZWQocHJlYykrXCLCsFwiKyhsbmc+PTA/XCJFXCI6XCJXXCIpOyBcbn1cblxuY29uc3QgREJfTkFNRSA9IFwicGlubWFwLW9mZmxpbmVcIiwgREJfVkVSID0gMTtcbmxldCBvZmZsaW5lREIgPSBudWxsO1xuXG5leHBvcnQgZnVuY3Rpb24gb3BlbkRCKCkge1xuICBpZihvZmZsaW5lREIpIHJldHVybiBQcm9taXNlLnJlc29sdmUob2ZmbGluZURCKTtcbiAgcmV0dXJuIG5ldyBQcm9taXNlKGZ1bmN0aW9uKHJlcywgcmVqKSB7XG4gICAgdmFyIHJlcSA9IGluZGV4ZWREQi5vcGVuKERCX05BTUUsIERCX1ZFUik7XG4gICAgcmVxLm9udXBncmFkZW5lZWRlZCA9IGZ1bmN0aW9uKGUpIHtcbiAgICAgIHZhciBkYiA9IGUudGFyZ2V0LnJlc3VsdDtcbiAgICAgIGlmKCFkYi5vYmplY3RTdG9yZU5hbWVzLmNvbnRhaW5zKFwicGluc1wiKSkgICAgIGRiLmNyZWF0ZU9iamVjdFN0b3JlKFwicGluc1wiLCAgICAge2tleVBhdGg6XCJpZFwifSk7XG4gICAgICBpZighZGIub2JqZWN0U3RvcmVOYW1lcy5jb250YWlucyhcImNvbW1lbnRzXCIpKSBkYi5jcmVhdGVPYmplY3RTdG9yZShcImNvbW1lbnRzXCIsIHtrZXlQYXRoOlwiaWRcIn0pO1xuICAgIH07XG4gICAgcmVxLm9uc3VjY2VzcyAgPSBmdW5jdGlvbihlKSB7IG9mZmxpbmVEQiA9IGUudGFyZ2V0LnJlc3VsdDsgcmVzKG9mZmxpbmVEQik7IH07XG4gICAgcmVxLm9uZXJyb3IgICAgPSBmdW5jdGlvbihlKSB7IHJlaihlKTsgfTtcbiAgfSk7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBkYkdldEFsbChzdG9yZSkge1xuICByZXR1cm4gb3BlbkRCKCkudGhlbihmdW5jdGlvbihkYikge1xuICAgIHJldHVybiBuZXcgUHJvbWlzZShmdW5jdGlvbihyZXMsIHJlaikge1xuICAgICAgdmFyIHR4ID0gZGIudHJhbnNhY3Rpb24oc3RvcmUsIFwicmVhZG9ubHlcIik7XG4gICAgICB2YXIgcmVxID0gdHgub2JqZWN0U3RvcmUoc3RvcmUpLmdldEFsbCgpO1xuICAgICAgcmVxLm9uc3VjY2VzcyA9IGZ1bmN0aW9uKCkgeyByZXMocmVxLnJlc3VsdHx8W10pOyB9O1xuICAgICAgcmVxLm9uZXJyb3IgICA9IHJlajtcbiAgICB9KTtcbiAgfSk7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBkYlB1dChzdG9yZSwgaXRlbSkge1xuICByZXR1cm4gb3BlbkRCKCkudGhlbihmdW5jdGlvbihkYikge1xuICAgIHJldHVybiBuZXcgUHJvbWlzZShmdW5jdGlvbihyZXMsIHJlaikge1xuICAgICAgdmFyIHR4ID0gZGIudHJhbnNhY3Rpb24oc3RvcmUsIFwicmVhZHdyaXRlXCIpO1xuICAgICAgdmFyIHJlcSA9IHR4Lm9iamVjdFN0b3JlKHN0b3JlKS5wdXQoaXRlbSk7XG4gICAgICByZXEub25zdWNjZXNzID0gcmVzOyByZXEub25lcnJvciA9IHJlajtcbiAgICB9KTtcbiAgfSk7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBkYkRlbGV0ZShzdG9yZSwgaWQpIHtcbiAgcmV0dXJuIG9wZW5EQigpLnRoZW4oZnVuY3Rpb24oZGIpIHtcbiAgICByZXR1cm4gbmV3IFByb21pc2UoZnVuY3Rpb24ocmVzLCByZWopIHtcbiAgICAgIHZhciB0eCA9IGRiLnRyYW5zYWN0aW9uKHN0b3JlLCBcInJlYWR3cml0ZVwiKTtcbiAgICAgIHZhciByZXEgPSB0eC5vYmplY3RTdG9yZShzdG9yZSkuZGVsZXRlKGlkKTtcbiAgICAgIHJlcS5vbnN1Y2Nlc3MgPSByZXM7IHJlcS5vbmVycm9yID0gcmVqO1xuICAgIH0pO1xuICB9KTtcbn1cblxuY29uc3QgQkFOTkVEX1RBR1MgPSBbXG4gIFwicG9yblwiLFwicG9ybm9ncmFwaHlcIixcInh4eFwiLFwic2V4XCIsXCJuc2Z3XCIsXCJudWRlXCIsXCJudWRpdHlcIixcIm5ha2VkXCIsXCJhZHVsdFwiLFxuICBcImNvY2FpbmVcIixcImhlcm9pblwiLFwibWV0aFwiLFwiZHJ1Z3NcIixcIndlZWRcIixcIm1hcmlqdWFuYVwiLFwiY2FubmFiaXNcIixcImNyYWNrXCIsXG4gIFwia2lsbFwiLFwibXVyZGVyXCIsXCJyYXBlXCIsXCJhc3NhdWx0XCIsXCJib21iXCIsXCJleHBsb3NpdmVcIixcIndlYXBvblwiLFwiZ3VuXCIsXCJzaG9vdFwiLFxuICBcIm5hemlcIixcInJhY2lzdFwiLFwicmFjaXNtXCIsXCJ0ZXJyb3Jpc3RcIixcInRlcnJvcmlzbVwiLFwiamloYWRcIixcImlzaXNcIixcbiAgXCJoYXRlXCIsXCJzbHVyXCIsXCJuaWdnZXJcIixcImZhZ2dvdFwiLFwiY2hpbmtcIixcInNwaWNcIixcImtpa2VcIixcbiAgXCJpbGxlZ2FsXCIsXCJzdG9sZW5cIixcInRyYWZmaWNraW5nXCIsXCJwcm9zdGl0dXRlXCIsXCJlc2NvcnRcIixcbiAgXCJnYW1ibGluZ1wiLFwiY2FzaW5vXCIsXCJiZXR0aW5nXCIsXCJzY2FtXCIsXCJmcmF1ZFwiLFwiaGFja1wiLFwicGhpc2hpbmdcIlxuXTtcblxuY29uc3QgQkFOTkVEX1BBVFRFUk5TID0gW1xuICAvXmNwJC9pLFxuICAvY2hpbGQuKnBvcm4vaSxcbiAgL2RydWcuKmRlYWwvaSxcbiAgL2J1eS4qZ3VuL2ksXG5dO1xuXG5leHBvcnQgZnVuY3Rpb24gY2hlY2tCYW5uZWRUYWdzKHRhZ3MpIHtcbiAgdmFyIGZvdW5kID0gW107XG4gIHRhZ3MuZm9yRWFjaChmdW5jdGlvbih0YWcpIHtcbiAgICB2YXIgdCA9IHRhZy50b0xvd2VyQ2FzZSgpO1xuICAgIGlmKEJBTk5FRF9UQUdTLmluZGV4T2YodCkgPj0gMCkgeyBmb3VuZC5wdXNoKHRhZyk7IHJldHVybjsgfVxuICAgIEJBTk5FRF9QQVRURVJOUy5mb3JFYWNoKGZ1bmN0aW9uKHBhdCkge1xuICAgICAgaWYocGF0LnRlc3QodCkgJiYgZm91bmQuaW5kZXhPZih0YWcpIDwgMCkgZm91bmQucHVzaCh0YWcpO1xuICAgIH0pO1xuICB9KTtcbiAgcmV0dXJuIGZvdW5kO1xufVxuXG5leHBvcnQgZnVuY3Rpb24gZ2V0UGluSWNvbih0YWdzKSB7XG4gIHZhciB0ID0gKHRhZ3N8fFtdKS5qb2luKFwiIFwiKS50b0xvd2VyQ2FzZSgpO1xuICBpZigvcHVifGJhcnxicmV3ZXJ5fGJlZXJ8dGF2ZXJufGNlcnZlY2VyaWF8Y2VydmVjZXLDrWF8Y2VydmV6YXx0YWJlcm5hLy50ZXN0KHQpKSAgICAgICAgICByZXR1cm4gXCLwn426XCI7XG4gIGlmKC90cmFpbHxoaWtlfGhpa2luZ3x0cmFpbGhlYWR8dHJla3xzZW5kZXJvfGNhbWluYXRhfGNhbWluYXJ8ZXhjdXJzaW9ufGV4Y3Vyc2nDs258dHJla2tpbmd8c2VuZGVyaXNtby8udGVzdCh0KSkgICAgIHJldHVybiBcIvCfpb5cIjtcbiAgaWYoL2Zsb3dlcnx3aWxkZmxvd2VyfGZsb3JhfGJsb29tfGdhcmRlbnxmbG9yfGZsb3Jlc3xzaWx2ZXN0cmV8amFyZGlufGphcmTDrW58ZmxvcmVjZXIvLnRlc3QodCkpIHJldHVybiBcIvCfjLhcIjtcbiAgaWYoL211cmFsfGFydHxncmFmZml0aXxzdHJlZXQgYXJ0fGFydGV8Z3JhZmZpdGl8YXJ0ZSBjYWxsZWplcm8vLnRlc3QodCkpICAgICAgICByZXR1cm4gXCLwn46oXCI7XG4gIGlmKC9maXNofGZpc2hpbmd8ZmlzaGluZ3Nwb3R8YW5nbGluZ3xwZXNjYXxwZXNjYXJ8cGVzY2FuZG8vLnRlc3QodCkpICAgICByZXR1cm4gXCLwn46jXCI7XG4gIGlmKC9nZW9jYWNoZXxjYWNoZXxnZW9jYWNoaW5nLy50ZXN0KHQpKSAgICAgICAgICAgICAgICAgICAgICAgcmV0dXJuIFwi8J+TplwiO1xuICBpZigva2F5YWt8Y2Fub2V8cGFkZGxlfHJvd2luZ3xrYXlha3xjYW5vYXxyZW1vfHJlbWFyLy50ZXN0KHQpKSAgICAgICAgICAgIHJldHVybiBcIvCfmqNcIjtcbiAgaWYoL2NhbXB8Y2FtcGluZ3xjYW1wc2l0ZXxhY2FtcGFyfGNhbXBhbWVudG98Y2FtcGluZy8udGVzdCh0KSkgICAgICAgICAgICAgICAgcmV0dXJuIFwi4pu6XCI7XG4gIGlmKC9waG90b3x2aWV3cG9pbnR8dmlzdGF8bG9va291dHxmb3RvfGZvdG9ncmFmaWF8Zm90b2dyYWbDrWF8bWlyYWRvcnx2aXN0YXxvYnNlcnZhdG9yaW8vLnRlc3QodCkpICAgICAgICByZXR1cm4gXCLwn5O3XCI7XG4gIGlmKC93YXRlcmZhbGx8bGFrZXxyaXZlcnxjcmVla3xzd2ltfGNhc2NhZGF8c2FsdG98bGFnb3xyaW98csOtb3xhcnJveW98bmFkYXIvLnRlc3QodCkpICAgICAgcmV0dXJuIFwi8J+Sp1wiO1xuICBpZigvYmlrZXxjeWNsaW5nfG10YnxjeWNsZXxiaWNpfGJpY2ljbGV0YXxjaWNsaXNtby8udGVzdCh0KSkgICAgICAgICAgICAgICByZXR1cm4gXCLwn5q0XCI7XG4gIGlmKC9jbGltYnxib3VsZGVyfGNyYWd8ZXNjYWxhcnxlc2NhbGFkYS8udGVzdCh0KSkgICAgICAgICAgICAgICAgICAgcmV0dXJuIFwi8J+nl1wiO1xuICBpZigvY29mZmVlfGNhZmV8YmFrZXJ5fGNhZmV8Y2Fmw6l8Y2FmZXRlcmlhfGNhZmV0ZXLDrWF8cGFuYWRlcmlhfHBhbmFkZXLDrWEvLnRlc3QodCkpICAgICAgICAgICAgICAgICAgIHJldHVybiBcIuKYlVwiO1xuICBpZigvZm9vZHxyZXN0YXVyYW50fGVhdHxkaW5lcnxjb21pZGF8cmVzdGF1cmFudGV8Y29tZXIvLnRlc3QodCkpICAgICAgICAgICAgcmV0dXJuIFwi8J+NvVwiO1xuICBpZigvbXVzZXVtfGdhbGxlcnl8aGlzdG9yeXxoZXJpdGFnZXxtdXNlb3xnYWxlcmlhfGdhbGVyw61hfGhpc3RvcmlhfHBhdHJpbW9uaW8vLnRlc3QodCkpICAgICAgcmV0dXJuIFwi8J+Pm1wiO1xuICBpZigvYmVhY2h8Y29hc3R8c2VhfG9jZWFufHN1cmZ8cGxheWF8Y29zdGF8bWFyfG9jZWFub3xvY8OpYW5vfHN1cmYvLnRlc3QodCkpICAgICAgICAgICByZXR1cm4gXCLwn4+WXCI7XG4gIGlmKC91cmJhbnx1cmJleHxhYmFuZG9uZWR8dXJiYW5vfGFiYW5kb25hZG98YWJhbmRvbmFkYS8udGVzdCh0KSkgICAgICAgICAgICAgICAgcmV0dXJuIFwi8J+PmlwiO1xuICBpZigvYmlyZHx3aWxkbGlmZXxuYXR1cmV8YW5pbWFsfGF2ZXxwYWphcm98cMOhamFyb3xmYXVuYXxuYXR1cmFsZXphfGFuaW1hbHxhbmltYWxlcy8udGVzdCh0KSkgICAgICAgICAgcmV0dXJuIFwi8J+mnFwiO1xuICBpZigvc25vd3xza2l8d2ludGVyfG1vdW50YWlufG5pZXZlfGVzcXVpfGVzcXXDrXxpbnZpZXJub3xtb250YcOxYS8udGVzdCh0KSkgICAgICAgICAgICAgcmV0dXJuIFwi8J+PlFwiO1xuICBpZigvb3ZlcmxhbmRpbmd8NHdkfG9mZnJvYWR8dG9kb3RlcnJlbm98NHg0Ly50ZXN0KHQpKSAgICAgICAgICAgICAgcmV0dXJuIFwi8J+amVwiO1xuICByZXR1cm4gXCLwn5ONXCI7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiB0YWdDb2xvcih0YWcpIHsgXG4gIHZhciBoPTA7IFxuICBmb3IodmFyIGk9MDtpPHRhZy5sZW5ndGg7aSsrKSBoPShoKjMxK3RhZy5jaGFyQ29kZUF0KGkpKT4+PjA7IFxuICByZXR1cm4gQ09MT1JTW2glQ09MT1JTLmxlbmd0aF07IFxufVxuXG5leHBvcnQgZnVuY3Rpb24gZGlzdEttKGEsYixjLGQpIHsgXG4gIHZhciBSPTYzNzEsZEw9KGMtYSkqTWF0aC5QSS8xODAsZGw9KGQtYikqTWF0aC5QSS8xODAseD1NYXRoLnNpbihkTC8yKSpNYXRoLnNpbihkTC8yKStNYXRoLmNvcyhhKk1hdGguUEkvMTgwKSpNYXRoLmNvcyhjKk1hdGguUEkvMTgwKSpNYXRoLnNpbihkbC8yKSpNYXRoLnNpbihkbC8yKTsgXG4gIHJldHVybiBSKjIqTWF0aC5hdGFuMihNYXRoLnNxcnQoeCksTWF0aC5zcXJ0KDEteCkpOyBcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIGRsRmlsZShjb250ZW50LG5hbWUsdHlwZSkgeyBcbiAgdmFyIGE9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcImFcIik7IFxuICBhLmhyZWY9VVJMLmNyZWF0ZU9iamVjdFVSTChuZXcgQmxvYihbY29udGVudF0se3R5cGU6dHlwZX0pKTsgXG4gIGEuZG93bmxvYWQ9bmFtZTsgXG4gIGEuY2xpY2soKTsgXG59XG5cbmV4cG9ydCBmdW5jdGlvbiB0b0dlb0pTT04ocGlucykgeyBcbiAgcmV0dXJuIEpTT04uc3RyaW5naWZ5KHt0eXBlOlwiRmVhdHVyZUNvbGxlY3Rpb25cIixmZWF0dXJlczpwaW5zLm1hcChmdW5jdGlvbihwKXtyZXR1cm4ge3R5cGU6XCJGZWF0dXJlXCIsZ2VvbWV0cnk6e3R5cGU6XCJQb2ludFwiLGNvb3JkaW5hdGVzOltwLmxuZyxwLmxhdF19LHByb3BlcnRpZXM6e25hbWU6cC5uYW1lLGRlc2NyaXB0aW9uOnAuZGVzY3JpcHRpb24sdGFnczpwLnRhZ3Msb3duZXI6cC5vd25lcn19O30pfSxudWxsLDIpOyBcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIHRvR1BYKHBpbnMpIHsgXG4gIHJldHVybiAnPD94bWwgdmVyc2lvbj1cIjEuMFwiPz48Z3B4IHZlcnNpb249XCIxLjFcIiBjcmVhdG9yPVwiUElOTUFQXCI+JytwaW5zLm1hcChmdW5jdGlvbihwKXtyZXR1cm4gJzx3cHQgbGF0PVwiJytwLmxhdCsnXCIgbG9uPVwiJytwLmxuZysnXCI+PG5hbWU+JytwLm5hbWUrJzwvbmFtZT48ZGVzYz4nKyhwLmRlc2NyaXB0aW9ufHxcIlwiKSsnICcrKHAudGFnc3x8W10pLm1hcChmdW5jdGlvbih0KXtyZXR1cm4gXCIjXCIrdDt9KS5qb2luKFwiIFwiKSsnPC9kZXNjPjwvd3B0Pic7fSkuam9pbihcIlwiKStcIjwvZ3B4PlwiOyBcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIHVzZXJOYW1lKHUpIHsgXG4gIHJldHVybiB1Pyh1LnVzZXJfbWV0YWRhdGEmJnUudXNlcl9tZXRhZGF0YS5mdWxsX25hbWU/dS51c2VyX21ldGFkYXRhLmZ1bGxfbmFtZTp1LmVtYWlsLnNwbGl0KFwiQFwiKVswXSk6XCJndWVzdFwiOyBcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIHVzZXJBdmF0YXIodSkgeyBcbiAgcmV0dXJuIHUmJnUudXNlcl9tZXRhZGF0YSYmdS51c2VyX21ldGFkYXRhLmF2YXRhcl91cmw/dS51c2VyX21ldGFkYXRhLmF2YXRhcl91cmw6bnVsbDsgXG59XG4iXX0=

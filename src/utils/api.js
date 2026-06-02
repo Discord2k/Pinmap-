@@ -11,6 +11,18 @@ function sbWithUser(uname) {
 
 function uid() { return Math.random().toString(36).slice(2,10); }
 
+export function parseComment(item) {
+  if (!item) return item;
+  var body = item.body || "";
+  var photoUrl = null;
+  if (body.includes("[photo]")) {
+    var parts = body.split("[photo]");
+    body = parts[0].trim();
+    photoUrl = parts[1] ? parts[1].trim() : null;
+  }
+  return Object.assign({}, item, { body: body, photo_url: photoUrl });
+}
+
 export const api = {
   list:           function()           { return sb.from("pins").select("*").order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
   insert:         function(pin)        { return sb.from("pins").insert(pin).select().then(function(r){return r.data;}); },
@@ -24,7 +36,7 @@ export const api = {
   deleteExpired:  function()            { return sb.from("pins").delete().lt("expires_at",new Date().toISOString()).not("expires_at","is",null); },
   remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).in("privacy",["public","insider"]).then(function(r){return r.data||[];}); },
-  getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){ if (r.error) throw r.error; return r.data||[];}); },
+  getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){ if (r.error) throw r.error; return (r.data||[]).map(parseComment);}); },
   upvoteComment:  function(id,upvotes) { return sb.from("comments").update({upvotes:upvotes}).eq("id",id).then(function(r) { if (r.error) throw r.error; return r.data; }); },
   addComment:     async function(c)    {
     if (c.photo_url && c.photo_url.startsWith("data:")) {
@@ -35,7 +47,12 @@ export const api = {
         console.error("Failed to upload offline journal photo", e);
       }
     }
-    return sb.from("comments").insert(c).select().then(function(r){ if (r.error) throw r.error; return r.data; });
+    var insertPayload = Object.assign({}, c);
+    if (insertPayload.photo_url) {
+      insertPayload.body = insertPayload.body ? insertPayload.body + "\n[photo]" + insertPayload.photo_url : "[photo]" + insertPayload.photo_url;
+      delete insertPayload.photo_url;
+    }
+    return sb.from("comments").insert(insertPayload).select().then(function(r){ if (r.error) throw r.error; return (r.data || []).map(parseComment); });
   },
   deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id).then(function(r) { if (r.error) throw r.error; return r.data; }); },
   signInGoogle:   function()            { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
@@ -327,7 +344,7 @@ export const api = {
         sb.from("comments").select("*, pins(name)").in("owner", followedUsers).order("created_at", {ascending: false}).limit(20)
           .then(function(r) {
             return (r.data || []).map(function(item) {
-              return Object.assign({}, item, {type: "comment"});
+              return Object.assign({}, parseComment(item), {type: "comment"});
             });
           })
       );
@@ -355,11 +372,14 @@ export const api = {
   getMyActivity: function(myPinIds) {
     if (!myPinIds || !myPinIds.length) return Promise.resolve([]);
     return sb.from("comments")
-      .select("id,pin_id,owner,body,photo_url,created_at")
+      .select("id,pin_id,owner,body,created_at")
       .in("pin_id", myPinIds)
       .order("created_at", {ascending: false})
       .limit(25)
-      .then(function(r) { return r.data || []; });
+      .then(function(r) {
+        if (r.error) throw r.error;
+        return (r.data || []).map(parseComment);
+      });
   },
   callEdgeFunction: callEdgeFunction
 };

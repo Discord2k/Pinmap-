@@ -13,8 +13,6 @@ export function Comments(props) {
   var [comments, setComments] = useState([]);
   var [cLoading, setCLoading] = useState(true);
   var [draft, setDraft] = useState("");
-  var [urlDraft, setUrlDraft] = useState("");
-  var [urlDraftActive, setUrlDraftActive] = useState(false);
   var [sending, setSending] = useState(false);
   var [replyTo, setReplyTo] = useState(null);
   var [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -75,8 +73,7 @@ export function Comments(props) {
 
   async function submit(){
     var trimmedDraft = draft.trim();
-    var trimmedUrl = urlDraft.trim();
-    if(!trimmedDraft && !trimmedUrl && !selectedPhoto) return;
+    if(!trimmedDraft && !selectedPhoto) return;
     if(!uname){api.signInGoogle();return;}
     setSending(true);
     
@@ -91,13 +88,6 @@ export function Comments(props) {
       }
 
       var finalBody = trimmedDraft;
-      if (trimmedUrl) {
-        var formattedUrl = trimmedUrl;
-        if (!/^https?:\/\//i.test(formattedUrl) && !/^www\./i.test(formattedUrl)) {
-          formattedUrl = "https://" + formattedUrl;
-        }
-        finalBody = finalBody ? finalBody + "\n" + formattedUrl : formattedUrl;
-      }
 
       var c={id:uid(),pin_id:pinId,owner:uname,body:finalBody,
         reply_to:replyTo?replyTo.id:null,
@@ -107,13 +97,13 @@ export function Comments(props) {
       if(!navigator.onLine){
         dbPut("comments", Object.assign({},c,{_offline:true})).then(function(){
           setComments(function(prev){return prev.concat([Object.assign({},c,{_offline:true})]);});
-          setDraft(""); setUrlDraft(""); setUrlDraftActive(false); setSelectedPhoto(null); setReplyTo(null); setSending(false);
+          setDraft(""); setSelectedPhoto(null); setReplyTo(null); setSending(false);
           if(props.flash) props.flash(t('toast_comment_posted_offline'));
         });
       } else {
         api.addComment(c).then(function(){
           setComments(function(prev){return prev.concat([c]);});
-          setDraft(""); setUrlDraft(""); setUrlDraftActive(false); setSelectedPhoto(null); setReplyTo(null); setSending(false);
+          setDraft(""); setSelectedPhoto(null); setReplyTo(null); setSending(false);
           if(props.pinOwner && props.pinOwner !== props.uname) {
             api.callEdgeFunction("new_comment", {
               pinOwner: props.pinOwner,
@@ -334,15 +324,6 @@ export function Comments(props) {
                 onChange={(ev) => setDraft(ev.target.value)}
                 onKeyDown={(ev) => {if(ev.key==="Enter")submit();}}
               />
-              {!urlDraftActive && uname && (
-                <button 
-                  style={{background:"#efe9d8",border:"1px solid #d8cfb8",padding:"0 8px",height:34,fontSize:12,fontWeight:600,cursor:"pointer",borderRadius:6,color:"#2a5d3c"}}
-                  onClick={() => setUrlDraftActive(true)}
-                  title="Add Link / URL"
-                >
-                  🔗 Link
-                </button>
-              )}
               <button 
                 style={{background:"#2a5d3c",color:"#fff",border:"none",padding:"0 14px",height:34,fontSize:13,fontWeight:700,cursor:"pointer",borderRadius:6,opacity:sending?0.6:1}}
                 onClick={submit}
@@ -351,24 +332,6 @@ export function Comments(props) {
                 {sending?"...":t('post_btn')}
               </button>
             </div>
-            {urlDraftActive && uname && (
-              <div style={{display:"flex",gap:6,alignItems:"center",animation:"fadeIn 0.2s ease-out"}}>
-                <span style={{fontSize:12,color:"#6f786f",fontFamily:"monospace"}}>URL:</span>
-                <input 
-                  style={{flex:1,background:"#efe9d8",border:"1px solid #d8cfb8",color:"#1a201c",padding:"8px 10px",fontSize:13,borderRadius:6,outline:"none",height:34,boxSizing:"border-box"}}
-                  placeholder="https://example.com"
-                  value={urlDraft}
-                  onChange={(ev) => setUrlDraft(ev.target.value)}
-                  onKeyDown={(ev) => {if(ev.key==="Enter")submit();}}
-                />
-                <button 
-                  style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:"0 8px",fontSize:14}}
-                  onClick={() => {setUrlDraft(""); setUrlDraftActive(false);}}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}

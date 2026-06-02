@@ -5386,32 +5386,6 @@ function App() {
               )
             );
           })(),
-          selPin.owner!==uname&&e("button",{
-            style:{fontSize:12,padding:"4px 10px",borderRadius:6,cursor:"pointer",fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-              background:"none",border:"1px solid #d8cfb8",
-              color:selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"#e65100":"#6f786f",
-              display:"inline-flex",alignItems:"center",gap:5},
-            onClick:function(){toggleSavePin(selPin);}
-          },
-            e("svg",{
-              width:13,
-              height:13,
-              viewBox:"0 0 24 24",
-              fill:selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0?"currentColor":"none",
-              stroke:"currentColor",
-              strokeWidth:"2.2",
-              strokeLinecap:"round",
-              strokeLinejoin:"round",
-              style:{flexShrink:0}
-            },
-              e("path",{d:"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"}),
-              e("polyline",{points:"17 21 17 13 7 13 7 21"}),
-              e("polyline",{points:"7 3 7 8 15 8"})
-            ),
-            e("span",null,selPin.saved_by&&selPin.saved_by.indexOf(uname)>=0
-              ? (lang === 'es' ? "Guardado" : "Saved")
-              : (lang === 'es' ? "Guardar" : "Save"))
-          ),
           (uname&&uname!=="guest"&&selPin.owner!==uname)&&(
             checkins.some(function(c){return c.pin_id===selPin.id;})
               ? e("button",{style:{fontSize:12,padding:"4px 10px",borderRadius:6,border:"1px solid #2a5d3c",background:"#dde6dc",color:"#2a5d3c",cursor:"default",display:"inline-flex",alignItems:"center",gap:5},disabled:true},"✓ Checked In")

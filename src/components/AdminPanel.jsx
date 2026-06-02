@@ -1,6 +1,6 @@
 import React from 'react';
 import { T, S } from '../utils/styles';
-import { sb } from '../utils/api';
+import { sb, parseComment } from '../utils/api';
 
 // Helper function to format relative time for last seen or activity
 function formatLastSeen(dateString, lang) {
@@ -140,7 +140,7 @@ export function AdminPanel(props) {
 
       const loadedProfiles = resProfiles.data || [];
       const loadedPins = resPins.data || [];
-      const loadedComments = resComments.data || [];
+      const loadedComments = (resComments.data || []).map(parseComment);
       const loadedCheckins = resCheckins.data || [];
       const loadedTrails = resTrails.data || [];
       const loadedPresence = resPresence.data || [];
