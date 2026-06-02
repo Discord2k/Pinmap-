@@ -5438,14 +5438,14 @@ function App() {
           )
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
-          e("button",{style:{background:"rgba(46,125,50,0.06)",border:"1px solid #2e7d32",color:"#2a5d3c",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:5},onClick:function(){openEdit(selPin);}},
+          e("button",{style:{background:"rgba(46,125,50,0.08)",border:"none",color:"#2a5d3c",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){openEdit(selPin);}},
             e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
               e("path",{d:"M11 20h9"}),
               e("path",{d:"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"})
             ),
             e("span",null,"Edit")
           ),
-          e("button",{style:{background:"#fde8e8",border:"1px solid #f8b4b4",color:"#c81e1e",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:5},onClick:function(){if(window.confirm("Delete \""+selPin.name+"\"? This cannot be undone.")){deletePin(selPin.id);setSelPin(null);}}},
+          e("button",{style:{background:"#fde8e8",border:"none",color:"#c81e1e",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){if(window.confirm("Delete \""+selPin.name+"\"? This cannot be undone.")){deletePin(selPin.id);setSelPin(null);}}},
             e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
               e("polyline",{points:"3 6 5 6 21 6"}),
               e("path",{d:"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"}),
@@ -5456,7 +5456,7 @@ function App() {
           )
         ),
         e("button",{
-          style:{background:"#e1effe",border:"1px solid #a4cafe",color:"#1e429f",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:5},
+          style:{background:"#e1effe",border:"none",color:"#1e429f",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},
           onClick:function(){
             var url="https://maps.google.com/?q="+selPin.lat+","+selPin.lng;
             if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) url="http://maps.apple.com/?ll="+selPin.lat+","+selPin.lng;
@@ -5471,7 +5471,7 @@ function App() {
           e("span",null,"Open in Maps")
         ),
         e("button",{
-          style:{background:"rgba(42,93,60,0.06)",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:5},
+          style:{background:"rgba(42,93,60,0.08)",border:"none",color:"#2a5d3c",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},
           onClick:function(){setShowCompass(true);}
         },
           e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
@@ -5481,7 +5481,7 @@ function App() {
           e("span",null,"Compass")
         ),
         (uname && uname !== "guest") && e("button",{
-          style:{background:"rgba(42,93,60,0.06)",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:5},
+          style:{background:"rgba(42,93,60,0.08)",border:"none",color:"#2a5d3c",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},
           onClick:function(){setShowAddToGuidesMenu(true);}
         },
           e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
