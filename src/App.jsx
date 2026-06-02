@@ -4104,8 +4104,8 @@ function App() {
         ),
         e("div",{style:{display:"flex",alignItems:"center",gap:6}},
           user&&userAvatar(user)?e("img",{src:userAvatar(user),style:{width:22,height:22,borderRadius:"50%",border:"1px solid #d8cfb8"}}):null,
-          e("span",{style:{fontSize:12,color:"#7a6a50",background:"#ece4cc",padding:"2px 7px",borderRadius:3,border:"1px solid #d8cfb8"}},uname),
-          !user && e("button",{style:{fontSize:12,background:"#2a5d3c",color:"#fff",border:"none",padding:"3px 8px",borderRadius:3,cursor:"pointer"},onClick:api.signInGoogle},"Sign in"),
+          e("span",{style:{fontSize:12,color:"#7a6a50",background:"#ece4cc",padding:"3px 8px",borderRadius:6,border:"1px solid #d8cfb8",fontWeight:500}},uname),
+          !user && e("button",{style:{fontSize:12,background:"#2a5d3c",color:"#fff",border:"none",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:600},onClick:api.signInGoogle},"Sign in"),
           e("button",{style:{background:"none",border:"none",color:T.ink3,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:32,height:32,borderRadius:8},onClick:function(){setOpen(false);}},e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none"},e("path",{d:"M18 6L6 18M6 6l12 12",stroke:T.ink3,strokeWidth:2,strokeLinecap:"round"})))
         )
       ),
@@ -5438,23 +5438,23 @@ function App() {
           )
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
-          e("button",{style:{background:"none",border:"1px solid #2e7d32",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){openEdit(selPin);}},"Edit"),
-          e("button",{style:{background:"none",border:"1px solid #c08080",color:"#c05050",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},onClick:function(){if(window.confirm("Delete \""+selPin.name+"\"? This cannot be undone.")){deletePin(selPin.id);setSelPin(null);}}},"Delete")
+          e("button",{style:{background:"rgba(46,125,50,0.06)",border:"1px solid #2e7d32",color:"#2a5d3c",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s"},onClick:function(){openEdit(selPin);}},"✏️ Edit"),
+          e("button",{style:{background:"#fde8e8",border:"1px solid #f8b4b4",color:"#c81e1e",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s"},onClick:function(){if(window.confirm("Delete \""+selPin.name+"\"? This cannot be undone.")){deletePin(selPin.id);setSelPin(null);}}},"🗑️ Delete")
         ),
         e("button",{
-          style:{background:"none",border:"1px solid #1565c0",color:"#1565c0",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},
+          style:{background:"#e1effe",border:"1px solid #a4cafe",color:"#1e429f",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s"},
           onClick:function(){
             var url="https://maps.google.com/?q="+selPin.lat+","+selPin.lng;
             if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) url="http://maps.apple.com/?ll="+selPin.lat+","+selPin.lng;
             window.open(url,"_blank");
           }
-        },"Open in Maps"),
+        },"🗺️ Open in Maps"),
         e("button",{
-          style:{background:"none",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},
+          style:{background:"rgba(42,93,60,0.06)",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s"},
           onClick:function(){setShowCompass(true);}
         },"🧭 Compass"),
         (uname && uname !== "guest") && e("button",{
-          style:{background:"none",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"4px 10px",cursor:"pointer",fontSize:12,borderRadius:3},
+          style:{background:"rgba(42,93,60,0.06)",border:"1px solid #2a5d3c",color:"#2a5d3c",padding:"6px 12px",cursor:"pointer",fontSize:12.5,borderRadius:8,fontWeight:600,transition:"all 0.2s"},
           onClick:function(){setShowAddToGuidesMenu(true);}
         },"📖 Add to Guide")
       ),
