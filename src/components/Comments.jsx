@@ -122,7 +122,10 @@ export function Comments(props) {
               pinId: props.pinId
             });
           }
-        }).catch(function(){setSending(false);});
+        }).catch(function(err){
+          setSending(false);
+          if(props.flash) props.flash("Failed to post comment: " + (err ? err.message : "Unknown error"));
+        });
       }
     } catch(e) {
       setSending(false);

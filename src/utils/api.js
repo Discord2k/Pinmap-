@@ -24,8 +24,8 @@ export const api = {
   deleteExpired:  function()            { return sb.from("pins").delete().lt("expires_at",new Date().toISOString()).not("expires_at","is",null); },
   remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).in("privacy",["public","insider"]).then(function(r){return r.data||[];}); },
-  getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){return r.data||[];}); },
-  upvoteComment:  function(id,upvotes) { return sb.from("comments").update({upvotes:upvotes}).eq("id",id); },
+  getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){ if (r.error) throw r.error; return r.data||[];}); },
+  upvoteComment:  function(id,upvotes) { return sb.from("comments").update({upvotes:upvotes}).eq("id",id).then(function(r) { if (r.error) throw r.error; return r.data; }); },
   addComment:     async function(c)    {
     if (c.photo_url && c.photo_url.startsWith("data:")) {
       try {
@@ -35,9 +35,9 @@ export const api = {
         console.error("Failed to upload offline journal photo", e);
       }
     }
-    return sb.from("comments").insert(c).select().then(function(r){return r.data;});
+    return sb.from("comments").insert(c).select().then(function(r){ if (r.error) throw r.error; return r.data; });
   },
-  deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id); },
+  deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id).then(function(r) { if (r.error) throw r.error; return r.data; }); },
   signInGoogle:   function()            { return sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}}); },
   signOut:        function()            { return sb.auth.signOut(); },
   getSession:     function()            { return sb.auth.getSession(); },
