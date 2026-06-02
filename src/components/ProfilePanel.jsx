@@ -1212,172 +1212,231 @@ export function ProfilePanel(props) {
           </div>
           {!settingsCollapsed && (
             <div style={{padding:"0 22px 12px"}}>
-          
-          {/* Language Setting Dropdown */}
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Idioma" : "Language"}</div>
-            <select
-              style={{
-                background: "transparent",
-                color: T.ink,
-                border: "1px solid " + T.border,
-                borderRadius: 8,
-                padding: "4px 8px",
-                fontSize: 13,
-                outline: "none",
-                cursor: "pointer"
-              }}
-              value={lang}
-              onChange={function(e) {
-                var val = e.target.value;
-                setLang(val);
-                localStorage.setItem("pm-lang", val);
-              }}
-            >
-              <option value="en" style={{background: T.paper, color: T.ink}}>🇺🇸 English</option>
-              <option value="es" style={{background: T.paper, color: T.ink}}>🇪🇸 Español</option>
-            </select>
-          </div>
+              {(() => {
+                var chevronSvg = (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-chevron">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                );
 
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            <div style={{flex:1,fontSize:15,color:T.ink}}>{t('push_notifications')}</div>
-            {pushEnabled ? (
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{fontSize:13,color:T.forest,cursor:"pointer"}} onClick={()=>flash(lang === 'es' ? "Para desactivar: toca 🔒 en la barra de direcciones de tu navegador → Notificaciones → Bloquear" : "To disable: tap 🔒 in your browser address bar → Notifications → Block")}>{lang === 'es' ? "Activadas" : "On"}</div>
-                <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
-              </div>
-            ) : (
-              <button 
-                style={{fontSize:13,color:T.ink3,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6}}
-                onClick={() => {
-                  var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
-                  if(!isCapacitor && !("Notification" in window)){flash(lang === 'es' ? "No soportado en este navegador" : "Not supported on this browser");return;}
-                  if(!isCapacitor && Notification.permission==="denied"){flash(lang === 'es' ? "Bloqueado — ve a la Configuración del navegador → Configuración del Sitio → Notificaciones → Permitir" : "Blocked — go to browser Settings → Site Settings → Notifications → Allow");return;}
-                  subscribeToPush(uname).then(function(){
-                    if(isCapacitor || Notification.permission==="granted"){
-                      setPushEnabled(true);
-                      flash(lang === 'es' ? "¡Activado!" : "Enabled!");
-                    }
-                  }).catch(function(err){
-                    flash((lang === 'es' ? "Error: " : "Error: ") + err.message);
-                  });
-                }}
-              >
-                {lang === 'es' ? "Activar" : "Enable"} <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
-              </button>
-            )}
-          </div>
-          
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>{localStorage.removeItem(ONBOARD_KEY);setOnboardStep(0);setOpen(false);}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <circle cx="12" cy="12" r="10" />
-              <polygon points="10 8 16 12 10 16 10 8" />
-            </svg>
-            <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Tutorial interactivo" : "Interactive Tutorial"}</div>
-            <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>{lang === 'es' ? "Repetir" : "Replay"} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
-          </div>
-          
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>{setShowFeatures(true);setOpen(false);}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z" />
-            </svg>
-            <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Todas las funciones" : "All features"}</div>
-            <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>{lang === 'es' ? "Ver" : "View"} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
-          </div>
-          
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",borderBottom:"1px solid "+T.borderSoft,cursor:"pointer"}} onClick={()=>setShowImport(true)}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <div style={{flex:1}}>
-              <div style={{fontSize:15,color:T.ink}}>{lang === 'es' ? "Importar Pines" : "Import Pins"}</div>
-              <div style={{fontSize:12,color:T.ink3,marginTop:2}}>KML · GPX · GeoJSON · CSV</div>
-            </div>
-            <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>{lang === 'es' ? "Importar" : "Import"} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
-          </div>
- 
-          {/* Offline Maps */}
-          <div style={{padding:"16px 0"}}>
-            <div style={Object.assign({}, S.secHead, {marginBottom:10, display:"flex", alignItems:"center", gap:8})}>
-              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3}}>
-                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-                <line x1="9" y1="3" x2="9" y2="18" />
-                <line x1="15" y1="6" x2="15" y2="21" />
-              </svg>
-              <span>{lang === 'es' ? "Mapas sin conexión" : "Offline Maps"}</span>
-            </div>
-            <div style={{fontSize:12,color:T.ink3,marginBottom:12,lineHeight:1.5}}>{lang === 'es' ? "Guarda imágenes del mapa para usarlas sin señal. Navega a tu destino y luego descarga." : "Cache map tiles for use without a signal. Navigate to your destination, then download."}</div>
-            <div style={{display:"flex",gap:8}}>
-              <button
-                style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"11px 0",borderRadius:10,border:"none",background:T.forest,color:T.paper,fontSize:13,fontWeight:600,cursor:"pointer"}}
-                onClick={onStartOfflineMode}
-              >
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
-                {lang === 'es' ? "Descargar región" : "Download Region"}
-              </button>
-              <button
-                style={{padding:"11px 14px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",color:T.ink3,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}
-                onClick={onPurgeOfflineTiles}
-              >
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
-                {lang === 'es' ? "Limpiar" : "Purge"}
-              </button>
-            </div>
-          </div>
-          
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0"}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
-            </svg>
-            <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Acerca de" : "About"}</div>
-            <div style={{fontSize:13,color:T.ink3,display:"flex",alignItems:"center",gap:6}}>v {APP_VERSION} <div style={{color:T.ink3,fontSize:16}}>{">"}</div></div>
-          </div>
- 
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={function(){window.open("https://pin-map.com/privacy","_blank");}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            <div style={{flex:1,fontSize:15,color:T.ink}}>{t('privacy_policy')}</div>
-            <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
-          </div>
- 
-          <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={function(){window.open("https://pin-map.com/terms","_blank");}}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: T.ink3}}>
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-            </svg>
-            <div style={{flex:1,fontSize:15,color:T.ink}}>{t('terms_service')}</div>
-            <div style={{color:T.ink3,fontSize:16}}>{">"}</div>
-          </div>
- 
-          {user && (
-            <div style={{display:"flex",alignItems:"center",padding:"14px 0",cursor:"pointer"}} onClick={props.onDeleteAccount}>
-              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 12, flexShrink: 0, color: "#c05050"}}>
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="8.5" cy="7" r="4" />
-                <line x1="23" y1="11" x2="17" y2="11" />
-              </svg>
-              <div style={{flex:1,fontSize:15,color:"#c05050",fontWeight:600}}>{t('delete_account')}</div>
-              <div style={{color:"#c05050",fontSize:16}}>{">"}</div>
+                return (
+                  <>
+                    {/* ── GENERAL SETTINGS ── */}
+                    <div className="pm-settings-label">{lang === 'es' ? "General" : "General"}</div>
+                    <div className="pm-settings-card">
+                      {/* Language Selection */}
+                      <div className="pm-settings-row">
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="2" y1="12" x2="22" y2="12" />
+                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </svg>
+                        <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Idioma" : "Language"}</div>
+                        <select
+                          style={{
+                            background: "transparent",
+                            color: T.ink,
+                            border: "1px solid " + T.border,
+                            borderRadius: 8,
+                            padding: "4px 8px",
+                            fontSize: 13,
+                            outline: "none",
+                            cursor: "pointer"
+                          }}
+                          value={lang}
+                          onChange={function(e) {
+                            var val = e.target.value;
+                            setLang(val);
+                            localStorage.setItem("pm-lang", val);
+                          }}
+                        >
+                          <option value="en" style={{background: T.paper, color: T.ink}}>🇺🇸 English</option>
+                          <option value="es" style={{background: T.paper, color: T.ink}}>🇪🇸 Español</option>
+                        </select>
+                      </div>
+
+                      {/* Push Notifications */}
+                      <div 
+                        className="pm-settings-row clickable"
+                        onClick={pushEnabled ? function(){flash(lang === 'es' ? "Para desactivar: toca 🔒 en la barra de direcciones de tu navegador → Notificaciones → Bloquear" : "To disable: tap 🔒 in your browser address bar → Notifications → Block");} : function() {
+                          var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+                          if(!isCapacitor && !("Notification" in window)){flash(lang === 'es' ? "No soportado en este navegador" : "Not supported on this browser");return;}
+                          if(!isCapacitor && Notification.permission==="denied"){flash(lang === 'es' ? "Bloqueado — ve a la Configuración del navegador → Configuración del Sitio → Notificaciones → Permitir" : "Blocked — go to browser Settings → Site Settings → Notifications → Allow");return;}
+                          subscribeToPush(uname).then(function(){
+                            if(isCapacitor || Notification.permission==="granted"){
+                              setPushEnabled(true);
+                              flash(lang === 'es' ? "¡Activado!" : "Enabled!");
+                            }
+                          }).catch(function(err){
+                            flash((lang === 'es' ? "Error: " : "Error: ") + err.message);
+                          });
+                        }}
+                      >
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        <div style={{flex:1,fontSize:15,color:T.ink}}>{t('push_notifications')}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:13,color:pushEnabled ? T.forest : T.ink3, fontWeight: pushEnabled ? 600 : 400}}>
+                            {pushEnabled ? (lang === 'es' ? "Activadas" : "On") : (lang === 'es' ? "Activar" : "Enable")}
+                          </span>
+                          {chevronSvg}
+                        </div>
+                      </div>
+
+                      {/* Interactive Tutorial */}
+                      <div 
+                        className="pm-settings-row clickable"
+                        onClick={()=>{localStorage.removeItem(ONBOARD_KEY);setOnboardStep(0);setOpen(false);}}
+                      >
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <circle cx="12" cy="12" r="10" />
+                          <polygon points="10 8 16 12 10 16 10 8" />
+                        </svg>
+                        <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Tutorial interactivo" : "Interactive Tutorial"}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:13,color:T.ink3}}>{lang === 'es' ? "Repetir" : "Replay"}</span>
+                          {chevronSvg}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── MAP TOOLS & DATA ── */}
+                    <div className="pm-settings-label">{lang === 'es' ? "Herramientas e Información" : "Tools & Data"}</div>
+                    <div className="pm-settings-card">
+                      {/* All Features */}
+                      <div 
+                        className="pm-settings-row clickable"
+                        onClick={()=>{setShowFeatures(true);setOpen(false);}}
+                      >
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z" />
+                        </svg>
+                        <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Todas las funciones" : "All features"}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:13,color:T.ink3}}>{lang === 'es' ? "Ver" : "View"}</span>
+                          {chevronSvg}
+                        </div>
+                      </div>
+
+                      {/* Import Pins */}
+                      <div 
+                        className="pm-settings-row clickable"
+                        onClick={()=>setShowImport(true)}
+                      >
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:15,color:T.ink}}>{lang === 'es' ? "Importar Pines" : "Import Pins"}</div>
+                          <div style={{fontSize:12,color:T.ink3,marginTop:2}}>KML · GPX · GeoJSON · CSV</div>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:13,color:T.ink3}}>{lang === 'es' ? "Importar" : "Import"}</span>
+                          {chevronSvg}
+                        </div>
+                      </div>
+
+                      {/* Offline Maps */}
+                      <div style={{padding:"12px 12px 8px"}}>
+                        <div style={{fontSize:13.5, fontWeight:700, color:T.ink, marginBottom:6, display:"flex", alignItems:"center", gap:8}}>
+                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3}}>
+                            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+                            <line x1="9" y1="3" x2="9" y2="18" />
+                            <line x1="15" y1="6" x2="15" y2="21" />
+                          </svg>
+                          <span>{lang === 'es' ? "Mapas sin conexión" : "Offline Maps"}</span>
+                        </div>
+                        <div style={{fontSize:12,color:T.ink3,marginBottom:10,lineHeight:1.4}}>{lang === 'es' ? "Guarda imágenes del mapa para usarlas sin señal." : "Cache map tiles for use without a signal."}</div>
+                        <div style={{display:"flex",gap:6}}>
+                          <button
+                            style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px 0",borderRadius:8,border:"none",background:T.forest,color:T.paper,fontSize:12,fontWeight:600,cursor:"pointer"}}
+                            onClick={onStartOfflineMode}
+                          >
+                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            {lang === 'es' ? "Descargar" : "Download"}
+                          </button>
+                          <button
+                            style={{padding:"8px 10px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink3,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}
+                            onClick={onPurgeOfflineTiles}
+                          >
+                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            {lang === 'es' ? "Limpiar" : "Purge"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── ABOUT & LEGAL ── */}
+                    <div className="pm-settings-label">{lang === 'es' ? "Acerca de y Soporte" : "About & Support"}</div>
+                    <div className="pm-settings-card">
+                      {/* About Version */}
+                      <div className="pm-settings-row">
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        <div style={{flex:1,fontSize:15,color:T.ink}}>{lang === 'es' ? "Acerca de" : "About"}</div>
+                        <div style={{fontSize:13,color:T.ink3}}>v {APP_VERSION}</div>
+                      </div>
+
+                      {/* Privacy Policy */}
+                      <div 
+                        className="pm-settings-row clickable"
+                        onClick={function(){window.open("https://pin-map.com/privacy","_blank");}}
+                      >
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        <div style={{flex:1,fontSize:15,color:T.ink}}>{t('privacy_policy')}</div>
+                        {chevronSvg}
+                      </div>
+
+                      {/* Terms of Service */}
+                      <div 
+                        className="pm-settings-row clickable"
+                        onClick={function(){window.open("https://pin-map.com/terms","_blank");}}
+                      >
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        <div style={{flex:1,fontSize:15,color:T.ink}}>{t('terms_service')}</div>
+                        {chevronSvg}
+                      </div>
+                    </div>
+
+                    {/* ── DANGER ZONE (Delete Account) ── */}
+                    {user && (
+                      <>
+                        <div className="pm-settings-label" style={{color:"#c05050"}}>{lang === 'es' ? "Zona de Peligro" : "Danger Zone"}</div>
+                        <div className="pm-settings-card" style={{borderColor:"rgba(192, 80, 80, 0.2)"}}>
+                          <div 
+                            className="pm-settings-row clickable danger"
+                            onClick={props.onDeleteAccount}
+                          >
+                            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="pm-settings-icon">
+                              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="8.5" cy="7" r="4" />
+                              <line x1="23" y1="11" x2="17" y2="11" />
+                            </svg>
+                            <div style={{flex:1,fontSize:15,color:"#c05050",fontWeight:600}}>{t('delete_account')}</div>
+                            {chevronSvg}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
-          </div>
-        )}
         </div>
       )}
  
