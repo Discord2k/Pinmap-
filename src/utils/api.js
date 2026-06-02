@@ -50,8 +50,8 @@ export const api = {
     var insertPayload = Object.assign({}, c);
     if (insertPayload.photo_url) {
       insertPayload.body = insertPayload.body ? insertPayload.body + "\n[photo]" + insertPayload.photo_url : "[photo]" + insertPayload.photo_url;
-      delete insertPayload.photo_url;
     }
+    delete insertPayload.photo_url;
     return sb.from("comments").insert(insertPayload).select().then(function(r){ if (r.error) throw r.error; return (r.data || []).map(parseComment); });
   },
   deleteComment:  function(id,uname)   { return sbWithUser(uname).from("comments").delete().eq("id",id).then(function(r) { if (r.error) throw r.error; return r.data; }); },
