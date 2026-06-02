@@ -1317,7 +1317,9 @@ function App() {
               type: 'raster-dem',
               tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
               encoding: 'terrarium',
-              tileSize: 256
+              tileSize: 256,
+              minzoom: 0,
+              maxzoom: 15
             });
           }
           map.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
@@ -3712,7 +3714,9 @@ function App() {
                     type: 'raster-dem',
                     tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
                     encoding: 'terrarium',
-                    tileSize: 256
+                    tileSize: 256,
+                    minzoom: 0,
+                    maxzoom: 15
                   });
                 }
                 mapObj.current.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 });
