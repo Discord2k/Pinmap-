@@ -5959,7 +5959,7 @@ function App() {
         },t('got_it'))
       )
     ),
-    !showWhatsNew&&onboardStep>=0&&e(Onboarding,{tutorial:onboardTutorial,step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
+    !showWhatsNew&&!showFeatures&&!showInsiderExplainer&&onboardStep>=0&&e(Onboarding,{tutorial:onboardTutorial,step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
 
     showInsiderExplainer && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",borderRadius:16,padding:"24px 22px",maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",display:"flex",flexDirection:"column"}},
