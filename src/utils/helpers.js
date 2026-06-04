@@ -62,8 +62,7 @@ export const ALL_FEATURES_EN = [
   {emoji:"📋", title:"Mine tab", body:"View all your pins grouped by hashtag. Drill into each tag to see individual pins, comment counts and new activity badges."},
   {emoji:"📤", title:"Export data", body:"Export all your pins as GeoJSON or GPX files from the Profile tab — compatible with Google Maps, QGIS and most mapping tools."},
   {emoji:"👤", title:"Custom profile", body:"Set up your profile with a bio, location, website, social links and a custom photo uploaded from your device."},
-  {emoji:"📡", title:"Offline mode", body:"Drop pins and comments without a connection. They queue locally and sync automatically when you come back online. Visited map tiles are cached too."},
-  {emoji:"🛡", title:"Admin dashboard", body:"Visible only to the app owner. Shows active users, top pins, trending tags, push subscribers and live usage stats."}
+  {emoji:"📡", title:"Offline mode", body:"Drop pins and comments without a connection. They queue locally and sync automatically when you come back online. Visited map tiles are cached too."}
 ];
 
 export const ALL_FEATURES_ES = [
@@ -93,8 +92,7 @@ export const ALL_FEATURES_ES = [
   {emoji:"📋", title:"Pestaña Bitácora", body:"Ver todos tus pines agrupados por hashtag. Entra en cada etiqueta para ver pines individuales, conteo de comentarios e insignias de actividad nueva."},
   {emoji:"📤", title:"Exportar datos", body:"Exporta todos tus pines como archivos GeoJSON o GPX desde la pestaña Perfil — compatible con Google Maps, QGIS y la mayoría de herramientas de mapas."},
   {emoji:"👤", title:"Perfil personalizado", body:"Configura tu perfil con biografía, ubicación, sitio web, enlaces sociales y una foto personalizada subida desde tu dispositivo."},
-  {emoji:"📡", title:"Modo sin conexión", body:"Coloca pines y comentarios sin conexión. Se encolan localmente y se sincronizan automáticamente cuando vuelves a estar en línea. Las imágenes del mapa visitado también se guardan en caché."},
-  {emoji:"🛡", title:"Panel de administración", body:"Visible solo para el propietario de la aplicación. Muestra usuarios activos, pines principales, hashtags de tendencia, suscriptores push y estadísticas de uso en vivo."}
+  {emoji:"📡", title:"Modo sin conexión", body:"Coloca pines y comentarios sin conexión. Se encolan localmente y se sincronizan automáticamente cuando vuelves a estar en línea. Las imágenes del mapa visitado también se guardan en caché."}
 ];
 
 export const ONBOARD_STEPS_EN = [
