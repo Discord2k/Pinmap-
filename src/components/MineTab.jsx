@@ -164,7 +164,7 @@ function ActivitySection(props) {
           onClick={function() { setOpen2(function(v){ return !v; }); }}
           style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, fontFamily: T.mono, color: T.ink3, flex: 1, cursor: 'pointer' }}
         >
-          ⚡ {t ? t('recent_activity') : 'Recent Activity'}
+          ⚡ {t ? t('recent_activity') : 'Comments'}
         </div>
         {total > 0 && (
           <button
@@ -546,6 +546,7 @@ export function MineTab(props) {
                 setOpen={setOpen}
                 mapObj={mapObj}
                 markCommentsSeen={props.markCommentsSeen}
+                commentsLastCleared={props.commentsLastCleared}
                 t={t}
                 focusPin={props.focusPin}
                 uname={uname}

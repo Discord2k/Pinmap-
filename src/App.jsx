@@ -249,6 +249,7 @@ function App() {
   var s33=useState(false); var trendingLoading=s33[0]; var setTrendingLoading=s33[1];
   var s24=useState(0); var unreadCount=s24[0]; var setUnreadCount=s24[1];
   var s39=useState([]); var unreadPinIds=s39[0]; var setUnreadPinIds=s39[1];
+  var sCommentsLastCleared=useState(Date.now()); var commentsLastCleared=sCommentsLastCleared[0]; var setCommentsLastCleared=sCommentsLastCleared[1];
   var s41=useState(13); var mapZoom=s41[0]; var setMapZoom=s41[1];
   var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
   var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
@@ -1133,6 +1134,7 @@ function App() {
 
   function markCommentsSeen() {
     localStorage.setItem("pm-comments-seen-"+uname, new Date().toISOString());
+    setCommentsLastCleared(Date.now());
     checkNewComments(pins, uname);
     setNewUpvotePinIds([]);
   }
@@ -4958,6 +4960,7 @@ function App() {
           deletePin:deletePin, toggleUpvote:toggleUpvote,
           saveToCollection:saveToCollection, loadUserProfile:loadUserProfile,
           markCommentsSeen:markCommentsSeen,
+          commentsLastCleared:commentsLastCleared,
           myActivity:myActivity, pins:pins,
           setPins:setPins, flash:flash,
           lang:lang, t:t,
