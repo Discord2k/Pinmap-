@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v347";
+var CACHE_NAME = "pinmap-v348";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -209,3 +209,11 @@ self.addEventListener("notificationclick", function(event) {
     })
   );
 });
+
+// Handle skipWaiting message from client
+self.addEventListener("message", function(event) {
+  if (event.data && event.data.action === "skipWaiting") {
+    self.skipWaiting();
+  }
+});
+

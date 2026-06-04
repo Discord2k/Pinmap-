@@ -6260,7 +6260,21 @@ function App() {
           flexShrink:0,
           boxShadow:T.shadow
         },
-        onClick:function(){window.location.reload();}
+        onClick:function(){
+          if (navigator.serviceWorker) {
+            navigator.serviceWorker.getRegistration().then(function(reg) {
+              if (reg && reg.waiting) {
+                reg.waiting.postMessage({ action: 'skipWaiting' });
+              } else {
+                window.location.reload();
+              }
+            }).catch(function() {
+              window.location.reload();
+            });
+          } else {
+            window.location.reload();
+          }
+        }
       },t("reload_btn"))
     ),
 
