@@ -95,159 +95,184 @@ export const ALL_FEATURES_ES = [
   {emoji:"📡", title:"Modo sin conexión", body:"Coloca pines y comentarios sin conexión. Se encolan localmente y se sincronizan automáticamente cuando vuelves a estar en línea. Las imágenes del mapa visitado también se guardan en caché."}
 ];
 
-export const ONBOARD_STEPS_EN = [
-  {
-    title: "Welcome to PINMAP!",
-    body: "PINMAP is a privacy-first mapping platform for saving, organizing, and sharing the places that matter. Drop pins, follow explorers, and map your adventures.",
-    target: "welcome"
-  },
-  {
-    title: "Explore & Search",
-    body: "Search pins worldwide by #hashtag, follow trending tags, or find any address globally. Tap here to open the search bar.",
-    target: "btn-tab-search"
-  },
-  {
-    title: "Place Your First Pin",
-    body: "Touch and hold (or tap) anywhere on the map to place a pin. Customize it with a name, description, tags, custom color, photos, or an optional expiry timer.",
-    target: "map-center"
-  },
-  {
-    title: "Filter Map Pins",
-    body: "Tap this button to switch between showing all public pins, only your own pins, or hiding all pins to clear the map.",
-    target: "btn-pin-layer-toggle"
-  },
-  {
-    title: "Explore in 3D Terrain",
-    body: "Tap the 2D/3D button to tilt the camera and load high-resolution 3D terrain! Rotate and tilt the map by dragging with your right mouse button (or Ctrl + drag). On mobile, swipe up/down with two fingers to adjust the tilt and rotate.",
-    target: "btn-3d-toggle"
-  },
-  {
-    title: "Record Your Routes",
-    body: "Click here to toggle the Trails & Quests panel. Start recording your path in real-time or import external GPX files.",
-    target: "btn-trail-quest"
-  },
-  {
-    title: "Quests, Collections & Badges",
-    body: "Manage your profile, view custom collections, track active quests, check your exploration badges, and export your data.",
-    target: "btn-tab-profile"
-  },
-  {
-    title: "How to Drop a Pin",
-    body: "Let's look at how to place your first pin. Tap here to open the Drop tab and customize your spot.",
-    target: "btn-tab-add"
-  },
-  {
-    title: "Pin Name",
-    body: "Give your spot a clear, recognizable name to identify it on the map.",
-    target: "form-pin-name"
-  },
-  {
-    title: "Field Notes & URL",
-    body: "Add a detailed description about local conditions or off-grid access, and link an optional reference website.",
-    target: "form-pin-desc"
-  },
-  {
-    title: "Hashtags & Suggestions",
-    body: "Add hashtags to categorize your pin. Common and nearby suggested tags will appear dynamically below as you type to help you select tags.",
-    target: "form-pin-tags"
-  },
-  {
-    title: "Custom Emoji Icon",
-    body: "An icon is automatically assigned based on your tags (e.g. 🥾 for #hiking), or you can manually enter any emoji to customize your map pin.",
-    target: "form-pin-icon"
-  },
-  {
-    title: "Field Photos",
-    body: "Attach up to three photos of the location directly from your device's camera or photo gallery.",
-    target: "form-photo-upload"
-  },
-  {
-    title: "Ready to Explore!",
-    body: "Look for (?) help icons across screens for quick tips. You can repeat this tour at any time from your Settings in the Profile tab.",
-    target: "wrap-up"
-  }
-];
+export const TUTORIALS_EN = {
+  welcome: [
+    {
+      title: "Welcome to PINMAP!",
+      body: "PINMAP is a privacy-first mapping platform for saving, organizing, and sharing the places that matter. Drop pins, follow explorers, and map your adventures.",
+      target: "welcome"
+    },
+    {
+      title: "Filter Map Pins",
+      body: "Tap this button to switch between showing all public pins, only your own pins, or hiding all pins to clear the map.",
+      target: "btn-pin-layer-toggle"
+    },
+    {
+      title: "Explore in 3D Terrain",
+      body: "Tap the 2D/3D button to tilt the camera and load high-resolution 3D terrain! Rotate and tilt the map by dragging with your right mouse button (or Ctrl + drag). On mobile, swipe up/down with two fingers to adjust the tilt and rotate.",
+      target: "btn-3d-toggle"
+    },
+    {
+      title: "Record Your Routes",
+      body: "Click here to toggle the Trails & Quests panel. Start recording your path in real-time or import external GPX files.",
+      target: "btn-trail-quest"
+    }
+  ],
+  search: [
+    {
+      title: "Explore & Search",
+      body: "Search pins worldwide by #hashtag, follow trending tags, or find any address globally. Tap here to open the search bar.",
+      target: "btn-tab-search"
+    },
+    {
+      title: "Search Tabs",
+      body: "Switch between # Tags to search pins by tags, 📍 Places to find addresses, or Activity to see logs from explorers you follow.",
+      target: "search-tabs"
+    }
+  ],
+  add: [
+    {
+      title: "How to Drop a Pin",
+      body: "First click anywhere on the map to set a location, then use this tab to customize your spot.",
+      target: "btn-tab-add"
+    },
+    {
+      title: "Pin Name",
+      body: "Give your spot a clear, recognizable name to identify it on the map.",
+      target: "form-pin-name"
+    },
+    {
+      title: "Field Notes & URL",
+      body: "Add a detailed description about local conditions or off-grid access, and link an optional reference website.",
+      target: "form-pin-desc"
+    },
+    {
+      title: "Hashtags & Suggestions",
+      body: "Add hashtags to categorize your pin. Common and nearby suggested tags will appear dynamically below as you type to help you select tags.",
+      target: "form-pin-tags"
+    },
+    {
+      title: "Custom Emoji Icon",
+      body: "An icon is automatically assigned based on your tags (e.g. 🥾 for #hiking), or you can manually enter any emoji to customize your map pin.",
+      target: "form-pin-icon"
+    },
+    {
+      title: "Field Photos",
+      body: "Attach up to three photos of the location directly from your device's camera or photo gallery.",
+      target: "form-photo-upload"
+    }
+  ],
+  mine: [
+    {
+      title: "Your Field Log",
+      body: "This is your personal logbook of dropped pins. You can view them grouped by tags, check comment counts, and see new activity.",
+      target: "btn-tab-mine"
+    }
+  ],
+  profile: [
+    {
+      title: "Quests, Collections & Badges",
+      body: "Manage your profile, view collections, track quests, check your badges, and export your data as GPX or GeoJSON.",
+      target: "btn-tab-profile"
+    }
+  ]
+};
 
-export const ONBOARD_STEPS_ES = [
-  {
-    title: "¡Bienvenido a PINMAP!",
-    body: "PINMAP es una plataforma cartográfica que prioriza la privacidad para guardar, organizar y compartir los lugares que te importan. Coloca pines, sigue exploradores y traza tus aventuras.",
-    target: "welcome"
-  },
-  {
-    title: "Explora y Busca",
-    body: "Busca pines globales por #hashtag, sigue tendencias o localiza direcciones en el mundo. Toca aquí para abrir la barra de búsqueda.",
-    target: "btn-tab-search"
-  },
-  {
-    title: "Coloca tu Primer Pin",
-    body: "Mantén presionado (o toca) en cualquier parte del mapa para añadir un pin. Ponle etiquetas, colores, fotos o un temporizador de expiración.",
-    target: "map-center"
-  },
-  {
-    title: "Filtrar Pines del Mapa",
-    body: "Toca este botón para cambiar entre mostrar todos los pines públicos, solo tus propios pines u ocultar todos los pines para limpiar el mapa.",
-    target: "btn-pin-layer-toggle"
-  },
-  {
-    title: "Explora en Terreno 3D",
-    body: "¡Toca el botón 2D/3D para inclinar la cámara y cargar relieve 3D de alta resolución! Rota e inclina el mapa arrastrando con el botón derecho (o Ctrl + arrastrar). En móvil, desliza hacia arriba/abajo con dos dedos para ajustar la inclinación y rotar.",
-    target: "btn-3d-toggle"
-  },
-  {
-    title: "Graba tus Rutas",
-    body: "Toca aquí para abrir el panel de Rutas y Desafíos. Graba tu recorrido en tiempo real o importa archivos GPX.",
-    target: "btn-trail-quest"
-  },
-  {
-    title: "Desafíos, Colecciones e Insignias",
-    body: "Administra tu perfil, organiza colecciones, haz el seguimiento de tus desafíos, revisa tus insignias y exporta tus datos.",
-    target: "btn-tab-profile"
-  },
-  {
-    title: "Cómo Colocar un Pin",
-    body: "Toca aquí para abrir la pestaña Colocar para comenzar a personalizar tu pin.",
-    target: "btn-tab-add"
-  },
-  {
-    title: "Nombre del Pin",
-    body: "Dale a tu ubicación un nombre claro y descriptivo.",
-    target: "form-pin-name"
-  },
-  {
-    title: "Notas de Campo y Enlace",
-    body: "Agrega descripciones detalladas sobre el acceso o terreno, e ingresa un enlace o sitio web de referencia opcional.",
-    target: "form-pin-desc"
-  },
-  {
-    title: "Hashtags y Sugerencias",
-    body: "Añade hashtags para clasificar tu pin. Las etiquetas comunes y sugeridas aparecerán debajo mientras escribes para ayudarte.",
-    target: "form-pin-tags"
-  },
-  {
-    title: "Selección de Icono Personalizado",
-    body: "Se asigna un icono automáticamente según tus etiquetas (ej. 🍺 para #bar), o puedes ingresar cualquier emoji manualmente para personalizar el pin.",
-    target: "form-pin-icon"
-  },
-  {
-    title: "Fotos de Campo",
-    body: "Adjunta hasta tres fotos del lugar directamente desde la cámara de tu dispositivo o galería de fotos.",
-    target: "form-photo-upload"
-  },
-  {
-    title: "¡Todo Listo!",
-    body: "Busca los iconos de ayuda (?) en la app para ver consejos rápidos. Puedes repetir este recorrido en la pestaña Perfil.",
-    target: "wrap-up"
-  }
-];
+export const TUTORIALS_ES = {
+  welcome: [
+    {
+      title: "¡Bienvenido a PINMAP!",
+      body: "PINMAP es una plataforma cartográfica que prioriza la privacidad para guardar, organizar y compartir los lugares que te importan. Coloca pines, sigue exploradores y traza tus aventuras.",
+      target: "welcome"
+    },
+    {
+      title: "Filtrar Pines del Mapa",
+      body: "Toca este botón para cambiar entre mostrar todos los pines públicos, solo tus propios pines u ocultar todos los pines para limpiar el mapa.",
+      target: "btn-pin-layer-toggle"
+    },
+    {
+      title: "Explora en Terreno 3D",
+      body: "¡Toca el botón 2D/3D para inclinar la cámara y cargar relieve 3D de alta resolución! Rota e inclina el mapa arrastrando con el botón derecho (o Ctrl + arrastrar). En móvil, desliza hacia arriba/abajo con dos dedos para ajustar la inclinación y rotar.",
+      target: "btn-3d-toggle"
+    },
+    {
+      title: "Graba tus Rutas",
+      body: "Toca aquí para abrir el panel de Rutas y Desafíos. Graba tu recorrido en tiempo real o importa archivos GPX.",
+      target: "btn-trail-quest"
+    }
+  ],
+  search: [
+    {
+      title: "Explora y Busca",
+      body: "Busca pines globales por #hashtag, sigue tendencias o localiza direcciones en el mundo. Toca aquí para abrir la barra de búsqueda.",
+      target: "btn-tab-search"
+    },
+    {
+      title: "Pestañas de Búsqueda",
+      body: "Cambia entre # Hashtags para buscar por etiquetas, 📍 Lugares para buscar direcciones, o Actividad para ver novedades de exploradores que sigues.",
+      target: "search-tabs"
+    }
+  ],
+  add: [
+    {
+      title: "Cómo Colocar un Pin",
+      body: "Primero haz clic en cualquier lugar del mapa para fijar la ubicación, luego usa esta pestaña para personalizar tu pin.",
+      target: "btn-tab-add"
+    },
+    {
+      title: "Nombre del Pin",
+      body: "Dale a tu ubicación un nombre claro y descriptivo.",
+      target: "form-pin-name"
+    },
+    {
+      title: "Notas de Campo y Enlace",
+      body: "Agrega descripciones detalladas sobre el acceso o terreno, e ingresa un enlace o sitio web de referencia opcional.",
+      target: "form-pin-desc"
+    },
+    {
+      title: "Hashtags y Sugerencias",
+      body: "Añade hashtags para clasificar tu pin. Las etiquetas comunes y sugeridas aparecerán debajo mientras escribes para ayudarte.",
+      target: "form-pin-tags"
+    },
+    {
+      title: "Selección de Icono Personalizado",
+      body: "Se asigna un icono automáticamente según tus etiquetas (ej. 🍺 para #bar), o puedes ingresar cualquier emoji manualmente para personalizar el pin.",
+      target: "form-pin-icon"
+    },
+    {
+      title: "Fotos de Campo",
+      body: "Adjunta hasta tres fotos del lugar directamente desde la cámara de tu dispositivo o galería de fotos.",
+      target: "form-photo-upload"
+    }
+  ],
+  mine: [
+    {
+      title: "Tu Registro de Campo",
+      body: "Este es tu registro personal de pines colocados. Puedes verlos agrupados por etiquetas, consultar recuentos de comentarios y ver nueva actividad.",
+      target: "btn-tab-mine"
+    }
+  ],
+  profile: [
+    {
+      title: "Desafíos, Colecciones e Insignias",
+      body: "Administra tu perfil, organiza colecciones, haz el seguimiento de tus desafíos, revisa tus insignias y exporta tus datos como GPX o GeoJSON.",
+      target: "btn-tab-profile"
+    }
+  ]
+};
 
 // Fallback arrays for backwards compatibility
 export const WHATSNEW = WHATSNEW_EN;
 export const ALL_FEATURES = ALL_FEATURES_EN;
-export const ONBOARD_STEPS = ONBOARD_STEPS_EN;
+export const ONBOARD_STEPS = TUTORIALS_EN.welcome;
 
 export function getOnboardSteps(lang) {
-  return lang === "es" ? ONBOARD_STEPS_ES : ONBOARD_STEPS_EN;
+  return lang === "es" ? TUTORIALS_ES.welcome : TUTORIALS_EN.welcome;
+}
+
+export function getTutorialSteps(tutorial, lang) {
+  var tuts = lang === "es" ? TUTORIALS_ES : TUTORIALS_EN;
+  return tuts[tutorial] || tuts.welcome;
 }
 
 export function getWhatsNewList(lang) {

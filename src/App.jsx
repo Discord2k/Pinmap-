@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api, sb, subscribeToPush, uploadPhoto, callEdgeFunction, MAPTILER_KEY } from './utils/api';
-import { dbGetAll, dbPut, dbDelete, uid, formatLL, tagColor, getPinIcon, distKm, checkBannedTags, userName, userAvatar, dlFile, toGeoJSON, toGPX, WHATSNEW, ONBOARD_KEY, WHATSNEW_KEY, ALL_FEATURES, ONBOARD_STEPS, getOnboardSteps, getWhatsNewList, getAllFeatures } from './utils/helpers';
+import { dbGetAll, dbPut, dbDelete, uid, formatLL, tagColor, getPinIcon, distKm, checkBannedTags, userName, userAvatar, dlFile, toGeoJSON, toGPX, WHATSNEW, ONBOARD_KEY, WHATSNEW_KEY, ALL_FEATURES, ONBOARD_STEPS, getOnboardSteps, getWhatsNewList, getAllFeatures, getTutorialSteps } from './utils/helpers';
 import { T, S } from './utils/styles';
 import { Splash } from './components/Splash';
 import { Onboarding } from './components/Onboarding';
@@ -257,7 +257,10 @@ function App() {
   var s17=useState(false);   var locating=s17[0];      var setLocating=s17[1];
   var s18=useState(10);      var nearbyKm=s18[0];      var setNearbyKm=s18[1];
   var s19=useState(null);    var nearbyRes=s19[0];     var setNearbyRes=s19[1];
-  var s20=useState(localStorage.getItem(ONBOARD_KEY)?-1:0); var onboardStep=s20[0]; var setOnboardStep=s20[1];
+  var initialTutorial = localStorage.getItem("pm-onboarded-welcome") ? null : "welcome";
+  var initialStep = localStorage.getItem("pm-onboarded-welcome") ? -1 : 0;
+  var s20=useState(initialStep); var onboardStep=s20[0]; var setOnboardStep=s20[1];
+  var sOnboardTutorial=useState(initialTutorial); var onboardTutorial=sOnboardTutorial[0]; var setOnboardTutorial=sOnboardTutorial[1];
   var s38=useState(
     localStorage.getItem(ONBOARD_KEY) && !localStorage.getItem(WHATSNEW_KEY)
   ); var showWhatsNew=s38[0]; var setShowWhatsNew=s38[1];
@@ -1228,26 +1231,64 @@ function App() {
   }, [showWhatsNew]);
 
   function nextOnboard() {
-    if(onboardStep>=getOnboardSteps(lang).length-1){ 
-      localStorage.setItem(ONBOARD_KEY,"1"); 
+    var steps = getTutorialSteps(onboardTutorial || 'welcome', lang);
+    if(onboardStep >= steps.length - 1){ 
+      if (onboardTutorial) {
+        localStorage.setItem("pm-onboarded-" + onboardTutorial, "1");
+      }
+      localStorage.setItem(ONBOARD_KEY, "1"); 
       setOnboardStep(-1); 
-      setShowFeatures(true);
+      setOnboardTutorial(null);
+      if (onboardTutorial === "welcome") {
+        setShowFeatures(true);
+      }
     }
     else { setOnboardStep(function(s){return s+1;}); }
   }
+
   function skipOnboard() { 
-    localStorage.setItem(ONBOARD_KEY,"1"); 
+    if (onboardTutorial) {
+      localStorage.setItem("pm-onboarded-" + onboardTutorial, "1");
+    }
+    localStorage.setItem(ONBOARD_KEY, "1"); 
     setOnboardStep(-1); 
-    setShowFeatures(true);
+    setOnboardTutorial(null);
+    if (onboardTutorial === "welcome") {
+      setShowFeatures(true);
+    }
   }
 
+  // Handle manual tutorial resets from profile settings
   useEffect(function() {
-    if (onboardStep === 7) {
-      setTab("add");
-    } else if (onboardStep === 0) {
-      setTab("search");
+    if (onboardStep === 0 && !onboardTutorial) {
+      localStorage.removeItem("pm-onboarded-welcome");
+      localStorage.removeItem("pm-onboarded-search");
+      localStorage.removeItem("pm-onboarded-add");
+      localStorage.removeItem("pm-onboarded-mine");
+      localStorage.removeItem("pm-onboarded-profile");
+      localStorage.removeItem(ONBOARD_KEY);
+      setOnboardTutorial("welcome");
     }
-  }, [onboardStep]);
+  }, [onboardStep, onboardTutorial]);
+
+  // Trigger tutorials contextually when switching tabs
+  useEffect(function() {
+    if (!splashDone || onboardTutorial) return;
+
+    if (tab === "search" && !localStorage.getItem("pm-onboarded-search")) {
+      setOnboardTutorial("search");
+      setOnboardStep(0);
+    } else if (tab === "add" && !localStorage.getItem("pm-onboarded-add")) {
+      setOnboardTutorial("add");
+      setOnboardStep(0);
+    } else if (tab === "mine" && !localStorage.getItem("pm-onboarded-mine")) {
+      setOnboardTutorial("mine");
+      setOnboardStep(0);
+    } else if (tab === "profile" && !localStorage.getItem("pm-onboarded-profile")) {
+      setOnboardTutorial("profile");
+      setOnboardStep(0);
+    }
+  }, [tab, splashDone, onboardTutorial]);
 
   useEffect(function(){
     api.getSession().then(function(res){
@@ -4337,7 +4378,7 @@ function App() {
           },t("search_btn")),
           e("div",{style:{position:"relative",display:"flex",alignItems:"center"}},
             e("div",{style:{position:"absolute",left:0,top:0,bottom:0,width:20,background:"linear-gradient(to right, "+T.paper+" 50%, transparent)",display:"flex",alignItems:"center",paddingLeft:2,pointerEvents:"none",color:T.ink3,zIndex:2,fontSize:12,fontWeight:"bold"}},"⟨"),
-            e("div",{style:{display:"flex",width:"100%",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",padding:"0 16px"}},
+            e("div",{id:"search-tabs",style:{display:"flex",width:"100%",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",padding:"0 16px"}},
               e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.forest:T.ink3,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
               },
                 e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"}),e("circle",{cx:"7",cy:"7",r:"0.5",fill:"currentColor"})),
@@ -5918,7 +5959,7 @@ function App() {
         },t('got_it'))
       )
     ),
-    !showWhatsNew&&onboardStep>=0&&e(Onboarding,{step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
+    !showWhatsNew&&onboardStep>=0&&e(Onboarding,{tutorial:onboardTutorial,step:onboardStep,onNext:nextOnboard,onSkip:skipOnboard,lang:lang,t:t}),
 
     showInsiderExplainer && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",borderRadius:16,padding:"24px 22px",maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",display:"flex",flexDirection:"column"}},

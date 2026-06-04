@@ -1,14 +1,15 @@
 import React from 'react';
 import { T, S } from '../utils/styles';
-import { getOnboardSteps } from '../utils/helpers';
+import { getOnboardSteps, getTutorialSteps } from '../utils/helpers';
 
 export function Onboarding(props) {
   const lang = props.lang || 'en';
+  const tutorial = props.tutorial || 'welcome';
   const step = props.step;
   const onNext = props.onNext || (() => {});
   const onSkip = props.onSkip || (() => {});
 
-  const steps = getOnboardSteps(lang);
+  const steps = getTutorialSteps(tutorial, lang);
   const info = steps[step] || { title: "", body: "", target: "welcome" };
   const total = steps.length;
   const isLast = step === total - 1;
@@ -125,7 +126,7 @@ export function Onboarding(props) {
   } : null;
 
   // Welcome Step (Step 0)
-  if (step === 0) {
+  if (tutorial === 'welcome' && step === 0) {
     return (
       <div style={{position:"fixed", inset:0, zIndex:10000, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(18,22,19,0.72)", padding:20, overflowY:"auto"}}>
         <div style={{position:"relative", background:T.paper, borderRadius:24, boxShadow:T.shadowLg, padding:"32px 28px", maxWidth:480, width:"100%", boxSizing:"border-box", display:"flex", flexDirection:"column", gap:20, animation:"scaleIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1)"}}>
@@ -297,8 +298,8 @@ export function Onboarding(props) {
         <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, marginTop:"auto"}}>
           {/* Progress indicators */}
           <div style={{display:"flex", gap:4}}>
-            {steps.slice(1).map((_, i) => {
-              const active = i + 1 === step;
+            {(tutorial === 'welcome' ? steps.slice(1) : steps).map((_, i) => {
+              const active = tutorial === 'welcome' ? (i + 1 === step) : (i === step);
               return (
                 <div 
                   key={i} 
