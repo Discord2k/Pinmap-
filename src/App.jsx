@@ -1133,8 +1133,7 @@ function App() {
 
   function markCommentsSeen() {
     localStorage.setItem("pm-comments-seen-"+uname, new Date().toISOString());
-    setUnreadCount(0);
-    setUnreadPinIds([]);
+    checkNewComments(pins, uname);
     setNewUpvotePinIds([]);
   }
 
@@ -1755,11 +1754,10 @@ function App() {
 
   // Re-check comments whenever user, pins or tab changes
   useEffect(function(){
-    var name = user ? (user.user_metadata&&user.user_metadata.full_name ? user.user_metadata.full_name : (user.email?user.email.split("@")[0]:"")) : "";
-    if(pins.length > 0 && name && name !== "guest") checkNewComments(pins, name);
+    if(pins.length > 0 && uname && uname !== "guest") checkNewComments(pins, uname);
     // Load comment counts + activity feed when Mine tab opens
-    if(tab==="mine" && pins.length>0 && name && name!=="guest"){
-      var myPinIds=pins.filter(function(p){return p.owner===name&&!p.saved_from;}).map(function(p){return p.id;});
+    if(tab==="mine" && pins.length>0 && uname && uname!=="guest"){
+      var myPinIds=pins.filter(function(p){return p.owner===uname&&!p.saved_from;}).map(function(p){return p.id;});
       if(myPinIds.length){
         sb.from("comments").select("pin_id").in("pin_id",myPinIds).then(function(r){
           var counts={};
@@ -1776,7 +1774,7 @@ function App() {
         }
       }
     }
-  },[user, pins, tab]);
+  },[user, pins, tab, uname]);
 
   // --- GPX TRAILS REAL-TIME DRAWING & PERSISTENCE ---
   useEffect(function() {

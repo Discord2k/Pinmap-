@@ -180,7 +180,7 @@ function ActivitySection(props) {
               fontWeight: 600, fontFamily: T.font
             }}
           >
-            Clear All
+            Mark all read
           </button>
         )}
         {!open && (
