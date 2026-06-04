@@ -133,8 +133,7 @@ function ActivitySection(props) {
   var total = allRows.length;
   var unreadCount = allRows.filter(function(r){ return r.isNew; }).length;
 
-  var hasNew = newUpvotePinIds.length > 0 || myActivity.length > 0;
-  var [open, setOpen2] = React.useState(hasNew);
+  var [open, setOpen2] = React.useState(false);
 
   if (total === 0) return null;
 
