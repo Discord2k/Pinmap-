@@ -120,7 +120,10 @@ function ActivitySection(props) {
 
   // Annotate comment rows with type
   var commentRows = myActivity.map(function(r) {
-    var isNew = r.created_at && new Date(r.created_at) > lastSeenTime;
+    var pinSeen = props.uname ? localStorage.getItem("pm-pin-comments-seen-" + props.uname + "-" + r.pin_id) : null;
+    var pinSeenTime = pinSeen ? new Date(pinSeen) : new Date(0);
+    var cutoff = pinSeenTime > lastSeenTime ? pinSeenTime : lastSeenTime;
+    var isNew = r.created_at && new Date(r.created_at) > cutoff;
     return Object.assign({}, r, { type: r.photo_url ? 'journal' : 'comment', isNew: isNew });
   });
 
@@ -164,7 +167,7 @@ function ActivitySection(props) {
         >
           ⚡ {t ? t('recent_activity') : 'Recent Activity'}
         </div>
-        {(props.hasUnread || unreadCount > 0) && (
+        {total > 0 && (
           <button
             onClick={function(ev) {
               ev.stopPropagation();

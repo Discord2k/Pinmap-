@@ -1097,8 +1097,15 @@ function App() {
     // ── Check new comments / journals ──────────────────────────────
     sb.from("comments").select("id,pin_id,created_at").in("pin_id",myPinIds).gt("created_at",lastSeenTime.toISOString()).then(function(r){
       if(r.data&&r.data.length>0){
-        setUnreadCount(r.data.length);
-        var ids=r.data.map(function(c){return c.pin_id;}).filter(function(v,i,a){return a.indexOf(v)===i;});
+        var unreadComments = r.data.filter(function(c) {
+          var pinSeen = localStorage.getItem("pm-pin-comments-seen-" + name + "-" + c.pin_id);
+          if (pinSeen) {
+            return new Date(c.created_at) > new Date(pinSeen);
+          }
+          return true;
+        });
+        setUnreadCount(unreadComments.length);
+        var ids=unreadComments.map(function(c){return c.pin_id;}).filter(function(v,i,a){return a.indexOf(v)===i;});
         setUnreadPinIds(ids);
       } else {
         setUnreadCount(0);
@@ -1130,6 +1137,18 @@ function App() {
     setUnreadPinIds([]);
     setNewUpvotePinIds([]);
   }
+
+  function markPinCommentsAsSeen(pinId) {
+    if (!uname || uname === "guest") return;
+    localStorage.setItem("pm-pin-comments-seen-" + uname + "-" + pinId, new Date().toISOString());
+    checkNewComments(pins, uname);
+  }
+
+  useEffect(function() {
+    if (selPin && selPin.id && selPin.owner === uname) {
+      markPinCommentsAsSeen(selPin.id);
+    }
+  }, [selPin, uname, pins]);
   function dismissWhatsNew() {
     localStorage.setItem(WHATSNEW_KEY,"1");
     setShowWhatsNew(false);
