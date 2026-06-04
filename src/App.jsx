@@ -164,6 +164,29 @@ window.L = {
   }
 };
 
+var OSM_FALLBACK_STYLE = {
+  "version": 8,
+  "sources": {
+    "osm-raster-tiles": {
+      "type": "raster",
+      "tiles": [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      ],
+      "tileSize": 256,
+      "attribution": "© OpenStreetMap contributors"
+    }
+  },
+  "layers": [
+    {
+      "id": "osm-raster-tiles",
+      "type": "raster",
+      "source": "osm-raster-tiles",
+      "minzoom": 0,
+      "maxzoom": 19
+    }
+  ]
+};
+
 var e = React.createElement;
 
 function App() {
@@ -1023,6 +1046,48 @@ function App() {
     setTimeout(tryFocus, 500);
   },[splashDone, pins]);
 
+  function applyStyleWithFallback(map, styleUrlOrObject) {
+    if (typeof styleUrlOrObject === 'string' && styleUrlOrObject.startsWith('http')) {
+      if (window._ofmFailed) {
+        console.log("Using cached fallback style for OpenFreeMap.");
+        map.setStyle(OSM_FALLBACK_STYLE);
+        return;
+      }
+      var loaded = false;
+      var timeoutId = setTimeout(function() {
+        if (!loaded) {
+          console.warn("Style load timed out, falling back to OSM raster style:", styleUrlOrObject);
+          window._ofmFailed = true;
+          map.setStyle(OSM_FALLBACK_STYLE);
+          flash("⚠️ Standard map style took too long to load. Using fallback map.");
+        }
+      }, 5500);
+
+      var onLoad = function() {
+        loaded = true;
+        clearTimeout(timeoutId);
+        map.off('style.load', onLoad);
+      };
+      
+      var onError = function(e) {
+        if (!loaded && e.error && (e.error.message || "").toString().toLowerCase().includes("style")) {
+          loaded = true;
+          clearTimeout(timeoutId);
+          console.warn("Style load failed, falling back to OSM raster style:", styleUrlOrObject, e.error);
+          window._ofmFailed = true;
+          map.setStyle(OSM_FALLBACK_STYLE);
+          flash("⚠️ Standard map style failed to load. Using fallback map.");
+          map.off('style.load', onLoad);
+          map.off('error', onError);
+        }
+      };
+
+      map.on('style.load', onLoad);
+      map.on('error', onError);
+    }
+    map.setStyle(styleUrlOrObject);
+  }
+
   // Keep mapLayerRef in sync so marker closures always see current value
   useEffect(function(){ mapLayerRef.current = mapLayer; },[mapLayer]);
   useEffect(function(){ baseLayerRef.current = baseLayer; },[baseLayer]);
@@ -1213,15 +1278,51 @@ function App() {
         if (!supportsWebGL) {
           throw new Error("WebGL is not supported or is disabled in your browser.");
         }
+        var initialStyle = window._ofmFailed ? OSM_FALLBACK_STYLE : "https://tiles.openfreemap.org/styles/liberty";
         map = new window.maplibregl.Map({
           container: mapDiv.current,
-          style: "https://tiles.openfreemap.org/styles/liberty",
+          style: initialStyle,
           center: [-98, 39],
           zoom: 4,
           maxZoom: 19,
           maxBounds: [[-179.9, -85], [179.9, 85]],
           antialias: true
         });
+
+        // Set timeout and error listener for initial load if loading remote style
+        if (initialStyle === "https://tiles.openfreemap.org/styles/liberty") {
+          var loaded = false;
+          var timeoutId = setTimeout(function() {
+            if (!loaded) {
+              console.warn("Initial style load timed out, falling back to OSM raster style.");
+              window._ofmFailed = true;
+              map.setStyle(OSM_FALLBACK_STYLE);
+              flash("⚠️ Standard map style took too long to load. Using fallback map.");
+            }
+          }, 5500);
+
+          var onLoad = function() {
+            loaded = true;
+            clearTimeout(timeoutId);
+            map.off('style.load', onLoad);
+          };
+          
+          var onError = function(e) {
+            if (!loaded && e.error && (e.error.message || "").toString().toLowerCase().includes("style")) {
+              loaded = true;
+              clearTimeout(timeoutId);
+              console.warn("Initial style load failed, falling back to OSM raster style.", e.error);
+              window._ofmFailed = true;
+              map.setStyle(OSM_FALLBACK_STYLE);
+              flash("⚠️ Standard map style failed to load. Using fallback map.");
+              map.off('style.load', onLoad);
+              map.off('error', onError);
+            }
+          };
+
+          map.on('style.load', onLoad);
+          map.on('error', onError);
+        }
       } catch (err) {
         console.error("MapLibre GL JS init failed:", err);
         flash("❌ Map Error: " + err.message);
@@ -1603,10 +1704,15 @@ function App() {
       if (map.getSource('cycling-trails')) map.removeSource('cycling-trails');
     } catch(e){}
     
+    // Reset OpenFreeMap failure flag on manual style switch so we retry it
+    if (baseLayer === "osm" || baseLayer === "trails") {
+      window._ofmFailed = false;
+    }
+
     if (baseLayer === "osm") {
-      map.setStyle("https://tiles.openfreemap.org/styles/liberty");
+      applyStyleWithFallback(map, "https://tiles.openfreemap.org/styles/liberty");
     } else if (baseLayer === "trails") {
-      map.setStyle("https://tiles.openfreemap.org/styles/liberty");
+      applyStyleWithFallback(map, "https://tiles.openfreemap.org/styles/liberty");
       // Add trails immediately if style is already loaded (otherwise style.load handles it)
       try {
         if (!map.getSource('hiking-trails')) {
@@ -5389,22 +5495,16 @@ function App() {
         e("span",null,selPin.lat.toFixed(5)+", "+selPin.lng.toFixed(5)),
         e("span",{style:{color:"#6f786f",fontFamily:"sans-serif",fontWeight:500}}, "📍 " + (selPinCheckinsCount || 0) + " check-in" + (selPinCheckinsCount === 1 ? "" : "s"))
       ),
-      e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}},
+      e("div",{className:"pm-action-buttons"},
         (uname&&selPin.owner!==uname)&&e(React.Fragment,null,
           (function(){
             var isUpvoted = selPin.upvotes && selPin.upvotes.indexOf(uname) >= 0;
             return e("button",{
+              className:"pm-action-btn",
               style:{
                 background:"none",
                 border:"1px solid " + (isUpvoted ? "#ff4500" : "#d8cfb8"),
                 color: isUpvoted ? "#ff4500" : "#3c4540",
-                padding:"4px 10px",
-                fontSize:13,
-                cursor:"pointer",
-                borderRadius:10,
-                display:"inline-flex",
-                alignItems:"center",
-                gap:5,
                 fontWeight: isUpvoted ? 700 : 400
               },
               onClick:function(){toggleUpvote(selPin.id);}
@@ -5432,9 +5532,10 @@ function App() {
           })(),
           (uname&&uname!=="guest"&&selPin.owner!==uname)&&(
             checkins.some(function(c){return c.pin_id===selPin.id;})
-              ? e("button",{style:{fontSize:12,padding:"4px 10px",borderRadius:6,border:"1px solid #2a5d3c",background:"#dde6dc",color:"#2a5d3c",cursor:"default",display:"inline-flex",alignItems:"center",gap:5},disabled:true},"✓ Checked In")
+              ? e("button",{className:"pm-action-btn",style:{border:"1px solid #2a5d3c",background:"#dde6dc",color:"#2a5d3c",cursor:"default"},disabled:true},"✓ Checked In")
               : e("button",{
-                  style:{fontSize:12,padding:"4px 10px",borderRadius:6,border:"1px solid #2a5d3c",background:"none",color:"#2a5d3c",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5},
+                  className:"pm-action-btn",
+                  style:{border:"1px solid #2a5d3c",background:"none",color:"#2a5d3c"},
                   onClick:function(){checkinToPin(selPin);}
                 },
                   e("svg",{
@@ -5456,14 +5557,14 @@ function App() {
           )
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,
-          e("button",{style:{background:"rgba(46,125,50,0.08)",border:"none",color:"#2a5d3c",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){openEdit(selPin);}},
+          e("button",{className:"pm-action-btn",style:{background:"rgba(46,125,50,0.08)",border:"none",color:"#2a5d3c"},onClick:function(){openEdit(selPin);}},
             e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
               e("path",{d:"M11 20h9"}),
               e("path",{d:"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"})
             ),
             e("span",null,"Edit")
           ),
-          e("button",{style:{background:"#fde8e8",border:"none",color:"#c81e1e",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){if(window.confirm("Delete \""+selPin.name+"\"? This cannot be undone.")){deletePin(selPin.id);setSelPin(null);}}},
+          e("button",{className:"pm-action-btn",style:{background:"#fde8e8",border:"none",color:"#c81e1e"},onClick:function(){if(window.confirm("Delete \""+selPin.name+"\"? This cannot be undone.")){deletePin(selPin.id);setSelPin(null);}}},
             e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
               e("polyline",{points:"3 6 5 6 21 6"}),
               e("path",{d:"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"}),
@@ -5474,7 +5575,8 @@ function App() {
           )
         ),
         e("button",{
-          style:{background:"#e1effe",border:"none",color:"#1e429f",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},
+          className:"pm-action-btn",
+          style:{background:"#e1effe",border:"none",color:"#1e429f"},
           onClick:function(){
             var url="https://maps.google.com/?q="+selPin.lat+","+selPin.lng;
             if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) url="http://maps.apple.com/?ll="+selPin.lat+","+selPin.lng;
@@ -5489,7 +5591,8 @@ function App() {
           e("span",null,"Open in Maps")
         ),
         e("button",{
-          style:{background:"rgba(42,93,60,0.08)",border:"none",color:"#2a5d3c",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},
+          className:"pm-action-btn",
+          style:{background:"rgba(42,93,60,0.08)",border:"none",color:"#2a5d3c"},
           onClick:function(){setShowCompass(true);}
         },
           e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
@@ -5499,7 +5602,8 @@ function App() {
           e("span",null,"Compass")
         ),
         (uname && uname !== "guest") && e("button",{
-          style:{background:"rgba(42,93,60,0.08)",border:"none",color:"#2a5d3c",padding:"8px 16px",cursor:"pointer",fontSize:12.5,borderRadius:100,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12)",transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:6},
+          className:"pm-action-btn",
+          style:{background:"rgba(42,93,60,0.08)",border:"none",color:"#2a5d3c"},
           onClick:function(){setShowAddToGuidesMenu(true);}
         },
           e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},

@@ -279,5 +279,56 @@ button:active { transform:scale(0.97); }
   color: #c05050;
 }
 
+/* ── Premium Details Card Action Buttons Grid ────────────────────────────── */
+.pm-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.pm-action-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  border-radius: 100px !important;
+  cursor: pointer;
+  flex: 1 1 auto;
+  min-width: 110px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12) !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap;
+}
+
+.pm-action-btn:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 480px) {
+  .pm-action-buttons {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .pm-action-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 8px 12px !important;
+  }
+  
+  /* If odd number of buttons, make the last one span full width */
+  .pm-action-btn:last-child:nth-child(odd) {
+    grid-column: span 2 !important;
+  }
+}
+
+
 
 
