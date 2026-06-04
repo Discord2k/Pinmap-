@@ -4342,7 +4342,8 @@ function App() {
         setSearchResults, setTrailSearchResults, mapPacks, collabPackIds, activeMapPack,
         handleSelectMapPack, loadUserProfile, expeditionLog, expeditionLogLoading,
         mapObj, setSelPin, setActiveTrail, activeFilter, searchResults, follows, toggleFollow,
-        trending, userLL, focusPin
+        trending, userLL, focusPin, api, trailSearchLoading, trailSearchResults,
+        activeTrail, savedTrailIds, setSavedTrailIds, setTrails, setActiveFilter
       }),
 
       tab==="admin" && uname==="Seth Gray" && e(AdminPanel,{
@@ -4377,8 +4378,7 @@ function App() {
 
       tab === "add" && e(AddPinForm, {
         pendingLL, setPendingLL, user, api, drafts, setDrafts, setForm, mapObj,
-        form, t, handlePhotoUpload, photoUploading, uploadProgress, removePhoto,
-        saveDraft, addPin, savePinLoading, trails, uname, savePin, takePhoto,
+        form, t, saveDraft, trails, uname, savePin, takePhoto,
         setShowInsiderExplainer, renderTagSuggestions
       }),
 

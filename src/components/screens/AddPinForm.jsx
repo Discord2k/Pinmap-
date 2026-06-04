@@ -6,8 +6,7 @@ const e = React.createElement;
 export function AddPinForm(props) {
   const {
     pendingLL, setPendingLL, user, api, drafts, setDrafts, setForm, mapObj,
-    form, t, handlePhotoUpload, photoUploading, uploadProgress, removePhoto,
-    saveDraft, addPin, savePinLoading, trails, uname, savePin, takePhoto,
+    form, t, saveDraft, trails, uname, savePin, takePhoto,
     setShowInsiderExplainer, renderTagSuggestions
   } = props;
 

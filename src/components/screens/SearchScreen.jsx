@@ -14,7 +14,8 @@ export function SearchScreen(props) {
      setSearchResults, setTrailSearchResults, mapPacks, collabPackIds, activeMapPack,
      handleSelectMapPack, loadUserProfile, expeditionLog, expeditionLogLoading,
      mapObj, setSelPin, setActiveTrail, activeFilter, searchResults, follows, toggleFollow,
-     trending, userLL, focusPin
+     trending, userLL, focusPin, api, trailSearchLoading, trailSearchResults,
+     activeTrail, savedTrailIds, setSavedTrailIds, setTrails, setActiveFilter
   } = props;
 
           return e("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
