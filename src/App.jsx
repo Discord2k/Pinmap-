@@ -1176,6 +1176,14 @@ function App() {
     setShowFeatures(true);
   }
 
+  useEffect(function() {
+    if (onboardStep === 7) {
+      setTab("add");
+    } else if (onboardStep === 0) {
+      setTab("search");
+    }
+  }, [onboardStep]);
+
   useEffect(function(){
     api.getSession().then(function(res){
       var session=res.data&&res.data.session;
@@ -4996,15 +5004,15 @@ function App() {
           })
         ),
         e("div",{style:{position:"relative",marginBottom:10}},
-          e("input",{style:S.input,placeholder:t("form_placeholder_name"),value:form.name,
+          e("input",{id:"form-pin-name",style:S.input,placeholder:t("form_placeholder_name"),value:form.name,
             onChange:function(ev){setForm(function(f){return Object.assign({},f,{name:ev.target.value});});}})
         ),
-        e("textarea",{style:Object.assign({},S.input,{resize:"vertical",minHeight:70}),
+        e("textarea",{id:"form-pin-desc",style:Object.assign({},S.input,{resize:"vertical",minHeight:70}),
           placeholder:t("form_placeholder_desc_optional"),value:form.description,
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{description:ev.target.value});});}}),
         e("input",{style:S.input,placeholder:"URL / Link (optional)",value:form.url || "",
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{url:ev.target.value});});}}),
-        e("input",{style:S.input,placeholder:t("form_placeholder_tags_hint"),value:form.tags,
+        e("input",{id:"form-pin-tags",style:S.input,placeholder:t("form_placeholder_tags_hint"),value:form.tags,
           onChange:function(ev){setForm(function(f){return Object.assign({},f,{tags:ev.target.value});});}}),
         renderTagSuggestions(form.tags, function(newTags) {
           setForm(function(f){return Object.assign({},f,{tags:newTags});});
@@ -5034,6 +5042,7 @@ function App() {
           e("div",{style:{fontSize:11,color:"#6f786f",marginBottom:6}}, "Choose icon or click pin to add your own"),
           e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
             e("input",{
+              id:"form-pin-icon",
               style:Object.assign({},S.input,{width:50,textAlign:"center",fontSize:16,padding:"6px",margin:0}),
               maxLength:2,
               placeholder:getPinIcon(form.tags.split(/[\s,]+/).filter(Boolean)),
@@ -5065,7 +5074,7 @@ function App() {
         ),
         e("div",{style:{marginBottom:16}},
           e("div",{style:{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:6}},t("photo_label")),
-          e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
+          e("div",{id:"form-photo-upload",style:{display:"flex",gap:8,alignItems:"center"}},
             [1, 2, 3].map(function(idx) {
               var fieldName = idx === 1 ? 'photo' : 'photo_' + idx;
               var photoVal = form[fieldName];

@@ -132,6 +132,36 @@ export const ONBOARD_STEPS_EN = [
     target: "btn-tab-profile"
   },
   {
+    title: "How to Drop a Pin",
+    body: "Let's look at how to place your first pin. Tap here to open the Drop tab and customize your spot.",
+    target: "btn-tab-add"
+  },
+  {
+    title: "Pin Name",
+    body: "Give your spot a clear, recognizable name to identify it on the map.",
+    target: "form-pin-name"
+  },
+  {
+    title: "Field Notes & URL",
+    body: "Add a detailed description about local conditions or off-grid access, and link an optional reference website.",
+    target: "form-pin-desc"
+  },
+  {
+    title: "Hashtags & Suggestions",
+    body: "Add hashtags to categorize your pin. Common and nearby suggested tags will appear dynamically below as you type to help you select tags.",
+    target: "form-pin-tags"
+  },
+  {
+    title: "Custom Emoji Icon",
+    body: "An icon is automatically assigned based on your tags (e.g. 🥾 for #hiking), or you can manually enter any emoji to customize your map pin.",
+    target: "form-pin-icon"
+  },
+  {
+    title: "Field Photos",
+    body: "Attach up to three photos of the location directly from your device's camera or photo gallery.",
+    target: "form-photo-upload"
+  },
+  {
     title: "Ready to Explore!",
     body: "Look for (?) help icons across screens for quick tips. You can repeat this tour at any time from your Settings in the Profile tab.",
     target: "wrap-up"
@@ -173,6 +203,36 @@ export const ONBOARD_STEPS_ES = [
     title: "Desafíos, Colecciones e Insignias",
     body: "Administra tu perfil, organiza colecciones, haz el seguimiento de tus desafíos, revisa tus insignias y exporta tus datos.",
     target: "btn-tab-profile"
+  },
+  {
+    title: "Cómo Colocar un Pin",
+    body: "Toca aquí para abrir la pestaña Colocar para comenzar a personalizar tu pin.",
+    target: "btn-tab-add"
+  },
+  {
+    title: "Nombre del Pin",
+    body: "Dale a tu ubicación un nombre claro y descriptivo.",
+    target: "form-pin-name"
+  },
+  {
+    title: "Notas de Campo y Enlace",
+    body: "Agrega descripciones detalladas sobre el acceso o terreno, e ingresa un enlace o sitio web de referencia opcional.",
+    target: "form-pin-desc"
+  },
+  {
+    title: "Hashtags y Sugerencias",
+    body: "Añade hashtags para clasificar tu pin. Las etiquetas comunes y sugeridas aparecerán debajo mientras escribes para ayudarte.",
+    target: "form-pin-tags"
+  },
+  {
+    title: "Selección de Icono Personalizado",
+    body: "Se asigna un icono automáticamente según tus etiquetas (ej. 🍺 para #bar), o puedes ingresar cualquier emoji manualmente para personalizar el pin.",
+    target: "form-pin-icon"
+  },
+  {
+    title: "Fotos de Campo",
+    body: "Adjunta hasta tres fotos del lugar directamente desde la cámara de tu dispositivo o galería de fotos.",
+    target: "form-photo-upload"
   },
   {
     title: "¡Todo Listo!",

@@ -273,6 +273,12 @@ export function Onboarding(props) {
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:10}}>
           <span style={{fontSize:18}}>
             {info.target === 'btn-tab-search' && "🔍"}
+            {info.target === 'btn-tab-add' && "➕"}
+            {info.target === 'form-pin-name' && "✏️"}
+            {info.target === 'form-pin-desc' && "📝"}
+            {info.target === 'form-pin-tags' && "🏷️"}
+            {info.target === 'form-pin-icon' && "🎨"}
+            {info.target === 'form-photo-upload' && "📷"}
             {info.target === 'map-center' && "📍"}
             {info.target === 'btn-pin-layer-toggle' && "👥"}
             {info.target === 'btn-3d-toggle' && "🏔"}
