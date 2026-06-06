@@ -408,6 +408,9 @@ export const api = {
   getParticipant: function(huntId, userId) {
     return sb.from("hunt_participants").select("*").eq("hunt_id", huntId).eq("user_id", userId).maybeSingle().then(function(r){ if (r.error) throw r.error; return r.data; });
   },
+  getUserEnrollments: function(userId) {
+    return sb.from("hunt_participants").select("*").eq("user_id", userId).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
   updateParticipantStatus: function(participantId, status, totalPoints) {
     var updatePayload = { status: status };
     if (totalPoints !== undefined) updatePayload.total_points = totalPoints;

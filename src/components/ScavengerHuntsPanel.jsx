@@ -27,6 +27,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const [editSaving, setEditSaving] = useState(false);
   const [deletingHunt, setDeletingHunt] = useState(null); // hunt object queued for deletion
   const [deleteSaving, setDeleteSaving] = useState(false);
+  const [userEnrollments, setUserEnrollments] = useState([]); // hunt participant records for current user
   
   // Profile gamification states
   const [profileStats, setProfileStats] = useState({
@@ -52,6 +53,10 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             badge_levels: profile.badge_levels || {}
           });
         }
+        const enrollments = await api.getUserEnrollments(uname);
+        setUserEnrollments(enrollments);
+      } else {
+        setUserEnrollments([]);
       }
     } catch (err) {
       console.error("Failed to load scavenger hunts data:", err);
@@ -396,96 +401,135 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     ),
 
     // List rendering
-    (!loading && activeSubTab === 'my_hunts') && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-      hunts.filter(h => h.creator === uname).length === 0 ? 
-        e('div', { style: { textAlign: 'center', padding: '24px 0', color: T.ink3, fontStyle: 'italic', fontSize: 13.5 } },
-          lang === 'es' ? "Aún no has creado cacerías." : "You haven't created any hunts yet.")
-        :
-        hunts.filter(h => h.creator === uname).map(h => (
-
-          e('div', {
-            key: h.id,
-            style: Object.assign({}, S.card, { margin: 0, padding: 14, background: T.paper2, cursor: 'pointer' })
-          },
-            e('div', {
-              style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
-              onClick: () => handleSelectHunt(h)
-            },
-              e('div', { style: { fontWeight: 700, fontSize: 15, color: T.ink, flex: 1 } }, h.name),
-              // Action buttons
-              e('div', { style: { display: 'flex', gap: 6, flexShrink: 0 } },
-                // Edit button
-                e('button', {
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    const sd = h.start_date ? h.start_date.slice(0,10) : '';
-                    const ed = h.end_date ? h.end_date.slice(0,10) : '';
-                    setEditingHunt({ ...h, start_date_local: sd, end_date_local: ed });
-                  },
-                  title: lang === 'es' ? 'Editar cacería' : 'Edit hunt',
-                  style: {
-                    background: 'none', border: `1px solid ${T.borderSoft}`, borderRadius: 8,
-                    padding: '4px 9px', fontSize: 13, cursor: 'pointer', color: T.ink3,
-                    display: 'flex', alignItems: 'center'
-                  }
+    (!loading && activeSubTab === 'my_hunts') && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
+      // Section 1: Created Hunts
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        e('div', { style: { fontSize: 11, fontWeight: 700, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 } },
+          lang === 'es' ? "Creadas por Mí" : "Created by Me"),
+        hunts.filter(h => h.creator === uname).length === 0 ? 
+          e('div', { style: { textAlign: 'center', padding: '16px 0', color: T.ink4, fontStyle: 'italic', fontSize: 13, background: T.paper3, borderRadius: 10 } },
+            lang === 'es' ? "Aún no has creado cacerías." : "You haven't created any hunts yet.")
+          :
+          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+            hunts.filter(h => h.creator === uname).map(h => (
+              e('div', {
+                key: h.id,
+                style: Object.assign({}, S.card, { margin: 0, padding: 14, background: T.paper2, cursor: 'pointer' })
+              },
+                e('div', {
+                  style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+                  onClick: () => handleSelectHunt(h)
                 },
-                  e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
-                    e('path', { d: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7' }),
-                    e('path', { d: 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z' })
+                  e('div', { style: { fontWeight: 700, fontSize: 15, color: T.ink, flex: 1 } }, h.name),
+                  // Action buttons
+                  e('div', { style: { display: 'flex', gap: 6, flexShrink: 0 } },
+                    // Edit button
+                    e('button', {
+                      onClick: (ev) => {
+                        ev.stopPropagation();
+                        const sd = h.start_date ? h.start_date.slice(0,10) : '';
+                        const ed = h.end_date ? h.end_date.slice(0,10) : '';
+                        setEditingHunt({ ...h, start_date_local: sd, end_date_local: ed });
+                      },
+                      title: lang === 'es' ? 'Editar cacería' : 'Edit hunt',
+                      style: {
+                        background: 'none', border: `1px solid ${T.borderSoft}`, borderRadius: 8,
+                        padding: '4px 9px', fontSize: 13, cursor: 'pointer', color: T.ink3,
+                        display: 'flex', alignItems: 'center'
+                      }
+                    },
+                      e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+                        e('path', { d: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7' }),
+                        e('path', { d: 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z' })
+                      )
+                    ),
+                    // Share button
+                    e('button', {
+                      onClick: (ev) => shareHunt(h, ev),
+                      title: lang === 'es' ? 'Compartir búsqueda' : 'Share hunt',
+                      style: {
+                        background: 'none', border: `1px solid ${T.borderSoft}`, borderRadius: 8,
+                        padding: '4px 9px', fontSize: 13, cursor: 'pointer', color: T.ink3,
+                        display: 'flex', alignItems: 'center'
+                      }
+                    },
+                      e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+                        e('path', { d: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8' }),
+                        e('polyline', { points: '16 6 12 2 8 6' }),
+                        e('line', { x1: '12', y1: '2', x2: '12', y2: '15' })
+                      )
+                    ),
+                    // Delete button
+                    e('button', {
+                      onClick: (ev) => {
+                        ev.stopPropagation();
+                        setDeletingHunt(h);
+                      },
+                      title: lang === 'es' ? 'Eliminar cacería' : 'Delete hunt',
+                      style: {
+                        background: 'none', border: '1px solid rgba(192, 80, 80, 0.25)', borderRadius: 8,
+                        padding: '4px 9px', fontSize: 13, cursor: 'pointer', color: '#c05050',
+                        display: 'flex', alignItems: 'center'
+                      }
+                    },
+                      e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+                        e('polyline', { points: '3 6 5 6 21 6' }),
+                        e('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' }),
+                        e('line', { x1: '10', y1: '11', x2: '10', y2: '17' }),
+                        e('line', { x1: '14', y1: '11', x2: '14', y2: '17' })
+                      )
+                    )
                   )
                 ),
-                // Share button
-                e('button', {
-                  onClick: (ev) => shareHunt(h, ev),
-                  title: lang === 'es' ? 'Compartir búsqueda' : 'Share hunt',
-                  style: {
-                    background: 'none', border: `1px solid ${T.borderSoft}`, borderRadius: 8,
-                    padding: '4px 9px', fontSize: 13, cursor: 'pointer', color: T.ink3,
-                    display: 'flex', alignItems: 'center'
-                  }
-                },
-                  e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
-                    e('path', { d: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8' }),
-                    e('polyline', { points: '16 6 12 2 8 6' }),
-                    e('line', { x1: '12', y1: '2', x2: '12', y2: '15' })
-                  )
-                ),
-                // Delete button
-                e('button', {
-                  onClick: (ev) => {
-                    ev.stopPropagation();
-                    setDeletingHunt(h);
-                  },
-                  title: lang === 'es' ? 'Eliminar cacería' : 'Delete hunt',
-                  style: {
-                    background: 'none', border: '1px solid rgba(192, 80, 80, 0.25)', borderRadius: 8,
-                    padding: '4px 9px', fontSize: 13, cursor: 'pointer', color: '#c05050',
-                    display: 'flex', alignItems: 'center'
-                  }
-                },
-                  e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
-                    e('polyline', { points: '3 6 5 6 21 6' }),
-                    e('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' }),
-                    e('line', { x1: '10', y1: '11', x2: '10', y2: '17' }),
-                    e('line', { x1: '14', y1: '11', x2: '14', y2: '17' })
-                  )
+                e('div', { style: { fontSize: 12.5, color: T.ink3, marginTop: 6 }, onClick: () => handleSelectHunt(h) }, h.description),
+                e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, fontSize: 11, fontFamily: T.mono, color: T.ink4 }, onClick: () => handleSelectHunt(h) },
+                  e('span', null, `Expires: ${new Date(h.end_date).toLocaleDateString()}`),
+                  e('span', {
+                    style: {
+                      textTransform: 'uppercase', fontWeight: 700, fontSize: 10.5,
+                      padding: '2px 7px', borderRadius: 5,
+                      background: h.visibility === 'private' ? 'rgba(239,108,0,0.10)' : 'rgba(46,125,50,0.10)',
+                      color: h.visibility === 'private' ? '#ef6c00' : T.forest
+                    }
+                  }, h.visibility === 'private' ? '🔒 Private' : '🌐 Public')
                 )
               )
-            ),
-            e('div', { style: { fontSize: 12.5, color: T.ink3, marginTop: 6 }, onClick: () => handleSelectHunt(h) }, h.description),
-            e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, fontSize: 11, fontFamily: T.mono, color: T.ink4 }, onClick: () => handleSelectHunt(h) },
-              e('span', null, `Expires: ${new Date(h.end_date).toLocaleDateString()}`),
-              e('span', {
-                style: {
-                  textTransform: 'uppercase', fontWeight: 700, fontSize: 10.5,
-                  padding: '2px 7px', borderRadius: 5,
-                  background: h.visibility === 'private' ? 'rgba(239,108,0,0.10)' : 'rgba(46,125,50,0.10)',
-                  color: h.visibility === 'private' ? '#ef6c00' : T.forest
-                }
-              }, h.visibility === 'private' ? '🔒 Private' : '🌐 Public')
-            )
+            ))
           )
-        ))
+      ),
+
+      // Section 2: Joined & Participating Hunts
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        e('div', { style: { fontSize: 11, fontWeight: 700, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 } },
+          lang === 'es' ? "Búsquedas en Curso / Unidas" : "Joined & Participating Hunts"),
+        hunts.filter(h => h.creator !== uname && userEnrollments.some(enroll => enroll.hunt_id === h.id)).length === 0 ? 
+          e('div', { style: { textAlign: 'center', padding: '16px 0', color: T.ink4, fontStyle: 'italic', fontSize: 13, background: T.paper3, borderRadius: 10 } },
+            lang === 'es' ? "No te has unido a ninguna búsqueda todavía." : "You haven't joined any hunts yet.")
+          :
+          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+            hunts.filter(h => h.creator !== uname && userEnrollments.some(enroll => enroll.hunt_id === h.id)).map(h => {
+              const enroll = userEnrollments.find(e_rec => e_rec.hunt_id === h.id);
+              const statusLabel = enroll.status === 'completed'
+                ? (lang === 'es' ? '🏆 Completado' : '🏆 Completed')
+                : (lang === 'es' ? '🏃 En progreso' : '🏃 In Progress');
+              return e('div', {
+                key: h.id,
+                style: Object.assign({}, S.card, { margin: 0, padding: 14, background: T.paper2, cursor: 'pointer' }),
+                onClick: () => handleSelectHunt(h)
+              },
+                e('div', { style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 } },
+                  e('div', { style: { fontWeight: 700, fontSize: 15, color: T.ink, flex: 1 } }, h.name),
+                  e('span', { style: { fontSize: 11, fontWeight: 700, color: T.forest, background: 'rgba(46,125,50,0.08)', padding: '2px 7px', borderRadius: 5 } }, `${enroll.total_points || 0} pts`)
+                ),
+                e('div', { style: { fontSize: 12.5, color: T.ink3, marginTop: 6 } }, h.description),
+                e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, fontSize: 11, fontFamily: T.mono, color: T.ink4 } },
+                  e('span', null, statusLabel),
+                  e('span', null, `By: @${h.creator}`)
+                )
+              );
+            })
+          )
+      )
     ),
 
     // ── Edit Hunt Modal ──────────────────────────────────────────────
