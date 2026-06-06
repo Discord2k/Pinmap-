@@ -932,6 +932,7 @@ export function ProfilePanel(props) {
               lang={lang}
               flash={flash}
               initialHuntsTab={huntsInitialTab}
+              huntsUpdateTrigger={props.huntsUpdateTrigger}
             />
           )}
         </div>

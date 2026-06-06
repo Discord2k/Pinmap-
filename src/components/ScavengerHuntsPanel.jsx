@@ -6,7 +6,7 @@ import { HuntRadarOverlay } from './HuntRadarOverlay';
 
 const e = React.createElement;
 
-export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lang = 'en', flash, initialHuntsTab = 'my_hunts' }) {
+export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lang = 'en', flash, initialHuntsTab = 'my_hunts', huntsUpdateTrigger }) {
   const [activeSubTab, setActiveSubTab] = useState(initialHuntsTab); // my_hunts, active_play
   const [hunts, setHunts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +75,16 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       setActiveSubTab(initialHuntsTab);
     }
   }, [initialHuntsTab]);
+
+  // Sync state if check-in happens outside of this component (e.g., from map check-ins)
+  useEffect(() => {
+    if (huntsUpdateTrigger) {
+      loadHuntsData();
+      if (selectedHunt) {
+        handleSelectHunt(selectedHunt);
+      }
+    }
+  }, [huntsUpdateTrigger]);
 
   // --- Edit hunt handlers ---
   const handleSaveEdit = async () => {

@@ -367,6 +367,7 @@ function App() {
   var [showTrailQuestPanel, setShowTrailQuestPanel] = useState(false);
   var [quickHunts, setQuickHunts] = useState({ active: null, publicList: [], loading: false });
   var [profileHuntsTab, setProfileHuntsTab] = useState(null); // null = don't auto-open, 'my_hunts' = auto-open to My Hunts
+  var [huntsUpdateTrigger, setHuntsUpdateTrigger] = useState(0);
   var [recordingTrail, setRecordingTrail] = useState(false);
   var [isRecordingPaused, setIsRecordingPaused] = useState(false);
   var [recordedPoints, setRecordedPoints] = useState([]);
@@ -3215,7 +3216,7 @@ function App() {
                 if (activeEnroll) {
                   api.getHunt(activeEnroll.hunt_id).then(function(hunt) {
                     api.getHuntActivityLogs(activeEnroll.id).then(function(logs) {
-                      var steps = hunt.hunt_steps || [];
+                      var steps = (hunt.hunt_steps || []).slice().sort(function(a,b){ return a.sequence_order - b.sequence_order; });
                       var completedStepIds = logs.filter(function(l) { return l.activity_type === 'check_in'; }).map(function(l) { return l.step_id; });
                       var activeStep = steps.find(function(s) { return completedStepIds.indexOf(s.id) < 0; });
                       
@@ -3228,6 +3229,7 @@ function App() {
                           var newStatus = allDone ? 'completed' : 'enrolled';
                           
                           api.updateParticipantStatus(activeEnroll.id, newStatus, newPoints).then(function() {
+                            setHuntsUpdateTrigger(function(t){ return t + 1; });
                             setTimeout(function() {
                               if (allDone) {
                                 flash(lang === 'es' ? "🏆 ¡Búsqueda \"" + hunt.name + "\" completada!" : "🏆 Hunt \"" + hunt.name + "\" completed!");
@@ -4688,7 +4690,8 @@ function App() {
           setLang:setLang,
           t:t,
           openHuntsExpanded:!!profileHuntsTab,
-          initialHuntsTab:profileHuntsTab || 'my_hunts'
+          initialHuntsTab:profileHuntsTab || 'my_hunts',
+          huntsUpdateTrigger:huntsUpdateTrigger
         })
         )
 
