@@ -25,6 +25,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const [showRadar, setShowRadar] = useState(false);
   const [editingHunt, setEditingHunt] = useState(null); // hunt object being edited
   const [editSaving, setEditSaving] = useState(false);
+  const [deletingHunt, setDeletingHunt] = useState(null); // hunt object queued for deletion
+  const [deleteSaving, setDeleteSaving] = useState(false);
   
   // Profile gamification states
   const [profileStats, setProfileStats] = useState({
@@ -95,6 +97,22 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     }
   };
 
+  // --- Delete hunt handler ---
+  const handleDeleteHunt = async () => {
+    if (!deletingHunt) return;
+    setDeleteSaving(true);
+    try {
+      await api.deleteHunt(deletingHunt.id);
+      flash(lang === 'es' ? '🗑️ Cacería eliminada.' : '🗑️ Hunt deleted successfully!');
+      setDeletingHunt(null);
+      loadHuntsData();
+    } catch (err) {
+      console.error('Failed to delete hunt:', err);
+      flash(lang === 'es' ? 'Error al eliminar la cacería.' : 'Error deleting the hunt.');
+    } finally {
+      setDeleteSaving(false);
+    }
+  };
 
   const handleSelectHunt = async (hunt) => {
     setLoading(true);
@@ -431,6 +449,26 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                     e('polyline', { points: '16 6 12 2 8 6' }),
                     e('line', { x1: '12', y1: '2', x2: '12', y2: '15' })
                   )
+                ),
+                // Delete button
+                e('button', {
+                  onClick: (ev) => {
+                    ev.stopPropagation();
+                    setDeletingHunt(h);
+                  },
+                  title: lang === 'es' ? 'Eliminar cacería' : 'Delete hunt',
+                  style: {
+                    background: 'none', border: '1px solid rgba(192, 80, 80, 0.25)', borderRadius: 8,
+                    padding: '4px 9px', fontSize: 13, cursor: 'pointer', color: '#c05050',
+                    display: 'flex', alignItems: 'center'
+                  }
+                },
+                  e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+                    e('polyline', { points: '3 6 5 6 21 6' }),
+                    e('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' }),
+                    e('line', { x1: '10', y1: '11', x2: '10', y2: '17' }),
+                    e('line', { x1: '14', y1: '11', x2: '14', y2: '17' })
+                  )
                 )
               )
             ),
@@ -537,6 +575,55 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           },
             editSaving && e('div', { style: { width: 13, height: 13, border: '2px solid transparent', borderTopColor: T.paper, borderRadius: '50%', animation: 'spin 0.6s linear infinite' } }),
             lang === 'es' ? 'Guardar Cambios' : 'Save Changes'
+          )
+        )
+      )
+    ),
+
+    // ── Delete Hunt Modal ─────────────────────────────────────────────
+    deletingHunt && e('div', {
+      style: {
+        position: 'fixed', inset: 0, background: 'rgba(26,32,28,0.55)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10100, padding: 16
+      }
+    },
+      e('div', {
+        style: {
+          background: T.paper2, border: `1px solid ${T.border}`, borderRadius: 20,
+          boxShadow: T.shadowLg, width: '100%', maxWidth: 400, padding: '22px 20px',
+          boxSizing: 'border-box', fontFamily: T.font, display: 'flex', flexDirection: 'column', gap: 14
+        }
+      },
+        // Header / Icon
+        e('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center', margin: '8px 0' } },
+          e('div', { style: { width: 48, height: 48, borderRadius: '50%', background: 'rgba(192, 80, 80, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c05050' } },
+            e('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+              e('polyline', { points: '3 6 5 6 21 6' }),
+              e('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' })
+            )
+          ),
+          e('div', { style: { fontSize: 16, fontWeight: 800, color: T.ink } },
+            lang === 'es' ? '¿Eliminar Cacería?' : 'Delete Scavenger Hunt?'),
+          e('div', { style: { fontSize: 13, color: T.ink3, lineHeight: '1.4' } },
+            lang === 'es' 
+              ? `¿Estás seguro de que deseas eliminar "${deletingHunt.name}"? Esta acción no se puede deshacer.`
+              : `Are you sure you want to delete "${deletingHunt.name}"? This action cannot be undone.`)
+        ),
+        // Actions
+        e('div', { style: { display: 'flex', gap: 8, marginTop: 4 } },
+          e('button', {
+            onClick: () => setDeletingHunt(null),
+            style: Object.assign({}, S.btnOutline, { flex: 1 })
+          }, lang === 'es' ? 'Cancelar' : 'Cancel'),
+          e('button', {
+            onClick: handleDeleteHunt, disabled: deleteSaving,
+            style: Object.assign({}, S.btn, {
+              flex: 1, background: deleteSaving ? '#b04040' : '#c05050',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+            })
+          },
+            deleteSaving && e('div', { style: { width: 13, height: 13, border: '2px solid transparent', borderTopColor: T.paper, borderRadius: '50%', animation: 'spin 0.6s linear infinite' } }),
+            lang === 'es' ? 'Eliminar' : 'Delete'
           )
         )
       )

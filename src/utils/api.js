@@ -393,6 +393,9 @@ export const api = {
   updateHunt: function(huntId, updates) {
     return sb.from("hunts").update(updates).eq("id", huntId).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },
+  deleteHunt: function(huntId) {
+    return sb.from("hunts").delete().eq("id", huntId).then(function(r){ if (r.error) throw r.error; return r.data; });
+  },
   getHuntSteps: function(huntId) {
     return sb.from("hunt_steps").select("*").eq("hunt_id", huntId).order("sequence_order", {ascending: true}).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
   },
