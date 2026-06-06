@@ -8,7 +8,7 @@ import { Comments } from './components/Comments';
 import { PinCard } from './components/PinCard';
 import { ProfilePanel } from './components/ProfilePanel';
 import { MineTab } from './components/MineTab';
-
+import { HuntJoinModal } from './components/HuntJoinModal';
 
 import { BottomNav } from './components/ui/BottomNav';
 
@@ -25,6 +25,7 @@ import { getBadgesStatus } from './utils/badges';
 import JSZip from 'jszip';
 import { SearchScreen } from './components/screens/SearchScreen';
 import { AddPinForm } from './components/screens/AddPinForm';
+import { AddScavengerHunt } from './components/screens/AddScavengerHunt';
 
 var mapObjRef = { current: null };
 
@@ -318,6 +319,8 @@ function App() {
   var s92=useState(null); var selPinTrail=s92[0]; var setSelPinTrail=s92[1];
   var s93=useState([]); var savedTrailIds=s93[0]; var setSavedTrailIds=s93[1];
   var s95=useState(false); var showInsiderExplainer=s95[0]; var setShowInsiderExplainer=s95[1];
+  var [pendingHuntId, setPendingHuntId] = useState("");
+  var [addTabMode, setAddTabMode] = useState("pin");
   var s68=useState(false); var importLoading=s68[0]; var setImportLoading=s68[1];
   var s56=useState(navigator.onLine); var isOnline=s56[0]; var setIsOnline=s56[1];
   var s57=useState(0); var queueCount=s57[0]; var setQueueCount=s57[1];
@@ -362,6 +365,8 @@ function App() {
   var [activeTrail, setActiveTrail] = useState(null);
   var [trailInfoExpanded, setTrailInfoExpanded] = useState(false);
   var [showTrailQuestPanel, setShowTrailQuestPanel] = useState(false);
+  var [quickHunts, setQuickHunts] = useState({ active: null, publicList: [], loading: false });
+  var [profileHuntsTab, setProfileHuntsTab] = useState(null); // null = don't auto-open, 'my_hunts' = auto-open to My Hunts
   var [recordingTrail, setRecordingTrail] = useState(false);
   var [isRecordingPaused, setIsRecordingPaused] = useState(false);
   var [recordedPoints, setRecordedPoints] = useState([]);
@@ -396,9 +401,42 @@ function App() {
   var activeTrailPolyline = useRef(null);
   var recordingTrailPolyline = useRef(null);
 
-  React.useEffect(function(){
+  React.useEffect(function() {
     setTrailInfoExpanded(false);
   }, [activeTrail]);
+
+  // Reset profileHuntsTab once the profile tab is shown (so it doesn't stick)
+  React.useEffect(function() {
+    if (profileHuntsTab && tab === 'profile') {
+      // Delay reset to let ProfilePanel pick up the prop first
+      var timer = setTimeout(function() { setProfileHuntsTab(null); }, 500);
+      return function() { clearTimeout(timer); };
+    }
+  }, [tab, profileHuntsTab]);
+
+  // Load quick hunt summary when the panel opens
+  React.useEffect(function() {
+    if (!showTrailQuestPanel || !uname || uname === 'guest') return;
+    setQuickHunts(function(prev){ return Object.assign({},prev,{loading:true}); });
+    api.listHunts().then(function(allHunts){
+      // Find hunts the user is enrolled in (creator or participant)
+      var enrolled = allHunts.filter(function(h){ return h.creator === uname; });
+      var activeHunt = enrolled.length > 0 ? enrolled[0] : null;
+      setQuickHunts({
+        loading: false,
+        active: activeHunt ? {
+          id: activeHunt.id,
+          name: activeHunt.name,
+          visibility: activeHunt.visibility,
+          participantStep: 1,
+          totalSteps: (activeHunt.hunt_steps ? activeHunt.hunt_steps.length : 0) || 1
+        } : null,
+        publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname; }).slice(0,3)
+      });
+    }).catch(function(){
+      setQuickHunts({ loading: false, active: null, publicList: [] });
+    });
+  }, [showTrailQuestPanel, uname]);
 
   var [myActivity, setMyActivity] = useState([]);
   var activityCache = useRef({data: null, ts: 0}); // {data:[], ts: ms epoch}
@@ -1315,6 +1353,44 @@ function App() {
     });
     return function(){ if(sub&&sub.data&&sub.data.subscription) sub.data.subscription.unsubscribe(); };
   },[]);
+
+  useEffect(function() {
+    // 1. Web URL check on launch (e.g. ?join_hunt=XYZ or #hunts/join/XYZ)
+    var urlParams = new URLSearchParams(window.location.search);
+    var hId = urlParams.get('join_hunt') || urlParams.get('hunt_id');
+    if (!hId) {
+      var hash = window.location.hash || '';
+      var hashParts = hash.split('hunts/join/');
+      if (hashParts.length > 1) {
+        hId = hashParts[1].split(/[?#]/)[0];
+      }
+    }
+    if (hId) {
+      setPendingHuntId(hId);
+      // Clean query parameters from address bar to prevent looping behavior
+      try {
+        var cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+      } catch (e) {}
+    }
+
+    // 2. Capacitor native deep link listener
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      var AppPlugin = window.Capacitor.Plugins.App;
+      var appUrlListener = AppPlugin.addListener('appUrlOpen', function(data) {
+        if (data && data.url) {
+          var urlParts = data.url.split('hunts/join/');
+          if (urlParts.length > 1) {
+            var hIdNative = urlParts[1].split(/[?#]/)[0];
+            if (hIdNative) setPendingHuntId(hIdNative);
+          }
+        }
+      });
+      return function() {
+        appUrlListener.remove();
+      };
+    }
+  }, []);
 
   useEffect(function(){
     var timer;
@@ -4002,7 +4078,7 @@ function App() {
         showTrailQuestPanel && e("div",{
           style:{
             position:"absolute",right:48,top:0,
-            width:260,
+            width:300,
             background:"rgba(246,241,228,0.98)",backdropFilter:"blur(20px)",
             border:"1px solid "+T.border,borderRadius:14,
             boxShadow:T.shadowLg,overflow:"hidden",zIndex:1000
@@ -4066,7 +4142,70 @@ function App() {
             },t("manage_btn"))
           ),
 
-          // Trails list
+          // ── Hunts section ──────────────────────────────────────────
+          e("div",{style:{borderBottom:"1px solid "+T.borderSoft}},
+            // Section header
+            e("div",{style:{padding:"8px 14px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+              e("div",{style:{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},
+                "🏟️ " + (lang === 'es' ? "Cacerías" : "Hunts")
+              ),
+              e("button",{
+                style:{padding:"4px 10px",borderRadius:6,border:"none",background:T.forest,color:T.paper,fontSize:10,fontWeight:700,cursor:"pointer"},
+                onClick:function(){ setShowTrailQuestPanel(false); setTab("add"); setAddTabMode("hunt"); setOpen(true); }
+              }, lang === 'es' ? "+ Crear" : "+ Create")
+            ),
+
+            // Active hunt summary (loaded from quickHunts)
+            (function(){
+              if (quickHunts.loading) {
+                return e("div",{style:{padding:"8px 14px 10px",fontSize:12,color:T.ink4,fontStyle:"italic"}}, lang === 'es' ? "Cargando..." : "Loading...");
+              }
+              if (!quickHunts.active) {
+                return e("div",{style:{padding:"4px 14px 10px",fontSize:12,color:T.ink4,fontStyle:"italic"}},
+                  lang === 'es' ? "No estás inscrito en ninguna cacería activa." : "You aren't enrolled in any active hunt."
+                );
+              }
+              var ah = quickHunts.active;
+              var stepNum = ah.participantStep || 1;
+              var totalSteps = ah.totalSteps || 1;
+              var pct = Math.round((stepNum - 1) / totalSteps * 100);
+              return e("div",{style:{margin:"0 14px 10px",background:"rgba(46,125,50,0.07)",border:"1px solid rgba(46,125,50,0.18)",borderRadius:10,padding:"10px 12px"}},
+                e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}},
+                  e("div",null,
+                    e("div",{style:{fontSize:13,fontWeight:700,color:T.ink,marginBottom:1}}, ah.name),
+                    e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},
+                      lang === 'es' ? ("Paso "+stepNum+" de "+totalSteps) : ("Step "+stepNum+" of "+totalSteps)
+                    )
+                  ),
+                  // Radar shortcut
+                  e("button",{
+                    onClick:function(){ setShowTrailQuestPanel(false); setTab("profile"); setOpen(true); },
+                    title: lang === 'es' ? "Abrir Radar de Caza" : "Open Hunt Radar",
+                    style:{background:"linear-gradient(135deg,#1a3a22,#2e7d32)",border:"none",borderRadius:8,
+                      padding:"6px 10px",fontSize:13,cursor:"pointer",color:"#fff",fontWeight:700,
+                      boxShadow:"0 2px 8px rgba(46,125,50,0.35)"}
+                  }, "🧭")
+                ),
+                // Progress bar
+                e("div",{style:{width:"100%",height:4,background:T.borderSoft,borderRadius:2,overflow:"hidden"}},
+                  e("div",{style:{width:pct+"%",height:"100%",background:T.forest,borderRadius:2,transition:"width 0.4s"}})
+                )
+              );
+            }()),
+
+            // Quick-action buttons row
+            e("div",{style:{display:"flex",gap:6,padding:"0 14px 10px"}},
+              e("button",{
+                style:{flex:1,padding:"7px 8px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"center"},
+                onClick:function(){ setShowTrailQuestPanel(false); setProfileHuntsTab('my_hunts'); setTab("profile"); setOpen(true); }
+              }, lang === 'es' ? "🗺️ Mis Cacerías" : "🗺️ My Hunts"),
+              e("button",{
+                style:{flex:1,padding:"7px 8px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"center"},
+                onClick:function(){ setShowTrailQuestPanel(false); setSearchMode("hunts"); setTab("search"); setOpen(true); }
+              }, lang === 'es' ? "🔍 Explorar" : "🔍 Discover")
+            )
+          ),
+
           e("div",{style:{padding:"8px 14px 4px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid "+T.borderSoft}},
             e("div",{
               style:{display:"flex",alignItems:"center",gap:6,cursor:"pointer",userSelect:"none"},
@@ -4384,17 +4523,45 @@ function App() {
       ),
 
 
-      tab === "add" && e(AddPinForm, {
-        pendingLL, setPendingLL, user, api, drafts, setDrafts, setForm, mapObj,
-        form, t, saveDraft, trails, uname, savePin, takePhoto,
-        setShowInsiderExplainer, renderTagSuggestions
-      }),
+      tab === "add" && e("div", { style: { padding: "16px", overflowY: "auto", height: "100%", boxSizing: "border-box" } },
+        e("div", { style: { display: "flex", gap: 10, marginBottom: 16 } },
+          e("button", {
+            onClick: function() { setAddTabMode("pin"); },
+            style: {
+              flex: 1, padding: "8px 12px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+              background: addTabMode === "pin" ? T.forest : T.paper3,
+              color: addTabMode === "pin" ? T.paper : T.ink2,
+              border: "1px solid " + (addTabMode === "pin" ? T.forest : T.border),
+              cursor: "pointer"
+            }
+          }, t("tab_add", "Add Pin")),
+          e("button", {
+            onClick: function() { setAddTabMode("hunt"); },
+            style: {
+              flex: 1, padding: "8px 12px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+              background: addTabMode === "hunt" ? T.forest : T.paper3,
+              color: addTabMode === "hunt" ? T.paper : T.ink2,
+              border: "1px solid " + (addTabMode === "hunt" ? T.forest : T.border),
+              cursor: "pointer"
+            }
+          }, lang === 'es' ? "Búsqueda del Tesoro" : "Scavenger Hunt")
+        ),
+        addTabMode === "pin" ? e(AddPinForm, {
+          pendingLL, setPendingLL, user, api, drafts, setDrafts, setForm, mapObj,
+          form, t, saveDraft, trails, uname, savePin, takePhoto,
+          setShowInsiderExplainer, renderTagSuggestions
+        }) : e(AddScavengerHunt, {
+          uname, pins, trails, lang, flash,
+          onCreated: function() { setAddTabMode("pin"); setTab("profile"); },
+          onCancel: function() { setAddTabMode("pin"); }
+        })
+      ),
 
       tab==="nearby" && e(NearbyScreen, { pins, userLL, t, distKm, getPinIcon, setSelPin, formatLL, follows, mapObj, setOpen, loadUserProfile }),
 
       tab==="profile" && e("div",null,
         e(ProfilePanel,{
-          user:user,uname:uname,myPins:myPins,checkinsCount:checkins.length,
+          user:user,uname:uname,myPins:myPins,checkinsCount:checkins.length,userLL:userLL,
           userFollows:userFollows,followers:followers,toggleUserFollow:toggleUserFollow,
           loadUserProfile:loadUserProfile,pushEnabled:pushEnabled,setPushEnabled:setPushEnabled,
           focusUserPins:focusUserPins,
@@ -4429,7 +4596,9 @@ function App() {
           onPurgeOfflineTiles:purgeOfflineTiles,
           lang:lang,
           setLang:setLang,
-          t:t
+          t:t,
+          openHuntsExpanded:!!profileHuntsTab,
+          initialHuntsTab:profileHuntsTab || 'my_hunts'
         })
         )
 
@@ -4441,6 +4610,19 @@ function App() {
       selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
+    pendingHuntId && e(HuntJoinModal, {
+      huntId: pendingHuntId,
+      userId: uname,
+      lang: lang,
+      flash: flash,
+      onJoined: function(hunt, participant) {
+        setTab("profile");
+        setOpen(true);
+      },
+      onClose: function() {
+        setPendingHuntId("");
+      }
+    }),
     showCompass&&e(CompassModal,{pin:selPin,onClose:function(){setShowCompass(false);},flash:flash,lang:lang,t:t}),
     showAddToGuidesMenu && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",border:"none",borderRadius:16,padding:"24px 22px",maxWidth:400,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",maxHeight:"80vh",display:"flex",flexDirection:"column"}},

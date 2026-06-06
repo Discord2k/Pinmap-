@@ -18,89 +18,130 @@ export function SearchScreen(props) {
      activeTrail, savedTrailIds, setSavedTrailIds, setTrails, setActiveFilter
   } = props;
 
-          return e("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
+  const [huntsList, setHuntsList] = React.useState([]);
+  const [huntsLoading, setHuntsLoading] = React.useState(false);
+  const [huntsSearch, setHuntsSearch] = React.useState("");
 
-        e("div",{className:"pm-search-input-wrap",style:{background:T.paper,flexShrink:0}},
-          e("div",{style:{position:"relative",width:"100%",marginBottom:6}},
-            e("input",{
-              style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
-                borderRadius:12,padding:"12px 36px 12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font},
-              placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar guías...":"Search guides..."):searchMode==="activity"?(lang==="es"?"Filtrar activity...":"Filter activity..."):t("search_placeholder_places_detail"),
-              value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch,
-              onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else if(searchMode==="mappacks")setMapPackSearch(ev.target.value);else if(searchMode==="activity")setActivitySearch(ev.target.value);else setAddrSearch(ev.target.value);},
-              onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places")doAddrSearch();}}
-            }),
-            (function(){
-              var val = searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:addrSearch;
-              if (!val) return null;
-              return e("button",{
-                style:{
-                  position:"absolute",
-                  right:12,
-                  top:"50%",
-                  transform:"translateY(-50%)",
-                  background:"none",
-                  border:"none",
-                  color:T.ink3,
-                  fontSize:22,
-                  fontWeight:"300",
-                  cursor:"pointer",
-                  padding:4,
-                  display:"flex",
-                  alignItems:"center",
-                  justifyContent:"center"
-                },
-                onClick:function(){
-                  if(searchMode==="tags"){setSearchTag("");setSearchResults(null);}
-                  else if(searchMode==="quests")setQuestSearch("");
-                  else if(searchMode==="trails"){setTrailSearch("");setTrailSearchResults([]);}
-                  else if(searchMode==="mappacks")setMapPackSearch("");
-                  else if(searchMode==="activity")setActivitySearch("");
-                  else {setAddrSearch("");setAddrResults([]);}
-                }
-              },"×");
-            })()
-          ),
-          (searchMode!=="quests" && searchMode!=="activity" && searchMode!=="mappacks") && e("button",{
-            style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:8},
-            onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else doAddrSearch();}
-          },t("search_btn")),
-          e("div",{style:{position:"relative",display:"flex",alignItems:"center"}},
-            e("div",{style:{position:"absolute",left:0,top:0,bottom:0,width:20,background:"linear-gradient(to right, "+T.paper+" 50%, transparent)",display:"flex",alignItems:"center",paddingLeft:2,pointerEvents:"none",color:T.ink3,zIndex:2,fontSize:12,fontWeight:"bold"}},"⟨"),
-            e("div",{id:"search-tabs",style:{display:"flex",width:"100%",borderBottom:"1px solid "+T.borderSoft,overflowX:"auto",scrollbarWidth:"none",msOverflowStyle:"none",WebkitOverflowScrolling:"touch",padding:"0 16px"}},
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.forest:T.ink3,borderBottom:searchMode==="tags"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
-              },
-                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"}),e("circle",{cx:"7",cy:"7",r:"0.5",fill:"currentColor"})),
-                t("search_mode_tags")
-              ),
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="places"?T.forest:T.ink3,borderBottom:searchMode==="places"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("places");}
-              },
-                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),e("circle",{cx:"12",cy:"10",r:"3"})),
-                t("search_mode_places")
-              ),
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="activity"?T.forest:T.ink3,borderBottom:searchMode==="activity"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("activity");}
-              },
-                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"}),e("circle",{cx:"5",cy:"19",r:"1",fill:"currentColor"})),
-                t("search_mode_activity")
-              ),
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.forest:T.ink3,borderBottom:searchMode==="quests"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("quests");}
-              },
-                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2a4 4 0 0 0-4 4v5c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V6a4 4 0 0 0-4-4z"})),
-                t("search_mode_quests")
-              ),
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.forest:T.ink3,borderBottom:searchMode==="trails"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("trails"); doTrailSearch();}
-              },
-                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M3 17l4-8 4 4 4-6 4 10"})),
-                t("search_mode_trails")
-              ),
-              e("button",{className:"pm-search-tab",style:{color:searchMode==="mappacks"?T.forest:T.ink3,borderBottom:searchMode==="mappacks"?"2px solid "+T.forest:"2px solid transparent",display:"inline-flex",alignItems:"center",gap:6},onClick:function(){setSearchMode("mappacks");}
-              },
-                e("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"})),
-                t("search_mode_mappacks")
-              )
+  React.useEffect(() => {
+    if (searchMode === "hunts") {
+      setHuntsLoading(true);
+      api.listHunts()
+        .then(data => {
+          const publicHunts = (data || []).filter(h => h.visibility === 'public');
+          setHuntsList(publicHunts);
+          setHuntsLoading(false);
+        })
+        .catch(err => {
+          console.error("Error fetching hunts in Search:", err);
+          setHuntsLoading(false);
+        });
+    }
+  }, [searchMode]);
+
+  const handleEnrollHunt = async (hunt) => {
+    if (!uname || uname === 'guest') {
+      flash(lang === 'es' ? "Inicia sesión para participar." : "Sign in to participate.");
+      return;
+    }
+    try {
+      const part = await api.getParticipant(hunt.id, uname);
+      if (part) {
+        flash(lang === 'es' ? "Ya estás inscrito. ¡Visita tu Perfil para jugar!" : "Already enrolled. Go to Profile to play!");
+        return;
+      }
+      await api.enrollInHunt(hunt.id, uname, 'BROWSE_PUBLIC');
+      flash(lang === 'es' ? "🎉 ¡Te has unido! Visita la pestaña Perfil para jugar." : "🎉 Joined! Go to Profile tab to play.");
+    } catch (err) {
+      console.error("Enroll error:", err);
+      flash(lang === 'es' ? "Error al inscribirse." : "Error enrolling in the hunt.");
+    }
+  };
+
+  return e("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
+
+    e("div",{className:"pm-search-input-wrap",style:{background:T.paper,flexShrink:0}},
+      e("div",{style:{position:"relative",width:"100%",marginBottom:6}},
+        e("input",{
+          style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
+            borderRadius:12,padding:"12px 36px 12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font},
+          placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar guías...":"Search guides..."):searchMode==="activity"?(lang==="es"?"Filtrar activity...":"Filter activity..."):searchMode==="hunts"?(lang==="es"?"Buscar búsquedas públicas...":"Search public hunts..."):t("search_placeholder_places_detail"),
+          value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:searchMode==="hunts"?huntsSearch:addrSearch,
+          onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else if(searchMode==="mappacks")setMapPackSearch(ev.target.value);else if(searchMode==="activity")setActivitySearch(ev.target.value);else if(searchMode==="hunts")setHuntsSearch(ev.target.value);else setAddrSearch(ev.target.value);},
+          onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places")doAddrSearch();}}
+        }),
+        (function(){
+          var val = searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:searchMode==="hunts"?huntsSearch:addrSearch;
+          if (!val) return null;
+          return e("button",{
+            style:{
+              position:"absolute",
+              right:12,
+              top:"50%",
+              transform:"translateY(-50%)",
+              background:"none",
+              border:"none",
+              color:T.ink3,
+              fontSize:22,
+              fontWeight:"300",
+              cursor:"pointer",
+              padding:4,
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"center"
+            },
+            onClick:function(){
+              if(searchMode==="tags"){setSearchTag("");setSearchResults(null);}
+              else if(searchMode==="quests")setQuestSearch("");
+              else if(searchMode==="trails"){setTrailSearch("");setTrailSearchResults([]);}
+              else if(searchMode==="mappacks")setMapPackSearch("");
+              else if(searchMode==="activity")setActivitySearch("");
+              else if(searchMode==="hunts")setHuntsSearch("");
+              else {setAddrSearch("");setAddrResults([]);}
+            }
+          },"×");
+        })()
+      ),
+      (searchMode!=="quests" && searchMode!=="activity" && searchMode!=="mappacks" && searchMode!=="hunts") && e("button",{
+        style:{width:"100%",padding:"11px",borderRadius:10,background:T.forest,color:T.paper,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:8},
+        onClick:function(){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else doAddrSearch();}
+      },t("search_btn")),
+          e("div",{id:"search-tabs",style:{display:"flex",flexWrap:"wrap",gap:"6px 8px",width:"100%",borderBottom:"1px solid "+T.borderSoft,padding:"8px 16px"}},
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="tags"?T.paper:T.ink3,background:searchMode==="tags"?T.forest:"transparent",border:"1px solid "+(searchMode==="tags"?T.forest:T.border),borderRadius:"20px",padding:"6px 12px",fontSize:"12px",fontWeight:"600",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"},onClick:function(){setSearchMode("tags");setAddrResults([]);setSearchTag("");}
+            },
+              e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"}),e("circle",{cx:"7",cy:"7",r:"0.5",fill:"currentColor"})),
+              t("search_mode_tags")
             ),
-            e("div",{style:{position:"absolute",right:0,top:0,bottom:0,width:20,background:"linear-gradient(to left, "+T.paper+" 50%, transparent)",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:2,pointerEvents:"none",color:T.ink3,zIndex:2,fontSize:12,fontWeight:"bold"}},"⟩")
-          )
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="places"?T.paper:T.ink3,background:searchMode==="places"?T.forest:"transparent",border:"1px solid "+(searchMode==="places"?T.forest:T.border),borderRadius:"20px",padding:"6px 12px",fontSize:"12px",fontWeight:"600",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"},onClick:function(){setSearchMode("places");}
+            },
+              e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),e("circle",{cx:"12",cy:"10",r:"3"})),
+              t("search_mode_places")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="activity"?T.paper:T.ink3,background:searchMode==="activity"?T.forest:"transparent",border:"1px solid "+(searchMode==="activity"?T.forest:T.border),borderRadius:"20px",padding:"6px 12px",fontSize:"12px",fontWeight:"600",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"},onClick:function(){setSearchMode("activity");}
+            },
+              e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"}),e("circle",{cx:"5",cy:"19",r:"1",fill:"currentColor"})),
+              t("search_mode_activity")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="quests"?T.paper:T.ink3,background:searchMode==="quests"?T.forest:"transparent",border:"1px solid "+(searchMode==="quests"?T.forest:T.border),borderRadius:"20px",padding:"6px 12px",fontSize:"12px",fontWeight:"600",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"},onClick:function(){setSearchMode("quests");}
+            },
+              e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2a4 4 0 0 0-4 4v5c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V6a4 4 0 0 0-4-4z"})),
+              t("search_mode_quests")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="trails"?T.paper:T.ink3,background:searchMode==="trails"?T.forest:"transparent",border:"1px solid "+(searchMode==="trails"?T.forest:T.border),borderRadius:"20px",padding:"6px 12px",fontSize:"12px",fontWeight:"600",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"},onClick:function(){setSearchMode("trails"); doTrailSearch();}
+            },
+              e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M3 17l4-8 4 4 4-6 4 10"})),
+              t("search_mode_trails")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="mappacks"?T.paper:T.ink3,background:searchMode==="mappacks"?T.forest:"transparent",border:"1px solid "+(searchMode==="mappacks"?T.forest:T.border),borderRadius:"20px",padding:"6px 12px",fontSize:"12px",fontWeight:"600",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"},onClick:function(){setSearchMode("mappacks");}
+            },
+              e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"})),
+              t("search_mode_mappacks")
+            ),
+            e("button",{className:"pm-search-tab",style:{color:searchMode==="hunts"?T.paper:T.ink3,background:searchMode==="hunts"?T.forest:"transparent",border:"1px solid "+(searchMode==="hunts"?T.forest:T.border),borderRadius:"20px",padding:"6px 12px",fontSize:"12px",fontWeight:"600",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"},onClick:function(){setSearchMode("hunts");}
+            },
+              e("svg",{width:12,height:12,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round"},e("path",{d:"M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"}),e("line",{x1:"4",y1:"22",x2:"4",y2:"15"})),
+              lang === "es" ? "Búsquedas" : "Hunts"
+            )
+          ),
         ),
 
         e("div",{className:"pm-search-results-wrap",style:{flex:1,overflowY:"auto"}},
@@ -532,6 +573,48 @@ export function SearchScreen(props) {
                         )
                       );
                     })
+                  );
+                })()
+              )
+            : searchMode==="hunts"
+            ? e("div",null,
+                huntsLoading && e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, (lang === 'es' ? "Buscando..." : "Searching public hunts...")),
+                !huntsLoading && (function(){
+                  const query = huntsSearch.toLowerCase().trim();
+                  const filtered = huntsList.filter(h => 
+                    h.name.toLowerCase().includes(query) || 
+                    (h.description && h.description.toLowerCase().includes(query)) ||
+                    h.creator.toLowerCase().includes(query)
+                  );
+                  if (filtered.length === 0) {
+                    return e("div",{style:{padding:"30px 0",textAlign:"center",color:T.ink3,fontSize:14,fontStyle:"italic"}}, lang === 'es' ? "No se encontraron búsquedas públicas." : "No public hunts found.");
+                  }
+                  return e("div",{style:{padding:"10px 0",display:"flex",flexDirection:"column",gap:10}},
+                    filtered.map(hunt => 
+                      e("div",{
+                        key: hunt.id,
+                        style:{
+                          background: T.paper2, border: "1px solid " + T.borderSoft,
+                          borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 8
+                        }
+                      },
+                        e("div",{style:{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}},
+                          e("span",{style:{fontWeight:700,fontSize:15,color:T.ink}}, hunt.name),
+                          e("span",{style:{fontSize:11,color:T.ink3}}, `by @${hunt.creator}`)
+                        ),
+                        hunt.description && e("div",{style:{fontSize:12.5,color:T.ink2,lineHeight:1.4}}, hunt.description),
+                        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}},
+                          e("span",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}}, 
+                            lang === 'es' ? `Termina: ${new Date(hunt.end_date).toLocaleDateString()}` 
+                            : `Expires: ${new Date(hunt.end_date).toLocaleDateString()}`
+                          ),
+                          e("button",{
+                            onClick: () => handleEnrollHunt(hunt),
+                            style: { background: T.forest, color: T.paper, border: "none", padding: "6px 12px", borderRadius: 8, fontWeight: 700, fontSize: "12px", cursor: "pointer" }
+                          }, lang === 'es' ? "Participar" : "Join Hunt")
+                        )
+                      )
+                    )
                   );
                 })()
               )

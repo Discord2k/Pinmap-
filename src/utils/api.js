@@ -381,6 +381,50 @@ export const api = {
         return (r.data || []).map(parseComment);
       });
   },
+  listHunts: function() {
+    return sb.from("hunts").select("*").order("created_at", {ascending: false}).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
+  getHunt: function(id) {
+    return sb.from("hunts").select("*, hunt_steps(*)").eq("id", id).single().then(function(r){ if (r.error) throw r.error; return r.data; });
+  },
+  createHunt: function(hunt) {
+    return sb.from("hunts").insert(hunt).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  updateHunt: function(huntId, updates) {
+    return sb.from("hunts").update(updates).eq("id", huntId).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  getHuntSteps: function(huntId) {
+    return sb.from("hunt_steps").select("*").eq("hunt_id", huntId).order("sequence_order", {ascending: true}).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
+  createHuntSteps: function(steps) {
+    return sb.from("hunt_steps").insert(steps).select().then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
+  enrollInHunt: function(huntId, userId, joinMethod) {
+    return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  getParticipant: function(huntId, userId) {
+    return sb.from("hunt_participants").select("*").eq("hunt_id", huntId).eq("user_id", userId).maybeSingle().then(function(r){ if (r.error) throw r.error; return r.data; });
+  },
+  updateParticipantStatus: function(participantId, status, totalPoints) {
+    var updatePayload = { status: status };
+    if (totalPoints !== undefined) updatePayload.total_points = totalPoints;
+    if (status === 'completed') updatePayload.completed_at = new Date().toISOString();
+    return sb.from("hunt_participants").update(updatePayload).eq("id", participantId).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  logHuntActivity: function(participantId, stepId, activityType, pointsAwarded) {
+    return sb.from("hunt_activity_logs").insert({
+      participant_id: participantId,
+      step_id: stepId,
+      activity_type: activityType,
+      points_awarded: pointsAwarded
+    }).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  getHuntActivityLogs: function(participantId) {
+    return sb.from("hunt_activity_logs").select("*").eq("participant_id", participantId).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
+  getHuntLeaderboard: function(huntId) {
+    return sb.from("hunt_participants").select("user_id, status, total_points, profiles(id, bio, location, avatar_url)").eq("hunt_id", huntId).order("total_points", {ascending: false}).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
   callEdgeFunction: callEdgeFunction
 };
 

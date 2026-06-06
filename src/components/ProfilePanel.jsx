@@ -3,6 +3,7 @@ import { userAvatar, APP_VERSION, ONBOARD_KEY } from '../utils/helpers';
 import { api, subscribeToPush, sb } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { UserBadges } from './UserBadges';
+import { ScavengerHuntsPanel } from './ScavengerHuntsPanel';
 
 export function ProfilePanel(props) {
   var lang = props.lang || 'en';
@@ -70,6 +71,8 @@ export function ProfilePanel(props) {
 
   var [questTab, setQuestTab] = React.useState("active");
   var [questsCollapsed, setQuestsCollapsed] = React.useState(true);
+  var [huntsCollapsed, setHuntsCollapsed] = React.useState(!!props.openHuntsExpanded ? false : true);
+  var [huntsInitialTab] = React.useState(props.initialHuntsTab || 'my_hunts');
   var [collectionsCollapsed, setCollectionsCollapsed] = React.useState(true);
   var [trailsCollapsed, setTrailsCollapsed] = React.useState(true);
   var [expandedTrails, setExpandedTrails] = React.useState({});
@@ -325,6 +328,24 @@ export function ProfilePanel(props) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Scavenger Hunt Mini Stats ── */}
+      {!editingProfile && myProfile && (myProfile.hunts_participated > 0 || myProfile.accrued_points > 0) && (
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",background:T.paper2,borderBottom:"1px solid "+T.borderSoft,padding:"10px 0"}}>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:16,fontWeight:700,color:T.forest}}>{myProfile.accrued_points || 0}</div>
+            <div style={{fontSize:9,color:T.ink3,textTransform:"uppercase",letterSpacing:"0.05em",fontFamily:T.mono}}>{lang === 'es' ? "Puntos de Búsqueda" : "Hunt Points"}</div>
+          </div>
+          <div style={{textAlign:"center",borderLeft:"1px solid "+T.borderSoft,borderRight:"1px solid "+T.borderSoft}}>
+            <div style={{fontSize:16,fontWeight:700,color:T.ink}}>{myProfile.hunts_participated || 0}</div>
+            <div style={{fontSize:9,color:T.ink3,textTransform:"uppercase",letterSpacing:"0.05em",fontFamily:T.mono}}>{lang === 'es' ? "Búsquedas Iniciadas" : "Hunts Entered"}</div>
+          </div>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:16,fontWeight:700,color:T.ink}}>{myProfile.hunts_completed || 0}</div>
+            <div style={{fontSize:9,color:T.ink3,textTransform:"uppercase",letterSpacing:"0.05em",fontFamily:T.mono}}>{lang === 'es' ? "Completadas" : "Completed"}</div>
+          </div>
         </div>
       )}
 
@@ -872,6 +893,49 @@ export function ProfilePanel(props) {
         </div>
       </div>
     )}
+
+      {/* ── Scavenger Hunts ────────────────────────────────────────────── */}
+      {!editingProfile && (
+        <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
+          <div 
+            className="pm-section-header"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
+              userSelect: "none",
+              marginBottom: huntsCollapsed ? 0 : 12
+            }}
+            onClick={function(){ setHuntsCollapsed(function(prev){ return !prev; }); }}
+          >
+            <span style={{fontSize: 10, color: T.ink3, display: "inline-block", transition: "transform 0.2s", transform: huntsCollapsed ? "rotate(0deg)" : "rotate(90deg)"}}>▶</span>
+            <span style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2z" />
+              </svg>
+              <span>{lang === 'es' ? "Cacerías del Tesoro" : "Scavenger Hunts"}</span>
+            </span>
+          </div>
+
+          {!huntsCollapsed && (
+            <ScavengerHuntsPanel
+              uname={uname}
+              userLL={props.userLL}
+              pins={props.allPins}
+              trails={props.trails}
+              lang={lang}
+              flash={flash}
+              initialHuntsTab={huntsInitialTab}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Collections ────────────────────────────────────────────────── */}
       {!editingProfile && (
