@@ -933,6 +933,7 @@ export function ProfilePanel(props) {
               flash={flash}
               initialHuntsTab={huntsInitialTab}
               huntsUpdateTrigger={props.huntsUpdateTrigger}
+              onHuntProgress={props.onHuntProgress}
             />
           )}
         </div>

@@ -6,7 +6,7 @@ import { HuntRadarOverlay } from './HuntRadarOverlay';
 
 const e = React.createElement;
 
-export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lang = 'en', flash, initialHuntsTab = 'my_hunts', huntsUpdateTrigger }) {
+export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lang = 'en', flash, initialHuntsTab = 'my_hunts', huntsUpdateTrigger, onHuntProgress }) {
   const [activeSubTab, setActiveSubTab] = useState(initialHuntsTab); // my_hunts, active_play
   const [hunts, setHunts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -310,6 +310,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       // Refresh database stats
       loadHuntsData();
       handleSelectHunt(selectedHunt);
+      if (onHuntProgress) onHuntProgress();
     } catch (err) {
       console.error("Failed to check in:", err);
       flash(lang === 'es' ? "Error al realizar check-in." : "Error performing check-in.");
@@ -337,6 +338,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       
       flash(lang === 'es' ? `✨ ¡Bono completado! +${points} puntos` : `✨ Bonus completed! +${points} points`);
       loadHuntsData();
+      if (onHuntProgress) onHuntProgress();
     } catch (err) {
       console.error(`Failed to log modifier ${actionType}:`, err);
     }
@@ -732,8 +734,31 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         }, '🧭 ', lang === 'es' ? 'Radar' : 'Radar')
       ),
 
+      // Enrollment Call-To-Action if not enrolled
+      !participant && e('div', {
+        style: {
+          background: 'rgba(46,125,50,0.06)', border: `1px dashed ${T.forest}`,
+          borderRadius: 14, padding: 18, textAlign: 'center',
+          display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4
+        }
+      },
+        e('div', { style: { fontSize: 14.5, fontWeight: 700, color: T.forest, lineHeight: 1.4 } },
+          selectedHunt.creator === uname 
+            ? (lang === 'es' ? "Eres el creador de esta búsqueda. Inscríbete para probarla y verificar los check-ins." : "You are the creator of this hunt. Enroll to play/test it and verify check-ins.")
+            : (lang === 'es' ? "Aún no te has inscrito en esta búsqueda." : "You are not enrolled in this hunt yet.")
+        ),
+        e('button', {
+          onClick: () => handleEnroll(selectedHunt),
+          style: Object.assign({}, S.btn, {
+            background: T.forest, color: T.paper, border: 'none',
+            alignSelf: 'center', padding: '10px 24px', borderRadius: 10,
+            fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(46,125,50,0.25)'
+          })
+        }, lang === 'es' ? "Inscribirse y Empezar" : "Enroll & Start")
+      ),
+
       // Progress Tracker Card
-      e('div', { style: { background: T.paper3, borderRadius: 14, padding: 14 } },
+      participant && e('div', { style: { background: T.paper3, borderRadius: 14, padding: 14 } },
         e('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.ink3 } },
           e('span', null, lang === 'es' ? "Tus Puntos" : "Your points"),
           e('span', null, lang === 'es' ? "Progreso" : "Progress")
@@ -747,7 +772,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       ),
 
       // Check if Completed
-      currentStepIndex >= huntSteps.length ?
+      participant && (currentStepIndex >= huntSteps.length ?
         e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 14, padding: 16, textAlign: 'center' } },
           e('div', { style: { fontSize: 32 } }, '🏆'),
           e('div', { style: { fontSize: 16, fontWeight: 800, color: T.forest, marginTop: 8 } },
@@ -922,7 +947,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
               )
             )
           )
-        ),
+        )),
 
       // Leaderboard section for this hunt
       leaderboard.length > 0 && e('div', { style: { marginTop: 16 } },
