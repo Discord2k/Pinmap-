@@ -99,7 +99,9 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         description: editingHunt.description,
         start_date: new Date(editingHunt.start_date_local).toISOString(),
         end_date: new Date(editingHunt.end_date_local).toISOString(),
-        visibility: editingHunt.visibility
+        visibility: editingHunt.visibility,
+        completion_message: editingHunt.completion_message || null,
+        completion_url: editingHunt.completion_url || null
       });
       flash(lang === 'es' ? '✅ Cacería actualizada.' : '✅ Hunt updated successfully!');
       setEditingHunt(null);
@@ -616,6 +618,24 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             e('option', { value: 'private' }, lang === 'es' ? 'Privada — solo con enlace' : 'Private — shared link only')
           )
         ),
+        // Completion Message
+        e('div', null,
+          e('label', { style: { fontSize: 12, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? 'Mensaje de Finalización' : 'Completion Message'),
+          e('textarea', {
+            rows: 2, value: editingHunt.completion_message || '',
+            onChange: (ev) => setEditingHunt(eh => ({ ...eh, completion_message: ev.target.value })),
+            style: Object.assign({}, S.textarea, { marginTop: 4 })
+          })
+        ),
+        // Completion URL
+        e('div', null,
+          e('label', { style: { fontSize: 12, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? 'URL de Finalización' : 'Completion URL'),
+          e('input', {
+            type: 'url', value: editingHunt.completion_url || '',
+            onChange: (ev) => setEditingHunt(eh => ({ ...eh, completion_url: ev.target.value })),
+            style: Object.assign({}, S.input, { marginTop: 4 })
+          })
+        ),
         // Save / Cancel
         e('div', { style: { display: 'flex', gap: 8, marginTop: 4 } },
           e('button', {
@@ -773,12 +793,23 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
 
       // Check if Completed
       participant && (currentStepIndex >= huntSteps.length ?
-        e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 14, padding: 16, textAlign: 'center' } },
-          e('div', { style: { fontSize: 32 } }, '🏆'),
-          e('div', { style: { fontSize: 16, fontWeight: 800, color: T.forest, marginTop: 8 } },
+        e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
+          e('div', { style: { fontSize: 36 } }, '🏆'),
+          e('div', { style: { fontSize: 18, fontWeight: 800, color: T.forest } },
             lang === 'es' ? "¡Búsqueda Completada!" : "Hunt Completed!"),
-          e('div', { style: { fontSize: 13, color: T.ink3, marginTop: 4 } },
-            lang === 'es' ? "¡Has completado todos los pasos de este recorrido del tesoro!" : "You have finished all objectives for this hunt!")
+          e('div', { style: { fontSize: 14, color: T.ink2, lineHeight: 1.5 } },
+            selectedHunt.completion_message || (lang === 'es' ? "¡Has completado todos los pasos de este recorrido del tesoro!" : "You have finished all objectives for this hunt!")),
+          selectedHunt.completion_url && e('a', {
+            href: selectedHunt.completion_url,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            style: {
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: T.forest, color: T.paper, textDecoration: 'none',
+              padding: '10px 20px', borderRadius: 10, fontSize: 13.5, fontWeight: 700,
+              boxShadow: '0 2px 8px rgba(46,125,50,0.35)', marginTop: 4, cursor: 'pointer'
+            }
+          }, lang === 'es' ? "Ver Recompensa / Enlace 🔗" : "Claim Reward / View Link 🔗")
         )
         :
         // Active Step Details

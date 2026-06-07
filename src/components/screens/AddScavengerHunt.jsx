@@ -14,6 +14,8 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
     return nextWeek.toISOString().split('T')[0];
   });
   const [visibility, setVisibility] = useState('public');
+  const [completionMessage, setCompletionMessage] = useState('');
+  const [completionUrl, setCompletionUrl] = useState('');
   const [steps, setSteps] = useState([
     { sequence_order: 1, clue: '', pin_id: '', trail_id: '', point_rules: { check_in: 100 } }
   ]);
@@ -91,7 +93,9 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         description: description,
         start_date: new Date(startDate).toISOString(),
         end_date: new Date(endDate).toISOString(),
-        visibility: visibility
+        visibility: visibility,
+        completion_message: completionMessage || null,
+        completion_url: completionUrl || null
       };
 
       const createdHunt = await api.createHunt(huntPayload);
@@ -259,7 +263,29 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       },
         e('option', { value: 'public' }, lang === 'es' ? "Pública — todos pueden participar" : "Public — open to everyone"),
         e('option', { value: 'private' }, lang === 'es' ? "Privada — acceso con link de invitación" : "Private — shared link only")
-      )
+      ),
+
+      e('label', { htmlFor: 'hunt-completion-message-input', style: { fontSize: 12.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Mensaje de Finalización" : "Completion Message"),
+      e('textarea', {
+        id: 'hunt-completion-message-input',
+        name: 'completion_message',
+        rows: 2,
+        placeholder: lang === 'es' ? "¡Felicidades por completar la búsqueda! Aquí tienes tu recompensa..." : "Congrats on completing the hunt! Here is your reward details...",
+        value: completionMessage,
+        onChange: (e) => setCompletionMessage(e.target.value),
+        style: S.textarea
+      }),
+
+      e('label', { htmlFor: 'hunt-completion-url-input', style: { fontSize: 12.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Enlace / URL de Finalización" : "Completion URL / Link"),
+      e('input', {
+        id: 'hunt-completion-url-input',
+        name: 'completion_url',
+        type: 'url',
+        placeholder: "https://example.com/reward",
+        value: completionUrl,
+        onChange: (e) => setCompletionUrl(e.target.value),
+        style: S.input
+      })
     ),
 
     // Steps list header
