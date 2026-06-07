@@ -443,11 +443,31 @@ function App() {
         ]).then(function(stepsAndLogs) {
           var steps = stepsAndLogs[0];
           var logs = stepsAndLogs[1];
-          var completedStepIds = logs.filter(function(l) { return l.activity_type === 'check_in'; }).map(function(l) { return l.step_id; });
-          var nextStepIdx = steps.findIndex(function(s) { return completedStepIds.indexOf(s.id) < 0; });
+          steps.sort(function(a,b){ return a.sequence_order - b.sequence_order; });
+          
+          var activeStep = null;
+          var nextStepIdx = -1;
+          for (var i = 0; i < steps.length; i++) {
+            var step = steps[i];
+            var stepLogs = logs.filter(function(l) { return l.step_id === step.id; });
+            var loggedTypes = stepLogs.map(function(l) { return l.activity_type; });
+            var requiredTypes = Object.keys(step.point_rules || {});
+            var remainingTypes = requiredTypes.filter(function(t) { return loggedTypes.indexOf(t) < 0; });
+            if (remainingTypes.length > 0) {
+              activeStep = step;
+              nextStepIdx = i;
+              break;
+            }
+          }
           var currentStepNum = nextStepIdx === -1 ? steps.length : nextStepIdx + 1;
-          var activeStep = steps.find(function(s) { return completedStepIds.indexOf(s.id) < 0; });
           var activePinId = activeStep ? activeStep.pin_id : null;
+          
+          var activeCheckinLogged = false;
+          if (activeStep) {
+            activeCheckinLogged = logs.some(function(l) {
+              return l.step_id === activeStep.id && l.activity_type === 'check_in';
+            });
+          }
           
           setQuickHunts({
             loading: false,
@@ -457,7 +477,8 @@ function App() {
               visibility: activeHunt.visibility,
               participantStep: currentStepNum,
               totalSteps: steps.length || 1,
-              activePinId: activePinId
+              activePinId: activePinId,
+              activeCheckinLogged: activeCheckinLogged
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -470,7 +491,8 @@ function App() {
               visibility: activeHunt.visibility,
               participantStep: 1,
               totalSteps: 1,
-              activePinId: null
+              activePinId: null,
+              activeCheckinLogged: false
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -3185,47 +3207,72 @@ function App() {
               return;
             }
 
-            var saveCheckinPromise = (pin.owner === uname && !isHuntStep)
-              ? Promise.resolve(null)
-              : api.checkin(pin.id, uname, lat, lng);
-
-            saveCheckinPromise.then(function(newCheckin){
-              if (newCheckin) {
-                var updatedCheckins = checkins.concat([newCheckin]);
-                setCheckins(updatedCheckins);
-                setSelPinCheckinsCount(function(c){return c+1;});
-                flash("✅ Checked in successfully!");
-              } else if (pin.owner === uname) {
-                flash("📍 Hunt check-in verified at your pin!");
-              }
-
+            var handleHuntStepCheckin = function() {
               if (activeEnrollGlobal && activeStepGlobal) {
                 var checkinPoints = activeStepGlobal.point_rules.check_in || 100;
-                api.logHuntActivity(activeEnrollGlobal.id, activeStepGlobal.id, 'check_in', checkinPoints).then(function() {
-                  var newPoints = activeEnrollGlobal.total_points + checkinPoints;
-                  api.getHuntSteps(activeEnrollGlobal.hunt_id).then(function(steps) {
-                    steps.sort(function(a,b){ return a.sequence_order - b.sequence_order; });
-                    var stepIdx = steps.findIndex(function(s){ return s.id === activeStepGlobal.id; });
-                    var allDone = stepIdx === steps.length - 1;
-                    var newStatus = allDone ? 'completed' : 'enrolled';
-
-                    api.updateParticipantStatus(activeEnrollGlobal.id, newStatus, newPoints).then(function() {
-                      setHuntsUpdateTrigger(function(t){ return t + 1; });
-                      setTimeout(function() {
-                        if (allDone) {
-                          flash(lang === 'es' ? "🏆 ¡Búsqueda \"" + huntGlobal.name + "\" completada!" : "🏆 Hunt \"" + huntGlobal.name + "\" completed!");
-                        } else {
-                          flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada! Siguiente pista revelada." : "📍 Hunt step check-in registered! Next clue unlocked.");
-                        }
-                        setQuickHunts(function(prev) {
-                          if (!prev.active) return prev;
-                          return Object.assign({}, prev, {
-                            active: Object.assign({}, prev.active, {
-                              participantStep: stepIdx + 2
-                            })
-                          });
+                
+                api.getHuntActivityLogs(activeEnrollGlobal.id).then(function(logs) {
+                  var alreadyLogged = logs.some(function(l) { return l.step_id === activeStepGlobal.id && l.activity_type === 'check_in'; });
+                  
+                  var logPromise = alreadyLogged 
+                    ? Promise.resolve(null)
+                    : api.logHuntActivity(activeEnrollGlobal.id, activeStepGlobal.id, 'check_in', checkinPoints);
+                    
+                  logPromise.then(function(newLog) {
+                    var addedPoints = (!alreadyLogged && newLog) ? checkinPoints : 0;
+                    
+                    api.getHuntSteps(activeEnrollGlobal.hunt_id).then(function(steps) {
+                      steps.sort(function(a,b){ return a.sequence_order - b.sequence_order; });
+                      var stepIdx = steps.findIndex(function(s){ return s.id === activeStepGlobal.id; });
+                      
+                      api.getHuntActivityLogs(activeEnrollGlobal.id).then(function(freshLogs) {
+                        var stepLogs = freshLogs.filter(function(l) { return l.step_id === activeStepGlobal.id; });
+                        var loggedTypes = stepLogs.map(function(l) { return l.activity_type; });
+                        var requiredTypes = Object.keys(activeStepGlobal.point_rules);
+                        var remainingTypes = requiredTypes.filter(function(t) { return loggedTypes.indexOf(t) < 0; });
+                        
+                        api.getParticipant(activeEnrollGlobal.hunt_id, uname).then(function(part) {
+                          var currentPoints = part ? part.total_points : activeEnrollGlobal.total_points;
+                          var newPoints = currentPoints + addedPoints;
+                          
+                          var allDone = stepIdx === steps.length - 1;
+                          
+                          if (remainingTypes.length === 0) {
+                            var newStatus = allDone ? 'completed' : 'enrolled';
+                            api.updateParticipantStatus(activeEnrollGlobal.id, newStatus, newPoints).then(function() {
+                              setHuntsUpdateTrigger(function(t){ return t + 1; });
+                              setTimeout(function() {
+                                if (allDone) {
+                                  flash(lang === 'es' ? "🏆 ¡Búsqueda \"" + huntGlobal.name + "\" completada!" : "🏆 Hunt \"" + huntGlobal.name + "\" completed!");
+                                } else {
+                                  flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada! Siguiente pista revelada." : "📍 Hunt step completed! Next clue unlocked.");
+                                }
+                                setQuickHunts(function(prev) {
+                                  if (!prev.active) return prev;
+                                  return Object.assign({}, prev, {
+                                    active: Object.assign({}, prev.active, {
+                                      participantStep: stepIdx + 2,
+                                      activePinId: steps[stepIdx + 1] ? steps[stepIdx + 1].pin_id : null
+                                    })
+                                  });
+                                });
+                              }, 1500);
+                            });
+                          } else {
+                            api.updateParticipantStatus(activeEnrollGlobal.id, activeEnrollGlobal.status, newPoints).then(function() {
+                              setHuntsUpdateTrigger(function(t){ return t + 1; });
+                              var remainingLabels = remainingTypes.map(function(t) {
+                                if (t === 'check_in') return lang === 'es' ? 'Registrar visita' : 'Check-in';
+                                if (t === 'photo_upload') return lang === 'es' ? 'Subir foto' : 'Photo upload';
+                                if (t === 'comment') return lang === 'es' ? 'Bitácora' : 'Journal comment';
+                                if (t === 'create_trail') return lang === 'es' ? 'Vincular ruta' : 'Link trail';
+                                return t;
+                              });
+                              flash(lang === 'es' ? "📍 ¡Check-in verificado! Tareas restantes: " + remainingLabels.join(", ") : "📍 Check-in verified! Remaining tasks: " + remainingLabels.join(", "));
+                            });
+                          }
                         });
-                      }, 1500);
+                      });
                     });
                   });
                 }).catch(function(err) {
@@ -3233,8 +3280,54 @@ function App() {
                   flash("Hunt check-in error: " + (err.message || err));
                 });
               }
+            };
+
+            if (pin.owner === uname && !isHuntStep) {
+              flash("You cannot check in to your own pin!");
+              return;
+            }
+
+            var saveCheckinPromise = (pin.owner === uname && isHuntStep)
+              ? Promise.resolve(null)
+              : api.checkin(pin.id, uname, lat, lng);
+
+            saveCheckinPromise.then(function(newCheckin){
+              if (newCheckin) {
+                var updatedCheckins = checkins.concat([newCheckin]);
+                setCheckins(updatedCheckins);
+              } else {
+                // own-pin hunt check-in — add synthetic record so UI flips
+                setCheckins(function(prev) {
+                  return prev.concat([{ pin_id: pin.id, visitor: uname }]);
+                });
+              }
+              // Always refresh the count from the server for accuracy
+              api.getPinCheckinsCount(pin.id).then(function(count) {
+                setSelPinCheckinsCount(count);
+              });
+              flash("✅ Checked in successfully!");
+              if (isHuntStep) {
+                handleHuntStepCheckin();
+              }
             }).catch(function(err){
-              flash("Check-in failed: " + (err.message || "already checked in"));
+              // DB unique constraint = already checked in before
+              // Add synthetic record so button flips to "✓ Checked In"
+              var alreadyInState = checkins.some(function(c) { return c.pin_id === pin.id; });
+              if (!alreadyInState) {
+                setCheckins(function(prev) {
+                  return prev.concat([{ pin_id: pin.id, visitor: uname }]);
+                });
+              }
+              // Refresh count from server
+              api.getPinCheckinsCount(pin.id).then(function(count) {
+                setSelPinCheckinsCount(count);
+              });
+              if (isHuntStep) {
+                flash("✅ Checked in successfully!");
+                handleHuntStepCheckin();
+              } else {
+                flash("✅ Already checked in to this pin!");
+              }
             });
           },
           function(err){
@@ -3252,8 +3345,18 @@ function App() {
             return api.getHunt(enroll.hunt_id).then(function(hunt) {
               return api.getHuntActivityLogs(enroll.id).then(function(logs) {
                 var steps = (hunt.hunt_steps || []).slice().sort(function(a,b){ return a.sequence_order - b.sequence_order; });
-                var completedStepIds = logs.filter(function(l) { return l.activity_type === 'check_in'; }).map(function(l) { return l.step_id; });
-                var activeStep = steps.find(function(s) { return completedStepIds.indexOf(s.id) < 0; });
+                var activeStep = null;
+                for (var i = 0; i < steps.length; i++) {
+                  var step = steps[i];
+                  var stepLogs = logs.filter(function(l) { return l.step_id === step.id; });
+                  var loggedTypes = stepLogs.map(function(l) { return l.activity_type; });
+                  var requiredTypes = Object.keys(step.point_rules || {});
+                  var remainingTypes = requiredTypes.filter(function(t) { return loggedTypes.indexOf(t) < 0; });
+                  if (remainingTypes.length > 0) {
+                    activeStep = step;
+                    break;
+                  }
+                }
                 return {
                   enroll: enroll,
                   hunt: hunt,
@@ -4735,7 +4838,7 @@ function App() {
 
     
 
-      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null) }),
+      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null), activeHuntCheckinLogged: (quickHunts.active ? quickHunts.active.activeCheckinLogged : false), onHuntProgress: function() { setHuntsUpdateTrigger(function(t){ return t + 1; }); } }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
     pendingHuntId && e(HuntJoinModal, {

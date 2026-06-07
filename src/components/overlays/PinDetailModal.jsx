@@ -297,7 +297,7 @@ export function PinDetailModal(props) {
           e("span",null,"Add to Guide")
         )
       ),
-      e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash,lang:lang,t:t})
+      e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash,lang:lang,t:t,onHuntProgress:props.onHuntProgress})
       )
     );
 }

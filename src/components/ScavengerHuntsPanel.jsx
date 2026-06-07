@@ -178,10 +178,45 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   };
 
   const getBadgeTier = (points) => {
-    if (points >= 1500) return { title: lang === 'es' ? "Rastreador Leyenda" : "Legendary Tracker", emoji: "👑" };
-    if (points >= 800) return { title: lang === 'es' ? "Explorador Maestro" : "Master Explorer", emoji: "🏆" };
-    if (points >= 300) return { title: lang === 'es' ? "Guía de Ruta" : "Trailblazer", emoji: "🧭" };
-    return { title: lang === 'es' ? "Iniciado" : "Scout", emoji: "🥾" };
+    if (points >= 1500) {
+      return {
+        title: lang === 'es' ? "Rastreador Leyenda" : "Legendary Tracker",
+        icon: e('svg', { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffd700', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+          e('path', { d: 'M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z' }),
+          e('path', { d: 'M3 20h18' })
+        )
+      };
+    }
+    if (points >= 800) {
+      return {
+        title: lang === 'es' ? "Explorador Maestro" : "Master Explorer",
+        icon: e('svg', { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: '#c0c0c0', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+          e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
+          e('path', { d: 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18' }),
+          e('path', { d: 'M4 22h16' }),
+          e('path', { d: 'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22' }),
+          e('path', { d: 'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22' }),
+          e('path', { d: 'M18 2H6v7a6 6 0 0 0 12 0V2z' })
+        )
+      };
+    }
+    if (points >= 300) {
+      return {
+        title: lang === 'es' ? "Guía de Ruta" : "Trailblazer",
+        icon: e('svg', { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: '#cd7f32', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+          e('circle', { cx: '12', cy: '12', r: '10' }),
+          e('polygon', { points: '16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76' })
+        )
+      };
+    }
+    return {
+      title: lang === 'es' ? "Iniciado" : "Scout",
+      icon: e('svg', { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: '#8d6e63', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        e('polygon', { points: '3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21' }),
+        e('line', { x1: '9', y1: '3', x2: '9', y2: '18' }),
+        e('line', { x1: '15', y1: '6', x2: '15', y2: '21' })
+      )
+    };
   };
 
   const badgeTier = getBadgeTier(profileStats.accrued_points);
@@ -189,11 +224,13 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   // Active play computations
   const currentStepIndex = React.useMemo(() => {
     if (!huntSteps.length) return 0;
-    // Find first step where check_in is NOT logged
     for (let i = 0; i < huntSteps.length; i++) {
       const step = huntSteps[i];
-      const checkinLogged = activityLogs.some(l => l.step_id === step.id && l.activity_type === 'check_in');
-      if (!checkinLogged) return i;
+      const stepLogs = activityLogs.filter(l => l.step_id === step.id);
+      const loggedTypes = stepLogs.map(l => l.activity_type);
+      const requiredTypes = Object.keys(step.point_rules || {});
+      const remainingTypes = requiredTypes.filter(t => loggedTypes.indexOf(t) < 0);
+      if (remainingTypes.length > 0) return i;
     }
     return huntSteps.length; // All completed
   }, [huntSteps, activityLogs]);
@@ -274,12 +311,48 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   }, [currentDistanceFt]);
 
   const getProximityTemp = (distFt) => {
-    if (distFt === null) return null;
-    if (distFt <= 65) return { label: lang === 'es' ? "¡Aquí mismo!" : "Right Here!", color: '#2e7d32', icon: "🎯" };
-    if (distFt <= 260) return { label: lang === 'es' ? "¡Hirviendo!" : "Burning Hot!", color: '#d84315', icon: "🌋" };
-    if (distFt <= 820) return { label: lang === 'es' ? "Caliente" : "Hot", color: '#ef6c00', icon: "🔥" };
-    if (distFt <= 1960) return { label: lang === 'es' ? "Tibio" : "Warm", color: '#fbc02d', icon: "🌤️" };
-    return { label: lang === 'es' ? "Frío" : "Cold", color: '#1565c0', icon: "❄️" };
+    if (distFt === null) return { label: '', color: '', icon: null };
+    if (distFt <= 65) return {
+      label: lang === 'es' ? "¡Aquí mismo!" : "Right Here!",
+      color: '#2e7d32',
+      icon: e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#2e7d32', strokeWidth: 2.5, style: { flexShrink: 0 } },
+        e('circle', { cx: '12', cy: '12', r: '10' }),
+        e('circle', { cx: '12', cy: '12', r: '6' }),
+        e('circle', { cx: '12', cy: '12', r: '2' })
+      )
+    };
+    if (distFt <= 260) return {
+      label: lang === 'es' ? "¡Hirviendo!" : "Burning Hot!",
+      color: '#d84315',
+      icon: e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#d84315', strokeWidth: 2.5, style: { flexShrink: 0 } },
+        e('path', { d: 'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3zM12 21a4 4 0 0 0 4-4c0-.88-.3-1.3-.6-1.9-.686-1.372-.143-2.6 1.28-3.8.3 1.6 1.3 3.1 2.5 4.1C20.3 16.4 21 17.6 21 18.9a6 6 0 1 1-12 0c0-.74.277-1.46.6-1.9a1.6 1.6 0 0 0 1.6 1.9z' })
+      )
+    };
+    if (distFt <= 820) return {
+      label: lang === 'es' ? "Caliente" : "Hot",
+      color: '#ef6c00',
+      icon: e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#ef6c00', strokeWidth: 2.5, style: { flexShrink: 0 } },
+        e('path', { d: 'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z' })
+      )
+    };
+    if (distFt <= 1960) return {
+      label: lang === 'es' ? "Tibio" : "Warm",
+      color: '#fbc02d',
+      icon: e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#fbc02d', strokeWidth: 2.5, style: { flexShrink: 0 } },
+        e('circle', { cx: '12', cy: '12', r: '4' }),
+        e('path', { d: 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41' })
+      )
+    };
+    return {
+      label: lang === 'es' ? "Frío" : "Cold",
+      color: '#1565c0',
+      icon: e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#1565c0', strokeWidth: 2.5, style: { flexShrink: 0 } },
+        e('line', { x1: '12', y1: '2', x2: '12', y2: '22' }),
+        e('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
+        e('line', { x1: '4.93', y1: '4.93', x2: '19.07', y2: '19.07' }),
+        e('line', { x1: '19.07', y1: '4.93', x2: '4.93', y2: '19.07' })
+      )
+    };
   };
 
   const performCheckIn = async () => {
@@ -290,26 +363,46 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     setCheckingIn(true);
     try {
       const checkinPoints = activeStep.point_rules.check_in || 100;
-      await api.logHuntActivity(participant.id, activeStep.id, 'check_in', checkinPoints);
+      const alreadyLogged = activityLogs.some(l => l.step_id === activeStep.id && l.activity_type === 'check_in');
+      let addedPoints = 0;
+      if (!alreadyLogged) {
+        await api.logHuntActivity(participant.id, activeStep.id, 'check_in', checkinPoints);
+        addedPoints = checkinPoints;
+      }
       
       const newLogs = await api.getHuntActivityLogs(participant.id);
       setActivityLogs(newLogs);
       
-      const newPoints = participant.total_points + checkinPoints;
-      const allDone = currentStepIndex === huntSteps.length - 1;
-      const newStatus = allDone ? 'completed' : 'enrolled';
+      const stepLogs = newLogs.filter(l => l.step_id === activeStep.id);
+      const loggedTypes = stepLogs.map(l => l.activity_type);
+      const requiredTypes = Object.keys(activeStep.point_rules || {});
+      const remainingTypes = requiredTypes.filter(t => loggedTypes.indexOf(t) < 0);
       
-      const updatedPart = await api.updateParticipantStatus(participant.id, newStatus, newPoints);
-      setParticipant(updatedPart);
-
-      // Local push trigger
-      if (allDone) {
-        flash(lang === 'es' ? "🏆 ¡Felicidades! ¡Completaste toda la búsqueda del tesoro!" : "🏆 Congratulations! You completed the entire scavenger hunt!");
+      const newPoints = participant.total_points + addedPoints;
+      const allDone = currentStepIndex === huntSteps.length - 1;
+      
+      if (remainingTypes.length === 0) {
+        const newStatus = allDone ? 'completed' : 'enrolled';
+        const updatedPart = await api.updateParticipantStatus(participant.id, newStatus, newPoints);
+        setParticipant(updatedPart);
+        if (allDone) {
+          flash(lang === 'es' ? `🏆 ¡Felicidades! ¡Completaste toda la búsqueda "${selectedHunt.name}"!` : `🏆 Congratulations! You completed the entire scavenger hunt "${selectedHunt.name}"!`);
+        } else {
+          flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada! Siguiente pista revelada." : "📍 Hunt step completed! Next clue unlocked.");
+        }
       } else {
-        flash(lang === 'es' ? "📍 ¡Check-in completado! Pista del siguiente paso revelada." : "📍 Check-in successful! Next step clue revealed.");
+        const updatedPart = await api.updateParticipantStatus(participant.id, participant.status, newPoints);
+        setParticipant(updatedPart);
+        const remainingLabels = remainingTypes.map(t => {
+          if (t === 'check_in') return lang === 'es' ? 'Registrar visita' : 'Check-in';
+          if (t === 'photo_upload') return lang === 'es' ? 'Subir foto' : 'Photo upload';
+          if (t === 'comment') return lang === 'es' ? 'Bitácora' : 'Journal comment';
+          if (t === 'create_trail') return lang === 'es' ? 'Vincular ruta' : 'Link trail';
+          return t;
+        });
+        flash(lang === 'es' ? "📍 ¡Check-in verificado! Tareas restantes: " + remainingLabels.join(", ") : "📍 Check-in verified! Remaining tasks: " + remainingLabels.join(", "));
       }
       
-      // Refresh database stats
       loadHuntsData();
       handleSelectHunt(selectedHunt);
       if (onHuntProgress) onHuntProgress();
@@ -323,7 +416,6 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
 
   const logModifierAction = async (actionType, defaultPoints) => {
     if (!participant || !activeStep) return;
-    // Check if already logged for this step
     const alreadyLogged = activityLogs.some(l => l.step_id === activeStep.id && l.activity_type === actionType);
     if (alreadyLogged) return;
 
@@ -334,12 +426,38 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       const newLogs = await api.getHuntActivityLogs(participant.id);
       setActivityLogs(newLogs);
 
+      const stepLogs = newLogs.filter(l => l.step_id === activeStep.id);
+      const loggedTypes = stepLogs.map(l => l.activity_type);
+      const requiredTypes = Object.keys(activeStep.point_rules || {});
+      const remainingTypes = requiredTypes.filter(t => loggedTypes.indexOf(t) < 0);
+
       const newPoints = participant.total_points + points;
-      const updatedPart = await api.updateParticipantStatus(participant.id, participant.status, newPoints);
-      setParticipant(updatedPart);
+      const allDone = currentStepIndex === huntSteps.length - 1;
+
+      if (remainingTypes.length === 0) {
+        const newStatus = allDone ? 'completed' : 'enrolled';
+        const updatedPart = await api.updateParticipantStatus(participant.id, newStatus, newPoints);
+        setParticipant(updatedPart);
+        if (allDone) {
+          flash(lang === 'es' ? `🏆 ¡Felicidades! ¡Completaste toda la búsqueda "${selectedHunt.name}"!` : `🏆 Congratulations! You completed the entire scavenger hunt "${selectedHunt.name}"!`);
+        } else {
+          flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada! Siguiente pista revelada." : "📍 Hunt step completed! Next clue unlocked.");
+        }
+      } else {
+        const updatedPart = await api.updateParticipantStatus(participant.id, participant.status, newPoints);
+        setParticipant(updatedPart);
+        const remainingLabels = remainingTypes.map(t => {
+          if (t === 'check_in') return lang === 'es' ? 'Registrar visita' : 'Check-in';
+          if (t === 'photo_upload') return lang === 'es' ? 'Subir foto' : 'Photo upload';
+          if (t === 'comment') return lang === 'es' ? 'Bitácora' : 'Journal comment';
+          if (t === 'create_trail') return lang === 'es' ? 'Vincular ruta' : 'Link trail';
+          return t;
+        });
+        flash(lang === 'es' ? "✨ ¡Tarea registrada! Tareas restantes: " + remainingLabels.join(", ") : "✨ Task registered! Remaining tasks: " + remainingLabels.join(", "));
+      }
       
-      flash(lang === 'es' ? `✨ ¡Bono completado! +${points} puntos` : `✨ Bonus completed! +${points} points`);
       loadHuntsData();
+      handleSelectHunt(selectedHunt);
       if (onHuntProgress) onHuntProgress();
     } catch (err) {
       console.error(`Failed to log modifier ${actionType}:`, err);
@@ -375,7 +493,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, boxShadow: T.shadow
       }
     },
-      e('div', { style: { fontSize: 28 } }, badgeTier.emoji),
+      e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center' } }, badgeTier.icon),
       e('div', null,
         e('div', { style: { fontSize: 11, fontFamily: T.mono, opacity: 0.8, textTransform: 'uppercase' } }, badgeTier.title),
         e('div', { style: { fontSize: 18, fontWeight: 800 } }, `${profileStats.accrued_points.toLocaleString()} pts`),
@@ -915,8 +1033,9 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             },
               (() => {
                 const temp = getProximityTemp(currentDistanceFt);
+                if (!temp || !temp.label) return null;
                 return e('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: temp.color } },
-                  e('span', null, temp.icon),
+                  e('span', { style: { display: 'flex', alignItems: 'center' } }, temp.icon),
                   e('span', null, temp.label)
                 );
               })(),

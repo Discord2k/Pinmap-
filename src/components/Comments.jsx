@@ -44,7 +44,7 @@ export function Comments(props) {
         } else {
           if (height > max_height) {
             width *= max_height / height;
-            width = max_height;
+            height = max_height;
           }
         }
         canvas.width = width;
@@ -121,34 +121,83 @@ export function Comments(props) {
                 api.getHunt(enroll.hunt_id).then(function(hunt) {
                   api.getHuntActivityLogs(enroll.id).then(function(logs) {
                     var steps = (hunt.hunt_steps || []).slice().sort(function(a,b){ return a.sequence_order - b.sequence_order; });
-                    var completedCheckinIds = logs.filter(function(l) { return l.activity_type === 'check_in'; }).map(function(l) { return l.step_id; });
-                    var activeStep = steps.find(function(s) { return completedCheckinIds.indexOf(s.id) < 0; });
+                    var activeStep = null;
+                    var stepIdx = -1;
+                    for (var i = 0; i < steps.length; i++) {
+                      var step = steps[i];
+                      var stepLogs = logs.filter(function(l) { return l.step_id === step.id; });
+                      var loggedTypes = stepLogs.map(function(l) { return l.activity_type; });
+                      var requiredTypes = Object.keys(step.point_rules || {});
+                      var remainingTypes = requiredTypes.filter(function(t) { return loggedTypes.indexOf(t) < 0; });
+                      if (remainingTypes.length > 0) {
+                        activeStep = step;
+                        stepIdx = i;
+                        break;
+                      }
+                    }
+
                     if (activeStep && activeStep.pin_id === pinId) {
+                      var addedPoints = 0;
+                      var promises = [];
+
                       if (activeStep.point_rules.comment) {
                         var alreadyCommented = logs.some(function(l) { return l.step_id === activeStep.id && l.activity_type === 'comment'; });
                         if (!alreadyCommented) {
                           var commentPoints = activeStep.point_rules.comment || 50;
-                          api.logHuntActivity(enroll.id, activeStep.id, 'comment', commentPoints).then(function() {
-                            var newPoints = enroll.total_points + commentPoints;
-                            api.updateParticipantStatus(enroll.id, enroll.status, newPoints).then(function() {
-                              if (props.flash) props.flash("✨ Hunt Journal Bonus completed! +" + commentPoints + " pts");
-                            });
-                          });
+                          addedPoints += commentPoints;
+                          promises.push(api.logHuntActivity(enroll.id, activeStep.id, 'comment', commentPoints));
                         }
                       }
                       if (photoUrl && activeStep.point_rules.photo_upload) {
                         var alreadyPhoto = logs.some(function(l) { return l.step_id === activeStep.id && l.activity_type === 'photo_upload'; });
                         if (!alreadyPhoto) {
                           var photoPoints = activeStep.point_rules.photo_upload || 50;
-                          api.logHuntActivity(enroll.id, activeStep.id, 'photo_upload', photoPoints).then(function() {
+                          addedPoints += photoPoints;
+                          promises.push(api.logHuntActivity(enroll.id, activeStep.id, 'photo_upload', photoPoints));
+                        }
+                      }
+
+                      if (promises.length > 0) {
+                        Promise.all(promises).then(function() {
+                          api.getHuntActivityLogs(enroll.id).then(function(freshLogs) {
+                            var stepLogs = freshLogs.filter(function(l) { return l.step_id === activeStep.id; });
+                            var loggedTypes = stepLogs.map(function(l) { return l.activity_type; });
+                            var requiredTypes = Object.keys(activeStep.point_rules || {});
+                            var remainingTypes = requiredTypes.filter(function(t) { return loggedTypes.indexOf(t) < 0; });
+
                             api.getParticipant(enroll.hunt_id, uname).then(function(part) {
-                              var updatedPoints = (part ? part.total_points : enroll.total_points) + photoPoints;
-                              api.updateParticipantStatus(enroll.id, enroll.status, updatedPoints).then(function() {
-                                if (props.flash) props.flash("✨ Hunt Photo Bonus completed! +" + photoPoints + " pts");
-                              });
+                              var currentPoints = part ? part.total_points : enroll.total_points;
+                              var newPoints = currentPoints + addedPoints;
+                              var allDone = stepIdx === steps.length - 1;
+
+                              if (remainingTypes.length === 0) {
+                                var newStatus = allDone ? 'completed' : 'enrolled';
+                                api.updateParticipantStatus(enroll.id, newStatus, newPoints).then(function() {
+                                  if (props.onHuntProgress) props.onHuntProgress();
+                                  setTimeout(function() {
+                                    if (allDone) {
+                                      if (props.flash) props.flash(lang === 'es' ? "🏆 ¡Búsqueda \"" + hunt.name + "\" completada!" : "🏆 Hunt \"" + hunt.name + "\" completed!");
+                                    } else {
+                                      if (props.flash) props.flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada! Siguiente pista revelada." : "📍 Hunt step completed! Next clue unlocked.");
+                                    }
+                                  }, 1000);
+                                });
+                              } else {
+                                api.updateParticipantStatus(enroll.id, enroll.status, newPoints).then(function() {
+                                  if (props.onHuntProgress) props.onHuntProgress();
+                                  var remainingLabels = remainingTypes.map(function(t) {
+                                    if (t === 'check_in') return lang === 'es' ? 'Registrar visita' : 'Check-in';
+                                    if (t === 'photo_upload') return lang === 'es' ? 'Subir foto' : 'Photo upload';
+                                    if (t === 'comment') return lang === 'es' ? 'Bitácora' : 'Journal comment';
+                                    if (t === 'create_trail') return lang === 'es' ? 'Vincular ruta' : 'Link trail';
+                                    return t;
+                                  });
+                                  if (props.flash) props.flash(lang === 'es' ? "✨ ¡Tarea registrada! Tareas restantes: " + remainingLabels.join(", ") : "✨ Task registered! Remaining tasks: " + remainingLabels.join(", "));
+                                });
+                              }
                             });
                           });
-                        }
+                        });
                       }
                     }
                   });
