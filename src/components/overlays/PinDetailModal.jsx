@@ -212,30 +212,32 @@ export function PinDetailModal(props) {
               )
             );
           })(),
-          (uname&&uname!=="guest"&&selPin.owner!==uname)&&(
+          (uname&&uname!=="guest")&&(
             checkins.some(function(c){return c.pin_id===selPin.id;})
               ? e("button",{className:"pm-action-btn",style:{border:"1px solid #2a5d3c",background:"#dde6dc",color:"#2a5d3c",cursor:"default"},disabled:true},"✓ Checked In")
-              : e("button",{
-                  className:"pm-action-btn",
-                  style:{border:"1px solid #2a5d3c",background:"none",color:"#2a5d3c"},
-                  onClick:function(){checkinToPin(selPin);}
-                },
-                  e("svg",{
-                    width:13,
-                    height:13,
-                    viewBox:"0 0 24 24",
-                    fill:"none",
-                    stroke:"currentColor",
-                    strokeWidth:"2.2",
-                    strokeLinecap:"round",
-                    strokeLinejoin:"round",
-                    style:{flexShrink:0}
+              : (selPin.owner!==uname || selPin.id === props.activeHuntPinId)
+                ? e("button",{
+                    className:"pm-action-btn",
+                    style:{border:"1px solid #2a5d3c",background:"none",color:"#2a5d3c"},
+                    onClick:function(){checkinToPin(selPin);}
                   },
-                    e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),
-                    e("circle",{cx:12,cy:10,r:3})
-                  ),
-                  e("span",null,lang === 'es' ? "Registrar visita" : "Check In")
-                )
+                    e("svg",{
+                      width:13,
+                      height:13,
+                      viewBox:"0 0 24 24",
+                      fill:"none",
+                      stroke:"currentColor",
+                      strokeWidth:"2.2",
+                      strokeLinecap:"round",
+                      strokeLinejoin:"round",
+                      style:{flexShrink:0}
+                    },
+                      e("path",{d:"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"}),
+                      e("circle",{cx:12,cy:10,r:3})
+                    ),
+                    e("span",null,lang === 'es' ? "Registrar visita" : "Check In")
+                  )
+                : null
           )
         ),
         (uname&&selPin.owner===uname)&&e(React.Fragment,null,

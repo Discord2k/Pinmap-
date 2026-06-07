@@ -112,6 +112,50 @@ export function Comments(props) {
               pinId: props.pinId
             });
           }
+
+          // Scavenger hunt modifier tracking
+          if (uname && uname !== 'guest') {
+            api.getUserEnrollments(uname).then(function(enrollments) {
+              var activeEnrollments = enrollments.filter(function(e_rec) { return e_rec.status === 'enrolled'; });
+              activeEnrollments.forEach(function(enroll) {
+                api.getHunt(enroll.hunt_id).then(function(hunt) {
+                  api.getHuntActivityLogs(enroll.id).then(function(logs) {
+                    var steps = (hunt.hunt_steps || []).slice().sort(function(a,b){ return a.sequence_order - b.sequence_order; });
+                    var completedCheckinIds = logs.filter(function(l) { return l.activity_type === 'check_in'; }).map(function(l) { return l.step_id; });
+                    var activeStep = steps.find(function(s) { return completedCheckinIds.indexOf(s.id) < 0; });
+                    if (activeStep && activeStep.pin_id === pinId) {
+                      if (activeStep.point_rules.comment) {
+                        var alreadyCommented = logs.some(function(l) { return l.step_id === activeStep.id && l.activity_type === 'comment'; });
+                        if (!alreadyCommented) {
+                          var commentPoints = activeStep.point_rules.comment || 50;
+                          api.logHuntActivity(enroll.id, activeStep.id, 'comment', commentPoints).then(function() {
+                            var newPoints = enroll.total_points + commentPoints;
+                            api.updateParticipantStatus(enroll.id, enroll.status, newPoints).then(function() {
+                              if (props.flash) props.flash("✨ Hunt Journal Bonus completed! +" + commentPoints + " pts");
+                            });
+                          });
+                        }
+                      }
+                      if (photoUrl && activeStep.point_rules.photo_upload) {
+                        var alreadyPhoto = logs.some(function(l) { return l.step_id === activeStep.id && l.activity_type === 'photo_upload'; });
+                        if (!alreadyPhoto) {
+                          var photoPoints = activeStep.point_rules.photo_upload || 50;
+                          api.logHuntActivity(enroll.id, activeStep.id, 'photo_upload', photoPoints).then(function() {
+                            api.getParticipant(enroll.hunt_id, uname).then(function(part) {
+                              var updatedPoints = (part ? part.total_points : enroll.total_points) + photoPoints;
+                              api.updateParticipantStatus(enroll.id, enroll.status, updatedPoints).then(function() {
+                                if (props.flash) props.flash("✨ Hunt Photo Bonus completed! +" + photoPoints + " pts");
+                              });
+                            });
+                          });
+                        }
+                      }
+                    }
+                  });
+                });
+              });
+            });
+          }
         }).catch(function(err){
           setSending(false);
           if(props.flash) props.flash("Failed to post comment: " + (err ? err.message : "Unknown error"));

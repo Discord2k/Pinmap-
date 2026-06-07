@@ -446,6 +446,8 @@ function App() {
           var completedStepIds = logs.filter(function(l) { return l.activity_type === 'check_in'; }).map(function(l) { return l.step_id; });
           var nextStepIdx = steps.findIndex(function(s) { return completedStepIds.indexOf(s.id) < 0; });
           var currentStepNum = nextStepIdx === -1 ? steps.length : nextStepIdx + 1;
+          var activeStep = steps.find(function(s) { return completedStepIds.indexOf(s.id) < 0; });
+          var activePinId = activeStep ? activeStep.pin_id : null;
           
           setQuickHunts({
             loading: false,
@@ -454,7 +456,8 @@ function App() {
               name: activeHunt.name,
               visibility: activeHunt.visibility,
               participantStep: currentStepNum,
-              totalSteps: steps.length || 1
+              totalSteps: steps.length || 1,
+              activePinId: activePinId
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -466,7 +469,8 @@ function App() {
               name: activeHunt.name,
               visibility: activeHunt.visibility,
               participantStep: 1,
-              totalSteps: 1
+              totalSteps: 1,
+              activePinId: null
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -3181,7 +3185,7 @@ function App() {
               return;
             }
 
-            var saveCheckinPromise = (pin.owner === uname)
+            var saveCheckinPromise = (pin.owner === uname && !isHuntStep)
               ? Promise.resolve(null)
               : api.checkin(pin.id, uname, lat, lng);
 
@@ -4731,7 +4735,7 @@ function App() {
 
     
 
-      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu }),
+      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null) }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
     pendingHuntId && e(HuntJoinModal, {

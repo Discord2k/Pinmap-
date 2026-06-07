@@ -505,7 +505,23 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                       background: h.visibility === 'private' ? 'rgba(239,108,0,0.10)' : 'rgba(46,125,50,0.10)',
                       color: h.visibility === 'private' ? '#ef6c00' : T.forest
                     }
-                  }, h.visibility === 'private' ? '🔒 Private' : '🌐 Public')
+                  }, h.visibility === 'private' ? 
+                    e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4 } },
+                      e('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2 },
+                        e('rect', { x: 3, y: 11, width: 18, height: 11, rx: 2, ry: 2 }),
+                        e('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+                      ),
+                      lang === 'es' ? 'Privada' : 'Private'
+                    ) : 
+                    e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4 } },
+                      e('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2 },
+                        e('circle', { cx: 12, cy: 12, r: 10 }),
+                        e('line', { x1: 2, y1: 12, x2: 22, y2: 12 }),
+                        e('path', { d: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' })
+                      ),
+                      lang === 'es' ? 'Pública' : 'Public'
+                    )
+                  )
                 )
               )
             ))
@@ -524,8 +540,24 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             hunts.filter(h => h.creator !== uname && userEnrollments.some(enroll => enroll.hunt_id === h.id)).map(h => {
               const enroll = userEnrollments.find(e_rec => e_rec.hunt_id === h.id);
               const statusLabel = enroll.status === 'completed'
-                ? (lang === 'es' ? '🏆 Completado' : '🏆 Completed')
-                : (lang === 'es' ? '🏃 En progreso' : '🏃 In Progress');
+                ? e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, color: T.forest } },
+                    e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+                      e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
+                      e('path', { d: 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18' }),
+                      e('path', { d: 'M4 22h16' }),
+                      e('path', { d: 'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22' }),
+                      e('path', { d: 'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22' }),
+                      e('path', { d: 'M18 2H6v7a6 6 0 0 0 12 0V2z' })
+                    ),
+                    lang === 'es' ? 'Completado' : 'Completed'
+                  )
+                : e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, color: T.ink3 } },
+                    e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+                      e('circle', { cx: 12, cy: 12, r: 10 }),
+                      e('polyline', { points: '12 6 12 12 16 14' })
+                    ),
+                    lang === 'es' ? 'En progreso' : 'In Progress'
+                  );
               return e('div', {
                 key: h.id,
                 style: Object.assign({}, S.card, { margin: 0, padding: 14, background: T.paper2, cursor: 'pointer' }),
@@ -562,8 +594,12 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       },
         // Header
         e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
-          e('div', { style: { fontSize: 15, fontWeight: 800, color: T.ink } },
-            lang === 'es' ? '✏️ Editar Cacería' : '✏️ Edit Hunt'),
+          e('div', { style: { fontSize: 15, fontWeight: 800, color: T.ink, display: 'flex', alignItems: 'center', gap: 6 } },
+            e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2 },
+              e('path', { d: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7' }),
+              e('path', { d: 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z' })
+            ),
+            lang === 'es' ? 'Editar Cacería' : 'Edit Hunt'),
           e('button', {
             onClick: () => setEditingHunt(null),
             style: { background: 'none', border: 'none', fontSize: 22, color: T.ink3, cursor: 'pointer' }
@@ -751,7 +787,10 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             display: 'flex', alignItems: 'center', gap: 5,
             boxShadow: '0 2px 8px rgba(46,125,50,0.35)'
           }
-        }, '🧭 ', lang === 'es' ? 'Radar' : 'Radar')
+        }, e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, style: { flexShrink: 0 } },
+            e('circle', { cx: '12', cy: '12', r: '10' }),
+            e('polygon', { points: '16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76' })
+          ), lang === 'es' ? 'Radar' : 'Radar')
       ),
 
       // Enrollment Call-To-Action if not enrolled
@@ -794,7 +833,14 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       // Check if Completed
       participant && (currentStepIndex >= huntSteps.length ?
         e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
-          e('div', { style: { fontSize: 36 } }, '🏆'),
+          e('svg', { width: 42, height: 42, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, style: { color: T.forest } },
+            e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
+            e('path', { d: 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18' }),
+            e('path', { d: 'M4 22h16' }),
+            e('path', { d: 'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22' }),
+            e('path', { d: 'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22' }),
+            e('path', { d: 'M18 2H6v7a6 6 0 0 0 12 0V2z' })
+          ),
           e('div', { style: { fontSize: 18, fontWeight: 800, color: T.forest } },
             lang === 'es' ? "¡Búsqueda Completada!" : "Hunt Completed!"),
           e('div', { style: { fontSize: 14, color: T.ink2, lineHeight: 1.5 } },
@@ -809,7 +855,11 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
               padding: '10px 20px', borderRadius: 10, fontSize: 13.5, fontWeight: 700,
               boxShadow: '0 2px 8px rgba(46,125,50,0.35)', marginTop: 4, cursor: 'pointer'
             }
-          }, lang === 'es' ? "Ver Recompensa / Enlace 🔗" : "Claim Reward / View Link 🔗")
+          }, lang === 'es' ? "Ver Recompensa / Enlace " : "Claim Reward / View Link ", e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { marginLeft: 4, display: 'inline-block', verticalAlign: 'middle' } },
+            e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
+            e('polyline', { points: '15 3 21 3 21 9' }),
+            e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
+          ))
         )
         :
         // Active Step Details
@@ -819,8 +869,14 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           
           // Clue Box
           e('div', { style: { background: T.paper2, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16 } },
-            e('div', { style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, textTransform: 'uppercase' } },
-              lang === 'es' ? "💡 PISTA" : "💡 CLUE"),
+            e('div', { style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 } },
+              e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+                e('path', { d: 'M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .5 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5' }),
+                e('line', { x1: 9, y1: 18, x2: 15, y2: 18 }),
+                e('line', { x1: 10, y1: 22, x2: 14, y2: 22 })
+              ),
+              lang === 'es' ? "PISTA" : "CLUE"
+            ),
             e('div', { style: { fontSize: 14.5, color: T.ink, fontWeight: 700, marginTop: 4, lineHeight: 1.5 } },
               activeStep.clue)
           ),
@@ -884,22 +940,35 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             
             // Photo Modifier
             activeStep.point_rules.photo_upload && e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.paper2, padding: 10, borderRadius: 10, border: `1px solid ${T.borderSoft}` } },
-              e('span', { style: { fontSize: 13, color: T.ink2 } },
-                lang === 'es' ? `📸 Subir foto del lugar (+${activeStep.point_rules.photo_upload} pts)` : `📸 Upload photo of spot (+${activeStep.point_rules.photo_upload} pts)`),
+              e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { color: T.ink3 } },
+                  e('path', { d: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z' }),
+                  e('circle', { cx: 12, cy: 13, r: 4 })
+                ),
+                e('span', { style: { fontSize: 13, color: T.ink2 } },
+                  lang === 'es' ? `Subir foto del lugar (+${activeStep.point_rules.photo_upload} pts)` : `Upload photo of spot (+${activeStep.point_rules.photo_upload} pts)`)
+              ),
               activityLogs.some(l => l.step_id === activeStep.id && l.activity_type === 'photo_upload') ?
                 e('span', { style: { color: T.forest, fontWeight: 700, fontSize: 12 } }, '✓ Completed')
                 :
-                e('button', {
-                  onClick: () => logModifierAction('photo_upload', 50),
-                  style: S.miniBtn
-                }, lang === 'es' ? "Subir" : "Upload")
+                e('span', { style: { color: T.ink3, fontSize: 11.5, fontStyle: 'italic' } },
+                  lang === 'es' ? "(En el detalle del pin)" : "(From pin detail)")
             ),
 
             // Create & Link Trail Modifier
             activeStep.point_rules.create_trail && e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.paper2, padding: 10, borderRadius: 10, border: `1px solid ${T.borderSoft}` } },
               e('div', { style: { display: 'flex', flexDirection: 'column', gap: 2, flex: 1 } },
-                e('span', { style: { fontSize: 13, color: T.ink2 } },
-                  lang === 'es' ? `🥾 Grabar y vincular ruta (+${activeStep.point_rules.create_trail} pts) (mín. 500 ft)` : `🥾 Record & link trail (+${activeStep.point_rules.create_trail} pts) (min. 500 ft)`),
+                e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                  e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { color: T.ink3 } },
+                    e('path', { d: 'M3 7V5a2 2 0 0 1 2-2h2' }),
+                    e('path', { d: 'M17 3h2a2 2 0 0 1 2 2v2' }),
+                    e('path', { d: 'M21 17v2a2 2 0 0 1-2 2h-2' }),
+                    e('path', { d: 'M7 21H5a2 2 0 0 1-2-2v-2' }),
+                    e('circle', { cx: 12, cy: 12, r: 3 })
+                  ),
+                  e('span', { style: { fontSize: 13, color: T.ink2 } },
+                    lang === 'es' ? `Grabar y vincular ruta (+${activeStep.point_rules.create_trail} pts)` : `Record & link trail (+${activeStep.point_rules.create_trail} pts)`)
+                ),
                 !activityLogs.some(l => l.step_id === activeStep.id && l.activity_type === 'create_trail') && e('span', { style: { fontSize: 11, color: T.ink3 } },
                   (() => {
                     const linked = trails.find(t => t.owner === uname && t.pin_id === activeStep.pin_id);
@@ -945,37 +1014,20 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             ),
 
             // Comment / Journal Modifier
-            activeStep.point_rules.comment && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, background: T.paper2, padding: 10, borderRadius: 10, border: `1px solid ${T.borderSoft}` } },
-              e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+            activeStep.point_rules.comment && e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.paper2, padding: 10, borderRadius: 10, border: `1px solid ${T.borderSoft}` } },
+              e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { color: T.ink3 } },
+                  e('path', { d: 'M12 20h9' }),
+                  e('path', { d: 'M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z' })
+                ),
                 e('span', { style: { fontSize: 13, color: T.ink2 } },
-                  lang === 'es' ? `✍️ Escribir en la bitácora (+${activeStep.point_rules.comment} pts)` : `✍️ Write field journal entry (+${activeStep.point_rules.comment} pts)`),
-                activityLogs.some(l => l.step_id === activeStep.id && l.activity_type === 'comment') ?
-                  e('span', { style: { color: T.forest, fontWeight: 700, fontSize: 12 } }, '✓ Completed')
-                  :
-                  e('button', {
-                    onClick: () => setWritingComment(writingComment ? null : activeStep),
-                    style: S.miniBtn
-                  }, lang === 'es' ? "Escribir" : "Write")
+                  lang === 'es' ? `Escribir en la bitácora (+${activeStep.point_rules.comment} pts)` : `Write field journal entry (+${activeStep.point_rules.comment} pts)`)
               ),
-              
-              // Writing comment sub-input
-              writingComment === activeStep && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
-                e('label', { htmlFor: 'field-journal-input', style: { fontSize: 11.5, color: T.ink3, fontWeight: 700 } },
-                  lang === 'es' ? "Observaciones de la bitácora" : "Field Journal Observations"),
-                e('textarea', {
-                  id: 'field-journal-input',
-                  name: 'field_journal',
-                  rows: 2,
-                  placeholder: lang === 'es' ? "Escribe tus observaciones aquí..." : "Write your observations here...",
-                  value: commentText,
-                  onChange: (e) => setCommentText(e.target.value),
-                  style: S.textarea
-                }),
-                e('button', {
-                  onClick: submitFieldJournal,
-                  style: Object.assign({}, S.miniBtn, { background: T.forest, color: T.paper, border: 'none', alignSelf: 'flex-end' })
-                }, lang === 'es' ? "Guardar diario" : "Save Journal")
-              )
+              activityLogs.some(l => l.step_id === activeStep.id && l.activity_type === 'comment') ?
+                e('span', { style: { color: T.forest, fontWeight: 700, fontSize: 12 } }, '✓ Completed')
+                :
+                e('span', { style: { color: T.ink3, fontSize: 11.5, fontStyle: 'italic' } },
+                  lang === 'es' ? "(En el detalle del pin)" : "(From pin detail)")
             )
           )
         )),
