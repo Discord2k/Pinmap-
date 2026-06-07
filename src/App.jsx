@@ -31,7 +31,20 @@ var mapObjRef = { current: null };
 
 window.L = {
   point: function(x, y) { return { x: x, y: y }; },
-  latLng: function(lat, lng) { return { lat: lat, lng: lng }; },
+  latLng: function(lat, lng) {
+    return {
+      lat: lat,
+      lng: lng,
+      distanceTo: function(other) {
+        var a = lat, b = lng, c = other.lat, d = other.lng;
+        var R = 6371000; // Earth's radius in meters
+        var dL = (c - a) * Math.PI / 180;
+        var dl = (d - b) * Math.PI / 180;
+        var x = Math.sin(dL/2) * Math.sin(dL/2) + Math.cos(a * Math.PI / 180) * Math.cos(c * Math.PI / 180) * Math.sin(dl/2) * Math.sin(dl/2);
+        return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+      }
+    };
+  },
   latLngBounds: function(pts) {
     if (!pts || pts.length === 0) {
       return {
