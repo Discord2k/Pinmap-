@@ -4,7 +4,7 @@ import { T, S } from '../../utils/styles';
 
 const e = React.createElement;
 
-export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', onCreated, onCancel, flash }) {
+export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', onCreated, onCancel, flash, userLL }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -20,6 +20,8 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
     { sequence_order: 1, clue: '', pin_id: '', trail_id: '', point_rules: { check_in: 100 } }
   ]);
   const [saving, setSaving] = useState(false);
+  const [showAllPins, setShowAllPins] = useState(false);
+  const [searchQueries, setSearchQueries] = useState({});
 
   const handleAddStep = () => {
     setSteps([
@@ -121,7 +123,6 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
     }
   };
 
-  const myPins = pins.filter(p => p.owner === uname);
   const myTrails = trails.filter(t => t.owner === uname);
 
   // Haversine distance helper (in km)
@@ -143,7 +144,7 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
     const thresholdKm = 5;
     const clusters = [];
     const visited = new Set();
-    const sortedPins = [...pinsList].sort((a, b) => a.name.localeCompare(b.name));
+    const sortedPins = [...pinsList]; // Preserve order (e.g. sorted by distance)
 
     for (let i = 0; i < sortedPins.length; i++) {
       const pin = sortedPins[i];
@@ -194,7 +195,28 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
     return finalGroups;
   }
 
-  const pinGroups = getClusteredPins(myPins);
+  const getStepPinGroups = (stepIdx) => {
+    let list = showAllPins ? pins : pins.filter(p => p.owner === uname);
+    const query = (searchQueries[stepIdx] || '').trim().toLowerCase();
+    if (query) {
+      list = list.filter(p => {
+        const nameMatch = p.name && p.name.toLowerCase().includes(query);
+        const descMatch = p.description && p.description.toLowerCase().includes(query);
+        const tagMatch = p.tags && p.tags.some ? p.tags.some(t => t.toLowerCase().includes(query)) : (typeof p.tags === 'string' && p.tags.toLowerCase().includes(query));
+        return nameMatch || descMatch || tagMatch;
+      });
+    }
+    if (userLL && typeof userLL.lat === 'number' && typeof userLL.lng === 'number') {
+      list = [...list].sort((a, b) => {
+        const distA = getDistance(userLL.lat, userLL.lng, a.lat, a.lng);
+        const distB = getDistance(userLL.lat, userLL.lng, b.lat, b.lng);
+        return distA - distB;
+      });
+    } else {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return getClusteredPins(list);
+  };
 
   return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 16 } },
     // Title
@@ -298,10 +320,26 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       }, lang === 'es' ? "+ Agregar Paso" : "+ Add Step")
     ),
 
+    // Show all pins toggle
+    e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, marginTop: -4 } },
+      e('input', {
+        id: 'scavenger-hunt-show-all-pins-toggle',
+        type: 'checkbox',
+        checked: showAllPins,
+        onChange: (e) => setShowAllPins(e.target.checked),
+        style: { cursor: 'pointer', width: 16, height: 16 }
+      }),
+      e('label', {
+        htmlFor: 'scavenger-hunt-show-all-pins-toggle',
+        style: { fontSize: 13, fontWeight: 600, color: T.ink2, cursor: 'pointer', userSelect: 'none' }
+      }, lang === 'es' ? "Incluir pines de otros creadores" : "Include pins from other creators")
+    ),
+
     // Steps
     e('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      steps.map((step, idx) => (
-        e('div', {
+      steps.map((step, idx) => {
+        const stepPinGroups = getStepPinGroups(idx);
+        return e('div', {
           key: idx,
           style: {
             background: T.paper3, border: `1px solid ${T.border}`,
@@ -321,6 +359,23 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
           e('div', { style: { fontSize: 13, fontWeight: 700, color: T.forest } },
             `${lang === 'es' ? "Paso" : "Step"} ${step.sequence_order}`),
 
+          // Pin Search
+          e('div', null,
+            e('label', { htmlFor: `step-search-input-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+              lang === 'es' ? "Buscar / Filtrar Pines" : "Search / Filter Pins"),
+            e('input', {
+              id: `step-search-input-${idx}`,
+              type: 'text',
+              placeholder: lang === 'es' ? "Buscar por nombre, etiqueta..." : "Search name, tag...",
+              value: searchQueries[idx] || '',
+              onChange: (e) => {
+                const val = e.target.value;
+                setSearchQueries(prev => Object.assign({}, prev, { [idx]: val }));
+              },
+              style: Object.assign({}, S.input, { height: 38, marginBottom: 0 })
+            })
+          ),
+
           // Pin Selector
           e('div', null,
             e('label', { htmlFor: `step-pin-select-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
@@ -333,7 +388,7 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
               style: Object.assign({}, S.input, { height: 42, marginBottom: 0 })
             },
               e('option', { value: '' }, lang === 'es' ? "-- Selecciona un Pin --" : "-- Select a Pin --"),
-              pinGroups.map((group, gIdx) =>
+              stepPinGroups.map((group, gIdx) =>
                 e('optgroup', { key: gIdx, label: group.label },
                   group.pins.map(p => e('option', { key: p.id, value: p.id }, p.name))
                 )

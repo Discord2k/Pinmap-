@@ -4800,7 +4800,7 @@ function App() {
           form, t, saveDraft, trails, uname, savePin, takePhoto,
           setShowInsiderExplainer, renderTagSuggestions
         }) : e(AddScavengerHunt, {
-          uname, pins, trails, lang, flash,
+          uname, pins, trails, lang, flash, userLL,
           onCreated: function() { setAddTabMode("pin"); setTab("profile"); },
           onCancel: function() { setAddTabMode("pin"); }
         })
