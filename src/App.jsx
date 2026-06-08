@@ -332,6 +332,7 @@ function App() {
   var s92=useState(null); var selPinTrail=s92[0]; var setSelPinTrail=s92[1];
   var s93=useState([]); var savedTrailIds=s93[0]; var setSavedTrailIds=s93[1];
   var s95=useState(false); var showInsiderExplainer=s95[0]; var setShowInsiderExplainer=s95[1];
+  var sShowHuntTutorial=useState(false); var showHuntTutorial=sShowHuntTutorial[0]; var setShowHuntTutorial=sShowHuntTutorial[1];
   var [pendingHuntId, setPendingHuntId] = useState("");
   var [addTabMode, setAddTabMode] = useState("pin");
   var s68=useState(false); var importLoading=s68[0]; var setImportLoading=s68[1];
@@ -4778,7 +4779,13 @@ function App() {
             }
           }, t("tab_add", "Add Pin")),
           e("button", {
-            onClick: function() { setAddTabMode("hunt"); },
+            onClick: function() {
+              setAddTabMode("hunt");
+              if (!localStorage.getItem("pm-seen-hunt-tutorial")) {
+                setShowHuntTutorial(true);
+                localStorage.setItem("pm-seen-hunt-tutorial", "1");
+              }
+            },
             style: {
               flex: 1, padding: "8px 12px", borderRadius: 10, fontSize: 13, fontWeight: 700,
               background: addTabMode === "hunt" ? T.forest : T.paper3,
@@ -5209,6 +5216,70 @@ function App() {
           style:{width:"100%",padding:"12px",background:"#2a5d3c",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
           onClick:function(){setShowInsiderExplainer(false);}
         },"I Understand")
+      )
+    ),
+
+    showHuntTutorial && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
+      e("div",{style:{background:"#f6f1e4",borderRadius:16,padding:"24px 22px",maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",animation:"slideUp 0.32s cubic-bezier(0.34,1.1,0.64,1) both",display:"flex",flexDirection:"column"}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:14}},
+          e("span",{style:{fontSize:28}},"🧭"),
+          e("div",null,
+            e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}},
+              lang === 'es' ? "Búsqueda del Tesoro" : "Scavenger Hunts"
+            ),
+            e("div",{style:{fontSize:12,color:"#6f786f"}},
+              lang === 'es' ? "Cómo crear desafíos y divertirte" : "Create custom quests & share them"
+            )
+          )
+        ),
+        e("div",{style:{fontSize:13,color:"#3c4540",lineHeight:1.6,marginBottom:18,maxHeight:"60vh",overflowY:"auto"}},
+          e("div",{style:{background:"rgba(42,93,60,0.06)",border:"1px solid #c7dacb",borderRadius:10,padding:12,marginBottom:12}},
+            e("div",{style:{fontWeight:700,color:"#2a5d3c",fontSize:12.5,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}},
+              lang === 'es' ? "📋 Cómo crear una Búsqueda:" : "📋 How to make a Hunt:"
+            ),
+            e("ul",{style:{paddingLeft:16,margin:0,display:"flex",flexDirection:"column",gap:6,fontSize:12}},
+              e("li",null,
+                e("strong",null,lang === 'es' ? "1. Nombre y Detalles: " : "1. Name & Rules: "),
+                lang === 'es' ? "Define el título, reglas, visibilidad y un mensaje/link de recompensa." : "Enter a catchy title, description/rules, visibility, and optional completion reward link."
+              ),
+              e("li",null,
+                e("strong",null,lang === 'es' ? "2. Agrega Pasos: " : "2. Add Steps: "),
+                lang === 'es' ? "Selecciona pines que hayas creado como destinos del recorrido." : "Choose your existing pins as destinations for each step."
+              ),
+              e("li",null,
+                e("strong",null,lang === 'es' ? "3. Escribe Pistas: " : "3. Write Clues: "),
+                lang === 'es' ? "Crea una pista para ayudar a los exploradores a descifrar adónde ir." : "Write a riddle, clue, or instructions to guide players to the destination."
+              ),
+              e("li",null,
+                e("strong",null,lang === 'es' ? "4. Objetivos del Paso: " : "4. Optional Actions: "),
+                lang === 'es' ? "Configura si deben registrarse (check-in), subir una foto, escribir un diario o seguir una ruta." : "Add extra goals like requiring a photo upload, field journal entry, or recording a trail."
+              )
+            )
+          ),
+          e("div",{style:{background:"rgba(42,93,60,0.06)",border:"1px solid #c7dacb",borderRadius:10,padding:12}},
+            e("div",{style:{fontWeight:700,color:"#2a5d3c",fontSize:12.5,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}},
+              lang === 'es' ? "💡 Ideas Creativas:" : "💡 Creative Ideas:"
+            ),
+            e("ul",{style:{paddingLeft:16,margin:0,display:"flex",flexDirection:"column",gap:6,fontSize:12}},
+              e("li",null,
+                e("strong",null,lang === 'es' ? "🗺️ Ruta Histórica: " : "🗺️ Landmark History Tour: "),
+                lang === 'es' ? "Guía a amigos por monumentos de tu ciudad usando pistas de historia local." : "Lead friends through town landmarks with fun trivia as clues."
+              ),
+              e("li",null,
+                e("strong",null,lang === 'es' ? "📷 Aventura Fotográfica: " : "📷 Photo Scavenger Hunt: "),
+                lang === 'es' ? "Crea puntos de interés natural y exige subir una foto creativa en cada uno." : "Select beautiful viewpoints and reward points for uploading photos."
+              ),
+              e("li",null,
+                e("strong",null,lang === 'es' ? "🌲 Desafío de Senderos: " : "🌲 Trail Quest challenge: "),
+                lang === 'es' ? "Víncula rutas de senderismo y anima a otros a seguir el camino exacto." : "Link walking routes to steps and challenge users to complete the trails."
+              )
+            )
+          )
+        ),
+        e("button",{
+          style:{width:"100%",padding:"12px",background:"#2a5d3c",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
+          onClick:function(){setShowHuntTutorial(false);}
+        }, lang === 'es' ? "¡Entendido!" : "Got it!")
       )
     ),
 
