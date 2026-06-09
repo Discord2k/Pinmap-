@@ -28,6 +28,9 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const [deletingHunt, setDeletingHunt] = useState(null); // hunt object queued for deletion
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [userEnrollments, setUserEnrollments] = useState([]); // hunt participant records for current user
+  const [selectedStepId, setSelectedStepId] = useState(null);
+  const [editShowAllPins, setEditShowAllPins] = useState(false);
+  const [editSearchQueries, setEditSearchQueries] = useState({});
   
   // Profile gamification states
   const [profileStats, setProfileStats] = useState({
@@ -92,6 +95,16 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       flash(lang === 'es' ? 'El nombre es obligatorio.' : 'Hunt name is required.');
       return;
     }
+    if (editingHunt.steps) {
+      if (editingHunt.steps.some(s => !s.pin_id)) {
+        flash(lang === 'es' ? "Todos los pasos deben tener un pin seleccionado." : "All steps must have a selected pin.");
+        return;
+      }
+      if (editingHunt.steps.some(s => !s.clue.trim())) {
+        flash(lang === 'es' ? "Por favor escribe una pista para cada paso." : "Please write a clue for each step.");
+        return;
+      }
+    }
     setEditSaving(true);
     try {
       await api.updateHunt(editingHunt.id, {
@@ -103,6 +116,31 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         completion_message: editingHunt.completion_message || null,
         completion_url: editingHunt.completion_url || null
       });
+
+      if (editingHunt.steps) {
+        // Find existing step IDs in db to see if any were deleted
+        const dbSteps = await api.getHuntSteps(editingHunt.id);
+        const currentIds = editingHunt.steps.map(s => s.id).filter(Boolean);
+        const deletedIds = dbSteps.map(s => s.id).filter(id => !currentIds.includes(id));
+        
+        if (deletedIds.length > 0) {
+          await api.deleteHuntSteps(deletedIds);
+        }
+        
+        // Upsert the remaining/new steps
+        const stepsPayload = editingHunt.steps.map((s, idx) => ({
+          id: s.id || undefined,
+          hunt_id: editingHunt.id,
+          sequence_order: idx + 1,
+          clue: s.clue,
+          pin_id: s.pin_id,
+          trail_id: s.trail_id || null,
+          point_rules: s.point_rules
+        }));
+        
+        await api.upsertHuntSteps(stepsPayload);
+      }
+
       flash(lang === 'es' ? '✅ Cacería actualizada.' : '✅ Hunt updated successfully!');
       setEditingHunt(null);
       loadHuntsData();
@@ -137,6 +175,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       setSelectedHunt(hunt);
       const steps = await api.getHuntSteps(hunt.id);
       setHuntSteps(steps);
+      setSelectedStepId(null);
 
       // Check if user is enrolled
       const part = await api.getParticipant(hunt.id, uname);
@@ -222,20 +261,31 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const badgeTier = getBadgeTier(profileStats.accrued_points);
 
   // Active play computations
-  const currentStepIndex = React.useMemo(() => {
-    if (!huntSteps.length) return 0;
-    for (let i = 0; i < huntSteps.length; i++) {
-      const step = huntSteps[i];
+  const stepsStatus = React.useMemo(() => {
+    return huntSteps.map(step => {
       const stepLogs = activityLogs.filter(l => l.step_id === step.id);
       const loggedTypes = stepLogs.map(l => l.activity_type);
       const requiredTypes = Object.keys(step.point_rules || {});
       const remainingTypes = requiredTypes.filter(t => loggedTypes.indexOf(t) < 0);
-      if (remainingTypes.length > 0) return i;
-    }
-    return huntSteps.length; // All completed
+      const isCompleted = remainingTypes.length === 0;
+      return {
+        step,
+        isCompleted,
+        remainingTypes,
+        loggedTypes
+      };
+    });
   }, [huntSteps, activityLogs]);
 
-  const activeStep = huntSteps[currentStepIndex];
+  const activeStep = React.useMemo(() => {
+    if (!huntSteps.length) return null;
+    const found = huntSteps.find(s => s.id === selectedStepId);
+    if (found) return found;
+    // Default to the first incomplete step
+    const firstIncompleteIdx = stepsStatus.findIndex(s => !s.isCompleted);
+    if (firstIncompleteIdx >= 0) return huntSteps[firstIncompleteIdx];
+    return huntSteps[0];
+  }, [huntSteps, selectedStepId, stepsStatus]);
 
   // Geolocation math
   const getDistanceToPin = (pinId) => {
@@ -355,6 +405,81 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     };
   };
 
+  const getEditStepPinGroups = (stepIdx) => {
+    let list = editShowAllPins ? pins : pins.filter(p => p.owner === uname);
+    const query = (editSearchQueries[stepIdx] || '').trim().toLowerCase();
+    if (query) {
+      list = list.filter(p => {
+        const nameMatch = p.name && p.name.toLowerCase().includes(query);
+        const descMatch = p.description && p.description.toLowerCase().includes(query);
+        const tagMatch = p.tags && p.tags.some ? p.tags.some(t => t.toLowerCase().includes(query)) : (typeof p.tags === 'string' && p.tags.toLowerCase().includes(query));
+        return nameMatch || descMatch || tagMatch;
+      });
+    }
+    if (userLL && typeof userLL.lat === 'number' && typeof userLL.lng === 'number') {
+      list = [...list].sort((a, b) => {
+        const distA = distKm(userLL.lat, userLL.lng, a.lat, a.lng);
+        const distB = distKm(userLL.lat, userLL.lng, b.lat, b.lng);
+        return distA - distB;
+      });
+    } else {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    
+    const thresholdKm = 5;
+    const clusters = [];
+    const visited = new Set();
+    const sortedPins = [...list];
+
+    for (let i = 0; i < sortedPins.length; i++) {
+      const pin = sortedPins[i];
+      if (visited.has(pin.id)) continue;
+
+      const clusterPins = [pin];
+      visited.add(pin.id);
+
+      for (let j = 0; j < sortedPins.length; j++) {
+        const other = sortedPins[j];
+        if (visited.has(other.id)) continue;
+
+        const dist = distKm(pin.lat, pin.lng, other.lat, other.lng);
+        if (dist <= thresholdKm) {
+          clusterPins.push(other);
+          visited.add(other.id);
+        }
+      }
+
+      clusters.push({
+        centerPin: pin,
+        pins: clusterPins
+      });
+    }
+
+    const multiPinGroups = [];
+    const singlePins = [];
+
+    clusters.forEach(c => {
+      if (c.pins.length > 1) {
+        multiPinGroups.push({
+          label: lang === 'es' ? `Cerca de ${c.centerPin.name}` : `Near ${c.centerPin.name}`,
+          pins: c.pins
+        });
+      } else {
+        singlePins.push(c.pins[0]);
+      }
+    });
+
+    const finalGroups = [...multiPinGroups];
+    if (singlePins.length > 0) {
+      finalGroups.push({
+        label: lang === 'es' ? "Otras Ubicaciones" : "Other Locations",
+        pins: singlePins
+      });
+    }
+
+    return finalGroups;
+  };
+
   const performCheckIn = async () => {
     if (!isWithin65Ft) {
       flash(lang === 'es' ? "Debes estar a menos de 65 pies del objetivo." : "You must be within 65 feet of the objective.");
@@ -379,7 +504,14 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       const remainingTypes = requiredTypes.filter(t => loggedTypes.indexOf(t) < 0);
       
       const newPoints = participant.total_points + addedPoints;
-      const allDone = currentStepIndex === huntSteps.length - 1;
+      
+      const completedStepsCount = huntSteps.filter(step => {
+        const sLogs = newLogs.filter(l => l.step_id === step.id);
+        const lTypes = sLogs.map(l => l.activity_type);
+        const rTypes = Object.keys(step.point_rules || {});
+        return rTypes.every(t => lTypes.includes(t));
+      }).length;
+      const allDone = completedStepsCount === huntSteps.length;
       
       if (remainingTypes.length === 0) {
         const newStatus = allDone ? 'completed' : 'enrolled';
@@ -388,7 +520,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         if (allDone) {
           flash(lang === 'es' ? `🏆 ¡Felicidades! ¡Completaste toda la búsqueda "${selectedHunt.name}"!` : `🏆 Congratulations! You completed the entire scavenger hunt "${selectedHunt.name}"!`);
         } else {
-          flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada! Siguiente pista revelada." : "📍 Hunt step completed! Next clue unlocked.");
+          flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada!" : "📍 Hunt step completed!");
         }
       } else {
         const updatedPart = await api.updateParticipantStatus(participant.id, participant.status, newPoints);
@@ -432,7 +564,14 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       const remainingTypes = requiredTypes.filter(t => loggedTypes.indexOf(t) < 0);
 
       const newPoints = participant.total_points + points;
-      const allDone = currentStepIndex === huntSteps.length - 1;
+      
+      const completedStepsCount = huntSteps.filter(step => {
+        const sLogs = newLogs.filter(l => l.step_id === step.id);
+        const lTypes = sLogs.map(l => l.activity_type);
+        const rTypes = Object.keys(step.point_rules || {});
+        return rTypes.every(t => lTypes.includes(t));
+      }).length;
+      const allDone = completedStepsCount === huntSteps.length;
 
       if (remainingTypes.length === 0) {
         const newStatus = allDone ? 'completed' : 'enrolled';
@@ -441,7 +580,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         if (allDone) {
           flash(lang === 'es' ? `🏆 ¡Felicidades! ¡Completaste toda la búsqueda "${selectedHunt.name}"!` : `🏆 Congratulations! You completed the entire scavenger hunt "${selectedHunt.name}"!`);
         } else {
-          flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada! Siguiente pista revelada." : "📍 Hunt step completed! Next clue unlocked.");
+          flash(lang === 'es' ? "📍 ¡Etapa de la búsqueda completada!" : "📍 Hunt step completed!");
         }
       } else {
         const updatedPart = await api.updateParticipantStatus(participant.id, participant.status, newPoints);
@@ -557,11 +696,17 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                   e('div', { style: { display: 'flex', gap: 6, flexShrink: 0 } },
                     // Edit button
                     e('button', {
-                      onClick: (ev) => {
+                      onClick: async (ev) => {
                         ev.stopPropagation();
                         const sd = h.start_date ? h.start_date.slice(0,10) : '';
                         const ed = h.end_date ? h.end_date.slice(0,10) : '';
-                        setEditingHunt({ ...h, start_date_local: sd, end_date_local: ed });
+                        try {
+                          const steps = await api.getHuntSteps(h.id);
+                          setEditingHunt({ ...h, start_date_local: sd, end_date_local: ed, steps: steps });
+                        } catch (err) {
+                          console.error("Failed to fetch steps for editing:", err);
+                          setEditingHunt({ ...h, start_date_local: sd, end_date_local: ed, steps: [] });
+                        }
                       },
                       title: lang === 'es' ? 'Editar cacería' : 'Edit hunt',
                       style: {
@@ -707,7 +852,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         style: {
           background: T.paper2, border: `1px solid ${T.border}`, borderRadius: 20,
           boxShadow: T.shadowLg, width: '100%', maxWidth: 440, padding: '22px 20px',
-          boxSizing: 'border-box', fontFamily: T.font, display: 'flex', flexDirection: 'column', gap: 12
+          boxSizing: 'border-box', fontFamily: T.font, display: 'flex', flexDirection: 'column', gap: 12,
+          maxHeight: '90vh', overflowY: 'auto'
         }
       },
         // Header
@@ -788,6 +934,320 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             type: 'url', value: editingHunt.completion_url || '',
             onChange: (ev) => setEditingHunt(eh => ({ ...eh, completion_url: ev.target.value })),
             style: Object.assign({}, S.input, { marginTop: 4 })
+          })
+        ),
+
+        // Steps list header
+        e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, borderTop: `1px solid ${T.borderSoft}`, paddingTop: 16 } },
+          e('div', { style: { fontSize: 14, fontWeight: 800, color: T.ink } },
+            lang === 'es' ? "Pasos de la Búsqueda" : "Hunt Steps / Objectives"),
+          e('button', {
+            onClick: () => {
+              const newSteps = [...(editingHunt.steps || [])];
+              newSteps.push({
+                sequence_order: newSteps.length + 1,
+                clue: '',
+                pin_id: '',
+                trail_id: '',
+                point_rules: { check_in: 100 }
+              });
+              setEditingHunt({ ...editingHunt, steps: newSteps });
+            },
+            style: Object.assign({}, S.miniBtn, { background: T.forest, color: T.paper, border: 'none' })
+          }, lang === 'es' ? "+ Agregar Paso" : "+ Add Step")
+        ),
+
+        // Show all pins toggle for editing
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 } },
+          e('input', {
+            id: 'edit-scavenger-hunt-show-all-pins-toggle',
+            type: 'checkbox',
+            checked: editShowAllPins,
+            onChange: (e) => setEditShowAllPins(e.target.checked),
+            style: { cursor: 'pointer', width: 16, height: 16 }
+          }),
+          e('label', {
+            htmlFor: 'edit-scavenger-hunt-show-all-pins-toggle',
+            style: { fontSize: 13, fontWeight: 600, color: T.ink2, cursor: 'pointer', userSelect: 'none' }
+          }, lang === 'es' ? "Incluir pines de otros creadores" : "Include pins from other creators")
+        ),
+
+        // Steps list
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+          (editingHunt.steps || []).map((step, idx) => {
+            const stepPinGroups = getEditStepPinGroups(idx);
+            const myTrails = trails.filter(t => t.owner === uname);
+            return e('div', {
+              key: idx,
+              style: {
+                background: T.paper3, border: `1px solid ${T.border}`,
+                borderRadius: 14, padding: 14, position: 'relative', display: 'flex', flexDirection: 'column', gap: 10
+              }
+            },
+              // Remove button
+              (editingHunt.steps || []).length > 1 && e('button', {
+                onClick: () => {
+                  const newSteps = (editingHunt.steps || []).filter((_, i) => i !== idx).map((s, i) => ({
+                    ...s,
+                    sequence_order: i + 1
+                  }));
+                  setEditingHunt({ ...editingHunt, steps: newSteps });
+                },
+                style: {
+                  position: 'absolute', top: 10, right: 10,
+                  background: 'none', border: 'none', color: '#c62828',
+                  fontWeight: 700, cursor: 'pointer', fontSize: 12
+                }
+              }, lang === 'es' ? "Eliminar" : "Remove"),
+
+              e('div', { style: { fontSize: 13, fontWeight: 700, color: T.forest } },
+                `${lang === 'es' ? "Paso" : "Step"} ${step.sequence_order}`),
+
+              // Pin Search
+              e('div', null,
+                e('label', { htmlFor: `edit-step-search-input-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Buscar / Filtrar Pines" : "Search / Filter Pins"),
+                e('input', {
+                  id: `edit-step-search-input-${idx}`,
+                  type: 'text',
+                  placeholder: lang === 'es' ? "Buscar por nombre, etiqueta..." : "Search name, tag...",
+                  value: editSearchQueries[idx] || '',
+                  onChange: (e) => {
+                    const val = e.target.value;
+                    setEditSearchQueries(prev => Object.assign({}, prev, { [idx]: val }));
+                  },
+                  style: Object.assign({}, S.input, { height: 38, marginBottom: 0 })
+                })
+              ),
+
+              // Pin Selector
+              e('div', null,
+                e('label', { htmlFor: `edit-step-pin-select-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Pin de Destino" : "Destination Pin"),
+                e('select', {
+                  id: `edit-step-pin-select-${idx}`,
+                  value: step.pin_id,
+                  onChange: (e) => {
+                    const newSteps = [...editingHunt.steps];
+                    newSteps[idx].pin_id = e.target.value;
+                    setEditingHunt({ ...editingHunt, steps: newSteps });
+                  },
+                  style: Object.assign({}, S.input, { height: 42, marginBottom: 0 })
+                },
+                  e('option', { value: '' }, lang === 'es' ? "-- Selecciona un Pin --" : "-- Select a Pin --"),
+                  stepPinGroups.map((group, gIdx) =>
+                    e('optgroup', { key: gIdx, label: group.label },
+                      group.pins.map(p => e('option', { key: p.id, value: p.id }, p.name))
+                    )
+                  )
+                )
+              ),
+
+              // Clue
+              e('div', null,
+                e('label', { htmlFor: `edit-step-clue-textarea-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Pista para este destino" : "Clue for this spot"),
+                e('textarea', {
+                  id: `edit-step-clue-textarea-${idx}`,
+                  rows: 2,
+                  placeholder: lang === 'es' ? "Busca debajo del gran roble..." : "Look near the old brick fountain...",
+                  value: step.clue,
+                  onChange: (e) => {
+                    const newSteps = [...editingHunt.steps];
+                    newSteps[idx].clue = e.target.value;
+                    setEditingHunt({ ...editingHunt, steps: newSteps });
+                  },
+                  style: Object.assign({}, S.textarea, { marginBottom: 0 })
+                })
+              ),
+
+              // Trail Selector (Optional)
+              e('div', null,
+                e('label', { htmlFor: `edit-step-trail-select-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Ruta a seguir (Opcional)" : "Follow Trail (Optional)"),
+                e('select', {
+                  id: `edit-step-trail-select-${idx}`,
+                  value: step.trail_id || '',
+                  onChange: (e) => {
+                    const newSteps = [...editingHunt.steps];
+                    newSteps[idx].trail_id = e.target.value || null;
+                    setEditingHunt({ ...editingHunt, steps: newSteps });
+                  },
+                  style: Object.assign({}, S.input, { height: 42, marginBottom: 0 })
+                },
+                  e('option', { value: '' }, lang === 'es' ? "-- Ninguna ruta --" : "-- No trail --"),
+                  myTrails.map(t => e('option', { key: t.id, value: t.id }, t.name))
+                )
+              ),
+
+              // Objectives / Point rules
+              e('div', { style: { background: T.paper, padding: 10, borderRadius: 10 } },
+                e('div', { style: { fontSize: 11.5, color: T.ink2, fontWeight: 700, marginBottom: 6 } },
+                  lang === 'es' ? "Objetivos y Puntos del Paso" : "Objective Point Setup"),
+                
+                e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+                  // Check-in (always enabled)
+                  e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5 } },
+                    e('label', { htmlFor: `edit-step-checkin-checkbox-${idx}`, style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } },
+                      e('input', { id: `edit-step-checkin-checkbox-${idx}`, type: 'checkbox', checked: true, disabled: true }),
+                      lang === 'es' ? "Llegar al Pin (Check-in)" : "Arrive at Pin (Check-in)"
+                    ),
+                    e('input', {
+                      id: `edit-step-checkin-points-${idx}`,
+                      type: 'number',
+                      min: 0,
+                      value: step.point_rules.check_in || 0,
+                      onChange: (e) => {
+                        const newSteps = [...editingHunt.steps];
+                        newSteps[idx].point_rules = { ...newSteps[idx].point_rules, check_in: parseInt(e.target.value) || 0 };
+                        setEditingHunt({ ...editingHunt, steps: newSteps });
+                      },
+                      style: { width: 60, padding: 4, borderRadius: 6, border: `1px solid ${T.border}`, textAlign: 'right' }
+                    })
+                  ),
+
+                  // Upload Photo
+                  e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5 } },
+                    e('label', { htmlFor: `edit-step-photo-checkbox-${idx}`, style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                      e('input', {
+                        id: `edit-step-photo-checkbox-${idx}`,
+                        type: 'checkbox',
+                        checked: !!step.point_rules.photo_upload,
+                        onChange: () => {
+                          const newSteps = [...editingHunt.steps];
+                          const rules = { ...newSteps[idx].point_rules };
+                          if (rules.photo_upload) {
+                            delete rules.photo_upload;
+                          } else {
+                            rules.photo_upload = 50;
+                          }
+                          newSteps[idx].point_rules = rules;
+                          setEditingHunt({ ...editingHunt, steps: newSteps });
+                        }
+                      }),
+                      lang === 'es' ? "Subir Foto" : "Upload Photo"
+                    ),
+                    !!step.point_rules.photo_upload && e('input', {
+                      id: `edit-step-photo-points-${idx}`,
+                      type: 'number',
+                      min: 0,
+                      value: step.point_rules.photo_upload || 0,
+                      onChange: (e) => {
+                        const newSteps = [...editingHunt.steps];
+                        newSteps[idx].point_rules = { ...newSteps[idx].point_rules, photo_upload: parseInt(e.target.value) || 0 };
+                        setEditingHunt({ ...editingHunt, steps: newSteps });
+                      },
+                      style: { width: 60, padding: 4, borderRadius: 6, border: `1px solid ${T.border}`, textAlign: 'right' }
+                    })
+                  ),
+
+                  // Field Journal
+                  e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5 } },
+                    e('label', { htmlFor: `edit-step-comment-checkbox-${idx}`, style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                      e('input', {
+                        id: `edit-step-comment-checkbox-${idx}`,
+                        type: 'checkbox',
+                        checked: !!step.point_rules.comment,
+                        onChange: () => {
+                          const newSteps = [...editingHunt.steps];
+                          const rules = { ...newSteps[idx].point_rules };
+                          if (rules.comment) {
+                            delete rules.comment;
+                          } else {
+                            rules.comment = 50;
+                          }
+                          newSteps[idx].point_rules = rules;
+                          setEditingHunt({ ...editingHunt, steps: newSteps });
+                        }
+                      }),
+                      lang === 'es' ? "Agregar Diario / Comentario" : "Write Field Journal"
+                    ),
+                    !!step.point_rules.comment && e('input', {
+                      id: `edit-step-comment-points-${idx}`,
+                      type: 'number',
+                      min: 0,
+                      value: step.point_rules.comment || 0,
+                      onChange: (e) => {
+                        const newSteps = [...editingHunt.steps];
+                        newSteps[idx].point_rules = { ...newSteps[idx].point_rules, comment: parseInt(e.target.value) || 0 };
+                        setEditingHunt({ ...editingHunt, steps: newSteps });
+                      },
+                      style: { width: 60, padding: 4, borderRadius: 6, border: `1px solid ${T.border}`, textAlign: 'right' }
+                    })
+                  ),
+
+                  // Link Trail
+                  e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5 } },
+                    e('label', { htmlFor: `edit-step-createtrail-checkbox-${idx}`, style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                      e('input', {
+                        id: `edit-step-createtrail-checkbox-${idx}`,
+                        type: 'checkbox',
+                        checked: !!step.point_rules.create_trail,
+                        onChange: () => {
+                          const newSteps = [...editingHunt.steps];
+                          const rules = { ...newSteps[idx].point_rules };
+                          if (rules.create_trail) {
+                            delete rules.create_trail;
+                          } else {
+                            rules.create_trail = 150;
+                          }
+                          newSteps[idx].point_rules = rules;
+                          setEditingHunt({ ...editingHunt, steps: newSteps });
+                        }
+                      }),
+                      lang === 'es' ? "Grabar y Vincular Ruta" : "Record & Link Trail"
+                    ),
+                    !!step.point_rules.create_trail && e('input', {
+                      id: `edit-step-createtrail-points-${idx}`,
+                      type: 'number',
+                      min: 0,
+                      value: step.point_rules.create_trail || 0,
+                      onChange: (e) => {
+                        const newSteps = [...editingHunt.steps];
+                        newSteps[idx].point_rules = { ...newSteps[idx].point_rules, create_trail: parseInt(e.target.value) || 0 };
+                        setEditingHunt({ ...editingHunt, steps: newSteps });
+                      },
+                      style: { width: 60, padding: 4, borderRadius: 6, border: `1px solid ${T.border}`, textAlign: 'right' }
+                    })
+                  ),
+
+                  // Follow Trail (only show if trail is selected)
+                  step.trail_id && e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12.5 } },
+                    e('label', { htmlFor: `edit-step-trailfollow-checkbox-${idx}`, style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                      e('input', {
+                        id: `edit-step-trailfollow-checkbox-${idx}`,
+                        type: 'checkbox',
+                        checked: !!step.point_rules.trail_follow,
+                        onChange: () => {
+                          const newSteps = [...editingHunt.steps];
+                          const rules = { ...newSteps[idx].point_rules };
+                          if (rules.trail_follow) {
+                            delete rules.trail_follow;
+                          } else {
+                            rules.trail_follow = 150;
+                          }
+                          newSteps[idx].point_rules = rules;
+                          setEditingHunt({ ...editingHunt, steps: newSteps });
+                        }
+                      }),
+                      lang === 'es' ? "Completar Sendero" : "Follow Trail Route"
+                    ),
+                    !!step.point_rules.trail_follow && e('input', {
+                      id: `edit-step-trailfollow-points-${idx}`,
+                      type: 'number',
+                      min: 0,
+                      value: step.point_rules.trail_follow || 0,
+                      onChange: (e) => {
+                        const newSteps = [...editingHunt.steps];
+                        newSteps[idx].point_rules = { ...newSteps[idx].point_rules, trail_follow: parseInt(e.target.value) || 0 };
+                        setEditingHunt({ ...editingHunt, steps: newSteps });
+                      },
+                      style: { width: 60, padding: 4, borderRadius: 6, border: `1px solid ${T.border}`, textAlign: 'right' }
+                    })
+                  )
+                )
+              )
+            );
           })
         ),
         // Save / Cancel
@@ -944,12 +1404,12 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           e('span', { style: { fontSize: 20, fontWeight: 800, color: T.forest } },
             `${participant ? participant.total_points : 0} pts`),
           e('span', { style: { fontSize: 14, fontWeight: 700, color: T.ink } },
-            `${currentStepIndex} / ${huntSteps.length} Steps`)
+            `${stepsStatus.filter(s => s.isCompleted).length} / ${huntSteps.length} Steps`)
         )
       ),
 
       // Check if Completed
-      participant && (currentStepIndex >= huntSteps.length ?
+      participant && (stepsStatus.every(s => s.isCompleted) ?
         e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
           e('svg', { width: 42, height: 42, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, style: { color: T.forest } },
             e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
@@ -982,8 +1442,33 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         :
         // Active Step Details
         activeStep && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+          // Step Selector Tabs
+          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 4 } },
+            e('div', { style: { fontSize: 12, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Objetivos de la Búsqueda" : "Hunt Objectives"),
+            e('div', { style: { display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6 } },
+              stepsStatus.map((status, idx) => {
+                const isSelected = activeStep.id === status.step.id;
+                return e('button', {
+                  key: status.step.id,
+                  onClick: () => setSelectedStepId(status.step.id),
+                  style: {
+                    flexShrink: 0,
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: isSelected ? `2px solid ${T.forest}` : `1px solid ${T.borderSoft}`,
+                    background: isSelected ? T.forestPale : (status.isCompleted ? 'rgba(76,175,80,0.08)' : T.paper2),
+                    color: isSelected ? T.forest : (status.isCompleted ? '#2e7d32' : T.ink),
+                    fontFamily: T.font
+                  }
+                }, `${lang === 'es' ? "Paso" : "Step"} ${status.step.sequence_order || (idx + 1)} ${status.isCompleted ? '🏆' : ''}`);
+              })
+            )
+          ),
           e('div', { style: { fontSize: 12, fontFamily: T.mono, color: T.ink3, textTransform: 'uppercase' } },
-            `${lang === 'es' ? "ETAPA ACTIVA" : "ACTIVE OBJECTIVE"} (${currentStepIndex + 1}/${huntSteps.length})`),
+            `${lang === 'es' ? "ETAPA SELECCIONADA" : "SELECTED OBJECTIVE"} (${activeStep.sequence_order || (huntSteps.indexOf(activeStep) + 1)}/${huntSteps.length})`),
           
           // Clue Box
           e('div', { style: { background: T.paper2, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16 } },

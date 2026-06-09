@@ -402,6 +402,12 @@ export const api = {
   createHuntSteps: function(steps) {
     return sb.from("hunt_steps").insert(steps).select().then(function(r){ if (r.error) throw r.error; return r.data||[]; });
   },
+  deleteHuntSteps: function(stepIds) {
+    return sb.from("hunt_steps").delete().in("id", stepIds).then(function(r){ if (r.error) throw r.error; return r.data; });
+  },
+  upsertHuntSteps: function(steps) {
+    return sb.from("hunt_steps").upsert(steps).select().then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
   enrollInHunt: function(huntId, userId, joinMethod) {
     return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },
