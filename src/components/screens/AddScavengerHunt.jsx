@@ -549,7 +549,8 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
               )
             )
           )
-        )))
+        );
+      })
     ),
 
     // Save button
