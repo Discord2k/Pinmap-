@@ -1404,6 +1404,14 @@ function App() {
         map.jumpTo({ center: [lng, lat], zoom: finalZoom });
         return map;
       };
+
+      var origPanTo = map.panTo.bind(map);
+      map.panTo = function(latlng, options) {
+        var lat = Array.isArray(latlng) ? latlng[0] : latlng.lat;
+        var lng = Array.isArray(latlng) ? latlng[1] : latlng.lng;
+        origPanTo([lng, lat], options);
+        return map;
+      };
       
       var origFitBounds = map.fitBounds.bind(map);
       map.fitBounds = function(bounds, options) {
