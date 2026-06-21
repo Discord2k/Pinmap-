@@ -408,6 +408,12 @@ export const api = {
   upsertHuntSteps: function(steps) {
     return sb.from("hunt_steps").upsert(steps).select().then(function(r){ if (r.error) throw r.error; return r.data||[]; });
   },
+  verifyCheckpointAnswer: function(stepId, answer) {
+    return sb.rpc("verify_checkpoint_answer", { step_id: stepId, user_answer: answer }).then(function(r) {
+      if (r.error) throw r.error;
+      return r.data;
+    });
+  },
   enrollInHunt: function(huntId, userId, joinMethod) {
     return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },

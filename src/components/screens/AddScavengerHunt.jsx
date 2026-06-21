@@ -17,7 +17,7 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
   const [completionMessage, setCompletionMessage] = useState('');
   const [completionUrl, setCompletionUrl] = useState('');
   const [steps, setSteps] = useState([
-    { sequence_order: 1, clue: '', pin_id: '', trail_id: '', point_rules: { check_in: 100 } }
+    { sequence_order: 1, clue: '', pin_id: '', trail_id: '', point_rules: { check_in: 100 }, type: 'GPS', expected_answer: '', choices: [] }
   ]);
   const [saving, setSaving] = useState(false);
   const [showAllPins, setShowAllPins] = useState(false);
@@ -31,7 +31,10 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         clue: '',
         pin_id: '',
         trail_id: '',
-        point_rules: { check_in: 100 }
+        point_rules: { check_in: 100 },
+        type: 'GPS',
+        expected_answer: '',
+        choices: []
       }
     ]);
   };
@@ -87,14 +90,29 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       return;
     }
 
+    if (!startDate) {
+      flash(lang === 'es' ? "Por favor selecciona una fecha de inicio." : "Please select a start date.");
+      return;
+    }
+    if (!endDate) {
+      flash(lang === 'es' ? "Por favor selecciona una fecha de finalización." : "Please select an end date.");
+      return;
+    }
+    let sDateObj = new Date(startDate);
+    let eDateObj = new Date(endDate);
+    if (isNaN(sDateObj.getTime()) || isNaN(eDateObj.getTime())) {
+      flash(lang === 'es' ? "Fecha inválida." : "Invalid date value.");
+      return;
+    }
+
     setSaving(true);
     try {
       const huntPayload = {
         creator: uname,
         name: name,
         description: description,
-        start_date: new Date(startDate).toISOString(),
-        end_date: new Date(endDate).toISOString(),
+        start_date: sDateObj.toISOString(),
+        end_date: eDateObj.toISOString(),
         visibility: visibility,
         completion_message: completionMessage || null,
         completion_url: completionUrl || null
@@ -108,7 +126,10 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         clue: s.clue,
         pin_id: s.pin_id,
         trail_id: s.trail_id || null,
-        point_rules: s.point_rules
+        point_rules: s.point_rules,
+        type: s.type || 'GPS',
+        expected_answer: s.expected_answer || null,
+        choices: s.choices || null
       }));
 
       await api.createHuntSteps(stepPayloads);
@@ -409,6 +430,88 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
               onChange: (e) => handleStepChange(idx, 'clue', e.target.value),
               style: Object.assign({}, S.textarea, { marginBottom: 0 })
             })
+          ),
+
+          // Challenge / Verification Type
+          e('div', null,
+            e('label', { htmlFor: `step-type-select-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+              lang === 'es' ? "Tipo de Desafío" : "Challenge Verification Type"),
+            e('select', {
+              id: `step-type-select-${idx}`,
+              name: `step_type_${idx}`,
+              value: step.type || 'GPS',
+              onChange: (e) => {
+                handleStepChange(idx, 'type', e.target.value);
+                handleStepChange(idx, 'expected_answer', '');
+                handleStepChange(idx, 'choices', []);
+              },
+              style: Object.assign({}, S.input, { height: 42, marginBottom: 0 })
+            },
+              e('option', { value: 'GPS' }, lang === 'es' ? "📍 Ubicación GPS" : "📍 GPS Location Check-in"),
+              e('option', { value: 'QR_CODE' }, lang === 'es' ? "📷 Escanear Código QR" : "📷 Scan QR Code"),
+              e('option', { value: 'TRIVIA' }, lang === 'es' ? "❓ Trivia / Pregunta" : "❓ Trivia / Riddle Answer"),
+              e('option', { value: 'MULTIPLE_CHOICE' }, lang === 'es' ? "📝 Opción Múltiple" : "📝 Multiple Choice")
+            )
+          ),
+
+          // Conditional inputs based on Challenge Type
+          step.type === 'QR_CODE' && e('div', null,
+            e('label', { htmlFor: `step-qr-answer-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+              lang === 'es' ? "Valor de QR Esperado" : "Expected QR Code Text"),
+            e('input', {
+              id: `step-qr-answer-${idx}`,
+              type: 'text',
+              placeholder: lang === 'es' ? "Ej: pinmap-secret-123" : "e.g. pinmap-secret-123",
+              value: step.expected_answer || '',
+              onChange: (e) => handleStepChange(idx, 'expected_answer', e.target.value),
+              style: S.input
+            })
+          ),
+
+          step.type === 'TRIVIA' && e('div', null,
+            e('label', { htmlFor: `step-trivia-answer-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+              lang === 'es' ? "Respuesta correcta a la Trivia" : "Expected Trivia Answer"),
+            e('input', {
+              id: `step-trivia-answer-${idx}`,
+              type: 'text',
+              placeholder: lang === 'es' ? "Ej: París" : "e.g. Paris",
+              value: step.expected_answer || '',
+              onChange: (e) => handleStepChange(idx, 'expected_answer', e.target.value),
+              style: S.input
+            })
+          ),
+
+          step.type === 'MULTIPLE_CHOICE' && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+            e('label', { style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+              lang === 'es' ? "Opciones y Respuesta Correcta" : "Options & Correct Answer"),
+            e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+              [0, 1, 2, 3].map((optIdx) => {
+                const choices = step.choices || [];
+                const optionVal = choices[optIdx] || '';
+                return e('div', { key: optIdx, style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                  e('input', {
+                    type: 'radio',
+                    name: `correct_choice_${idx}`,
+                    checked: step.expected_answer === optionVal && optionVal !== '',
+                    onChange: () => handleStepChange(idx, 'expected_answer', optionVal),
+                    disabled: optionVal === ''
+                  }),
+                  e('input', {
+                    type: 'text',
+                    placeholder: `${lang === 'es' ? "Opción" : "Option"} ${optIdx + 1}`,
+                    value: optionVal,
+                    onChange: (e) => {
+                      const newChoices = [...choices];
+                      newChoices[optIdx] = e.target.value;
+                      handleStepChange(idx, 'choices', newChoices);
+                    },
+                    style: Object.assign({}, S.input, { height: 36, flex: 1, marginBottom: 0 })
+                  })
+                );
+              })
+            ),
+            e('span', { style: { fontSize: 11, color: T.ink3 } },
+              lang === 'es' ? "* Escribe opciones y marca el botón de opción circular para la respuesta correcta." : "* Fill choices and mark the radio button next to the correct answer.")
           ),
 
           // Trail Selector (Optional)

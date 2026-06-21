@@ -3,6 +3,7 @@ import { api } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { distKm } from '../utils/helpers';
 import { HuntRadarOverlay } from './HuntRadarOverlay';
+import { QRScannerModal } from './QRScannerModal';
 
 const e = React.createElement;
 
@@ -23,6 +24,9 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const [prevDistance, setPrevDistance] = useState(null);
   const [trend, setTrend] = useState(null); // 'closer', 'farther', null
   const [showRadar, setShowRadar] = useState(false);
+  const [triviaAnswer, setTriviaAnswer] = useState('');
+  const [selectedMCQ, setSelectedMCQ] = useState(null);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const [editingHunt, setEditingHunt] = useState(null); // hunt object being edited
   const [editSaving, setEditSaving] = useState(false);
   const [deletingHunt, setDeletingHunt] = useState(null); // hunt object queued for deletion
@@ -480,8 +484,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     return finalGroups;
   };
 
-  const performCheckIn = async () => {
-    if (!isWithin65Ft) {
+  const performCheckIn = async (bypassProximity = false) => {
+    if (!bypassProximity && !isWithin65Ft) {
       flash(lang === 'es' ? "Debes estar a menos de 65 pies del objetivo." : "You must be within 65 feet of the objective.");
       return;
     }
@@ -513,6 +517,9 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       }).length;
       const allDone = completedStepsCount === huntSteps.length;
       
+      setTriviaAnswer('');
+      setSelectedMCQ(null);
+      
       if (remainingTypes.length === 0) {
         const newStatus = allDone ? 'completed' : 'enrolled';
         const updatedPart = await api.updateParticipantStatus(participant.id, newStatus, newPoints);
@@ -541,6 +548,65 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     } catch (err) {
       console.error("Failed to check in:", err);
       flash(lang === 'es' ? "Error al realizar check-in." : "Error performing check-in.");
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  const submitTriviaAnswer = async () => {
+    if (!activeStep) return;
+    setCheckingIn(true);
+    try {
+      const isCorrect = await api.verifyCheckpointAnswer(activeStep.id, triviaAnswer);
+      if (isCorrect) {
+        flash(lang === 'es' ? "✅ ¡Respuesta correcta!" : "✅ Correct answer!");
+        await performCheckIn(true);
+      } else {
+        flash(lang === 'es' ? "❌ Respuesta incorrecta. Inténtalo de nuevo." : "❌ Incorrect answer. Try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      flash(lang === 'es' ? "Error al verificar respuesta" : "Error verifying answer");
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  const submitMCQChoice = async (choice) => {
+    if (!activeStep) return;
+    setSelectedMCQ(choice);
+    setCheckingIn(true);
+    try {
+      const isCorrect = await api.verifyCheckpointAnswer(activeStep.id, choice);
+      if (isCorrect) {
+        flash(lang === 'es' ? "✅ ¡Respuesta correcta!" : "✅ Correct answer!");
+        await performCheckIn(true);
+      } else {
+        flash(lang === 'es' ? "❌ Respuesta incorrecta. Inténtalo de nuevo." : "❌ Incorrect answer. Try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      flash(lang === 'es' ? "Error al verificar respuesta" : "Error verifying answer");
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  const handleQRScanSuccess = async (scannedText) => {
+    setIsQrScannerOpen(false);
+    if (!activeStep) return;
+    setCheckingIn(true);
+    try {
+      const isCorrect = await api.verifyCheckpointAnswer(activeStep.id, scannedText);
+      if (isCorrect) {
+        flash(lang === 'es' ? "✅ Código QR verificado con éxito!" : "✅ QR Code verified successfully!");
+        await performCheckIn(true);
+      } else {
+        flash(lang === 'es' ? "❌ Código QR incorrecto para esta ubicación." : "❌ Incorrect QR code for this location.");
+      }
+    } catch (err) {
+      console.error(err);
+      flash(lang === 'es' ? "Error al verificar código QR" : "Error verifying QR Code");
     } finally {
       setCheckingIn(false);
     }
@@ -1498,8 +1564,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                 e('div', { style: { fontSize: 16, fontWeight: 800, color: isWithin65Ft ? T.forest : T.ink, marginTop: 2 } },
                   formatDistance(currentDistanceFt))
               ),
-              participant && e('button', {
-                onClick: performCheckIn,
+              participant && (activeStep.type === 'GPS' || !activeStep.type) && e('button', {
+                onClick: () => performCheckIn(false),
                 disabled: checkingIn || !isWithin65Ft,
                 style: Object.assign({}, S.miniBtn, {
                   background: isWithin65Ft ? T.forest : T.paper,
@@ -1508,6 +1574,76 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                   fontWeight: 700, padding: '8px 16px', borderRadius: 10
                 })
               }, checkingIn ? '...' : (lang === 'es' ? "Check-in" : "Check-in"))
+            ),
+
+            // Challenge Task Input/Actions (Visible if not simple GPS check-in)
+            activeStep && activeStep.type && activeStep.type !== 'GPS' && e('div', {
+              style: {
+                paddingTop: 10, borderTop: `1px solid ${T.borderSoft}`,
+                display: 'flex', flexDirection: 'column', gap: 8, width: '100%'
+              }
+            },
+              e('div', { style: { fontSize: 11, color: T.ink3, fontWeight: 700 } },
+                lang === 'es' ? "DESAFÍO REQUERIDO" : "REQUIRED CHALLENGE"
+              ),
+              
+              // QR Code challenge UI
+              activeStep.type === 'QR_CODE' && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+                e('div', { style: { fontSize: 12.5, fontWeight: 600, color: T.ink2 } }, 
+                  lang === 'es' ? "Escanea el código QR en esta ubicación para verificar." : "Scan the QR code at this spot to verify."
+                ),
+                e('button', {
+                  onClick: () => setIsQrScannerOpen(true),
+                  disabled: checkingIn,
+                  style: Object.assign({}, S.btn, { background: T.forest, color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700 })
+                }, lang === 'es' ? "📷 Abrir Escáner QR" : "📷 Open QR Scanner")
+              ),
+
+              // Trivia / Riddle UI
+              activeStep.type === 'TRIVIA' && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+                e('div', { style: { fontSize: 12.5, fontWeight: 600, color: T.ink2 } }, 
+                  lang === 'es' ? "Responde la pregunta / enigma:" : "Solve the riddle/trivia question:"
+                ),
+                e('input', {
+                  type: 'text',
+                  placeholder: lang === 'es' ? "Escribe tu respuesta aquí..." : "Type your answer here...",
+                  value: triviaAnswer,
+                  onChange: (e) => setTriviaAnswer(e.target.value),
+                  style: Object.assign({}, S.input, { height: 38, marginBottom: 0 })
+                }),
+                e('button', {
+                  onClick: submitTriviaAnswer,
+                  disabled: checkingIn || !triviaAnswer.trim(),
+                  style: Object.assign({}, S.btn, { background: T.forest, color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700 })
+                }, checkingIn ? '...' : (lang === 'es' ? "Enviar Respuesta" : "Submit Answer"))
+              ),
+
+              // Multiple Choice UI
+              activeStep.type === 'MULTIPLE_CHOICE' && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+                e('div', { style: { fontSize: 12.5, fontWeight: 600, color: T.ink2 } }, 
+                  lang === 'es' ? "Selecciona la opción correcta:" : "Select the correct option:"
+                ),
+                e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+                  (activeStep.choices || []).map((choice, cIdx) => {
+                    return e('button', {
+                      key: cIdx,
+                      onClick: () => submitMCQChoice(choice),
+                      disabled: checkingIn,
+                      style: {
+                        background: selectedMCQ === choice ? T.forest : T.paper3,
+                        color: selectedMCQ === choice ? '#fff' : T.ink,
+                        border: `1px solid ${selectedMCQ === choice ? T.forest : T.border}`,
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        textAlign: 'left',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontSize: 13
+                      }
+                    }, choice);
+                  })
+                )
+              )
             ),
             // Hot / Cold temperature indicator and direction trend
             currentDistanceFt !== null && e('div', {
@@ -1670,6 +1806,14 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     trend: trend,
     lang: lang,
     onClose: () => setShowRadar(false)
+  }),
+
+  // QR Scanner Overlay
+  isQrScannerOpen && e(QRScannerModal, {
+    isOpen: isQrScannerOpen,
+    onClose: () => setIsQrScannerOpen(false),
+    onScanSuccess: handleQRScanSuccess,
+    lang: lang
   })
 
   ); // end Fragment
