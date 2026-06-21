@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../utils/api';
+import { api, sb } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { distKm } from '../utils/helpers';
 import { HuntRadarOverlay } from './HuntRadarOverlay';
@@ -41,6 +41,16 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const [selectedStepId, setSelectedStepId] = useState(null);
   const [editShowAllPins, setEditShowAllPins] = useState(false);
   const [editSearchQueries, setEditSearchQueries] = useState({});
+  const [participants, setParticipants] = useState([]);
+  const [huntTeams, setHuntTeams] = useState([]);
+  const [nowTime, setNowTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
   
   // Profile gamification states
   const [profileStats, setProfileStats] = useState({
@@ -234,6 +244,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       setSelectedHunt(hunt);
       const steps = await api.getHuntSteps(hunt.id);
       setHuntSteps(steps);
+      const teams = await api.getHuntTeams(hunt.id);
+      setHuntTeams(teams);
       setSelectedStepId(null);
       setTeamDetails(null);
       setShowEnrollCard(false);
@@ -253,6 +265,15 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           } catch (tErr) {
             console.error("Failed to load team details:", tErr);
           }
+        }
+      }
+
+      if (hunt.creator === uname) {
+        try {
+          const allPartsRes = await sb.from("hunt_participants").select("*").eq("hunt_id", hunt.id);
+          setParticipants(allPartsRes.data || []);
+        } catch (pErr) {
+          console.error("Failed to load participants list:", pErr);
         }
       }
 
@@ -356,6 +377,12 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     if (firstIncompleteIdx >= 0) return huntSteps[firstIncompleteIdx];
     return huntSteps[0];
   }, [huntSteps, selectedStepId, stepsStatus]);
+
+  const startD = React.useMemo(() => {
+    return selectedHunt?.start_time ? new Date(selectedHunt.start_time) : null;
+  }, [selectedHunt]);
+
+  const hasStarted = !startD || startD <= nowTime;
 
   // Geolocation math
   const getDistanceToPin = (pinId) => {
@@ -1760,8 +1787,177 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         )
       )),
 
-      // Progress Tracker Card
-      participant && e('div', { style: { background: T.paper3, borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 } },
+      // Countdown Card
+      (participant && !hasStarted) && e('div', {
+        style: {
+          background: T.paper3, borderRadius: 16, padding: '24px 20px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+          border: `1px solid ${T.borderSoft}`, boxShadow: T.shadowLg, marginTop: 4
+        }
+      },
+        e('div', { style: { fontSize: 32 } }, '⏳'),
+        e('div', { style: { fontSize: 16, fontWeight: 800, color: T.forest, textAlign: 'center' } }, 
+          lang === 'es' ? "La cacería comenzará pronto" : "Hunt Starts Soon"
+        ),
+        e('div', { style: { fontSize: 12, color: T.ink3, textAlign: 'center', lineHeight: 1.4 } },
+          lang === 'es' ? "Todos los mapas y pistas permanecerán bloqueados hasta que el temporizador llegue a cero." : "All map targets and clues remain locked until the countdown reaches zero."
+        ),
+        
+        e('div', { style: { display: 'flex', gap: 10, marginTop: 8 } },
+          (() => {
+            const diffMs = startD ? startD.getTime() - nowTime.getTime() : 0;
+            const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
+            const hours = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+            const seconds = String(totalSecs % 60).padStart(2, '0');
+            
+            const timeBlocks = [
+              { label: lang === 'es' ? 'Horas' : 'Hours', val: hours },
+              { label: lang === 'es' ? 'Minutos' : 'Mins', val: minutes },
+              { label: lang === 'es' ? 'Segundos' : 'Secs', val: seconds }
+            ];
+            
+            return timeBlocks.map((b, bIdx) => e('div', {
+              key: bIdx,
+              style: {
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                background: T.paper, padding: '8px 12px', borderRadius: 8,
+                border: `1px solid ${T.border}`, minWidth: 60
+              }
+            },
+              e('span', { style: { fontSize: 20, fontWeight: 800, color: T.ink, fontFamily: T.mono } }, b.val),
+              e('span', { style: { fontSize: 9, color: T.ink3, textTransform: 'uppercase', fontWeight: 700, marginTop: 2 } }, b.label)
+            ));
+          })()
+        ),
+
+        teamDetails && e('div', {
+          style: {
+            borderTop: `1px solid ${T.borderSoft}`, width: '100%',
+            paddingTop: 12, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4
+          }
+        },
+          e('div', { style: { fontSize: 11, color: T.ink3, textTransform: 'uppercase', fontWeight: 700 } }, 
+            lang === 'es' ? "Tu Equipo" : "Your Assigned Team"
+          ),
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+            e('div', { style: { width: 10, height: 10, borderRadius: '50%', background: teamDetails.team.color || '#2a5d3c' } }),
+            e('span', { style: { fontSize: 14, fontWeight: 800, color: T.ink } }, teamDetails.team.name)
+          ),
+          e('span', { style: { fontSize: 11.5, color: T.ink2 } }, 
+            `${lang === 'es' ? "Miembros: " : "Members: "}${teamDetails.members.join(', ')}`
+          )
+        ),
+
+        teamDetails && e('div', {
+          style: {
+            width: '100%', borderTop: `1px solid ${T.borderSoft}`, paddingTop: 12, marginTop: 4,
+            display: 'flex', flexDirection: 'column', gap: 6
+          }
+        },
+          e('label', { style: { fontSize: 11, color: T.ink3, textTransform: 'uppercase', fontWeight: 700 } },
+            lang === 'es' ? "Renombrar Equipo" : "Rename Team"
+          ),
+          e('div', { style: { display: 'flex', gap: 6 } },
+            e('input', {
+              type: 'text',
+              value: teamDetails.team.name,
+              placeholder: lang === 'es' ? "Nombre del equipo..." : "Team name...",
+              onChange: async (ev) => {
+                const newName = ev.target.value;
+                const updatedTeam = { ...teamDetails.team, name: newName };
+                setTeamDetails({ ...teamDetails, team: updatedTeam });
+                try {
+                  await api.updateTeamName(teamDetails.team.id, newName);
+                } catch (err) {
+                  console.error(err);
+                }
+              },
+              style: Object.assign({}, S.input, { height: 34, fontSize: 12 })
+            })
+          )
+        ),
+
+        // Creator Manual Team Assignment Manager
+        (selectedHunt.creator === uname && selectedHunt.team_assignment_mode === 'manual') && e('div', {
+          style: {
+            width: '100%', borderTop: `1px solid ${T.borderSoft}`, paddingTop: 12, marginTop: 4,
+            display: 'flex', flexDirection: 'column', gap: 8
+          }
+        },
+          e('div', { style: { fontSize: 11, color: T.ink3, textTransform: 'uppercase', fontWeight: 700 } }, 
+            lang === 'es' ? "Asignación de Equipos" : "Team Assignment Console"
+          ),
+          participants.length === 0 ? (
+            e('div', { style: { fontSize: 12, color: T.ink3, fontStyle: 'italic', padding: '4px 0' } },
+              lang === 'es' ? "Esperando a que se unan jugadores…" : "Waiting for players to join…"
+            )
+          ) : (
+            participants.map(p => {
+              return e('div', {
+                key: p.id,
+                style: {
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: T.paper, padding: '6px 10px', borderRadius: 8, border: `1px solid ${T.border}`,
+                  marginTop: 2
+                }
+              },
+                e('span', { style: { fontSize: 12.5, fontWeight: 600, color: T.ink } }, p.user_id),
+                e('select', {
+                  value: p.team_id || '',
+                  onChange: async (ev) => {
+                    const selectedTeamId = ev.target.value || null;
+                    const updatedParts = participants.map(part => part.id === p.id ? { ...part, team_id: selectedTeamId } : part);
+                    setParticipants(updatedParts);
+                    try {
+                      await api.assignParticipantToTeam(p.id, selectedTeamId, p.user_id);
+                      flash(lang === 'es' ? "Equipo asignado." : "Team assigned successfully.");
+                    } catch (err) {
+                      console.error(err);
+                      flash(lang === 'es' ? "Error al asignar equipo." : "Error assigning team.");
+                    }
+                  },
+                  style: {
+                    fontSize: 11.5, padding: '3px 6px', borderRadius: 6,
+                    border: `1px solid ${T.border}`, background: T.paper
+                  }
+                },
+                  e('option', { value: '' }, lang === 'es' ? "Sin Equipo / Esperando" : "No Team / Waiting"),
+                  huntTeams.map(t => e('option', { key: t.id, value: t.id }, t.name))
+                )
+              );
+            })
+          )
+        ),
+
+        e('button', {
+          onClick: function() {
+            if (window.confirm(lang === 'es' ? "¿Estás seguro de que deseas salir de esta cacería?" : "Are you sure you want to leave this hunt?")) {
+              api.leaveHunt(participant.id).then(function() {
+                setSelectedHunt(null);
+                setActiveSubTab('my_hunts');
+                if (onHuntProgress) onHuntProgress('leave');
+                flash(lang === 'es' ? "Has salido de la cacería." : "You left the hunt.");
+              });
+            }
+          },
+          style: {
+            background: 'rgba(211, 47, 47, 0.08)',
+            border: 'none',
+            color: '#d32f2f',
+            fontWeight: 700,
+            fontSize: 11,
+            padding: '6px 12px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            marginTop: 12,
+            alignSelf: 'center'
+          }
+        }, "🚪 " + (lang === 'es' ? "Abandonar Cacería" : "Leave Hunt"))
+      ),
+
+      // Progress Tracker Card (shown after start)
+      (participant && hasStarted) && e('div', { style: { background: T.paper3, borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 } },
         e('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.ink3 } },
           e('span', null, lang === 'es' ? "Tus Puntos" : "Your points"),
           e('span', null, lang === 'es' ? "Progreso" : "Progress")
@@ -1792,6 +1988,27 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           ),
           e('div', { style: { fontSize: 11.5, color: T.ink3, marginTop: 2 } },
             `${lang === 'es' ? 'Miembros: ' : 'Members: '}${teamDetails.members.join(', ')}`
+          ),
+          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 } },
+            e('label', { style: { fontSize: 10, color: T.ink3, fontWeight: 700, textTransform: 'uppercase' } },
+              lang === 'es' ? "Renombrar Equipo" : "Rename Team"
+            ),
+            e('input', {
+              type: 'text',
+              value: teamDetails.team.name,
+              placeholder: lang === 'es' ? "Nombre del equipo..." : "Team name...",
+              onChange: async (ev) => {
+                const newName = ev.target.value;
+                const updatedTeam = { ...teamDetails.team, name: newName };
+                setTeamDetails({ ...teamDetails, team: updatedTeam });
+                try {
+                  await api.updateTeamName(teamDetails.team.id, newName);
+                } catch (err) {
+                  console.error(err);
+                }
+              },
+              style: Object.assign({}, S.input, { height: 32, fontSize: 11.5, padding: '4px 8px' })
+            })
           )
         ),
         e('button', {
@@ -1820,8 +2037,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         }, "🚪 " + (lang === 'es' ? "Abandonar Cacería" : "Leave Hunt"))
       ),
 
-      // Play Tab Bar Toggle
-      participant && e('div', {
+      // Play Tab Bar Toggle (only shown when started)
+      (participant && hasStarted) && e('div', {
         style: {
           display: 'flex', borderBottom: `1px solid ${T.borderSoft}`, marginBottom: 8, marginTop: 4
         }
@@ -1864,8 +2081,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         }, lang === 'es' ? "Organizador" : "Console")
       ),
 
-      // Play Tab Content Window
-      participant && (playTab === 'photostream' ?
+      // Play Tab Content Window (only shown when started)
+      (participant && hasStarted) && (playTab === 'photostream' ?
         e(PhotostreamTab, {
           submissions: submissions,
           huntSteps: huntSteps,
@@ -1880,6 +2097,56 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         :
         playTab === 'organizer' ?
         e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+          selectedHunt.team_assignment_mode === 'manual' && e('div', {
+            style: {
+              background: T.paper3, border: `1px solid ${T.border}`, borderRadius: 14, padding: 12,
+              display: 'flex', flexDirection: 'column', gap: 8
+            }
+          },
+            e('div', { style: { fontSize: 13, fontWeight: 800, color: T.forest } },
+              lang === 'es' ? "Asignación de Equipos" : "Team Assignment Console"
+            ),
+            participants.length === 0 ? (
+              e('div', { style: { fontSize: 12, color: T.ink3, fontStyle: 'italic', padding: '4px 0' } },
+                lang === 'es' ? "Esperando a que se unan jugadores…" : "Waiting for players to join…"
+              )
+            ) : (
+              participants.map(p => {
+                return e('div', {
+                  key: p.id,
+                  style: {
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: T.paper, padding: '6px 10px', borderRadius: 8, border: `1px solid ${T.border}`,
+                    marginTop: 2
+                  }
+                },
+                  e('span', { style: { fontSize: 12.5, fontWeight: 600, color: T.ink } }, p.user_id),
+                  e('select', {
+                    value: p.team_id || '',
+                    onChange: async (ev) => {
+                      const selectedTeamId = ev.target.value || null;
+                      const updatedParts = participants.map(part => part.id === p.id ? { ...part, team_id: selectedTeamId } : part);
+                      setParticipants(updatedParts);
+                      try {
+                        await api.assignParticipantToTeam(p.id, selectedTeamId, p.user_id);
+                        flash(lang === 'es' ? "Equipo asignado." : "Team assigned successfully.");
+                      } catch (err) {
+                        console.error(err);
+                        flash(lang === 'es' ? "Error al asignar equipo." : "Error assigning team.");
+                      }
+                    },
+                    style: {
+                      fontSize: 11.5, padding: '3px 6px', borderRadius: 6,
+                      border: `1px solid ${T.border}`, background: T.paper
+                    }
+                  },
+                    e('option', { value: '' }, lang === 'es' ? "Sin Equipo / Esperando" : "No Team / Waiting"),
+                    huntTeams.map(t => e('option', { key: t.id, value: t.id }, t.name))
+                  )
+                );
+              })
+            )
+          ),
           e('div', { style: { fontSize: 14, fontWeight: 800, color: T.ink } },
             lang === 'es' ? "Consola del Organizador — Envíos" : "Organizer Review Console — Submissions"
           ),

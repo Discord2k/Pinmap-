@@ -26,6 +26,13 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
   const [completionMessage, setCompletionMessage] = useState('');
   const [completionUrl, setCompletionUrl] = useState('');
   const [hideSpoilers, setHideSpoilers] = useState(true);
+  const [teamAssignmentMode, setTeamAssignmentMode] = useState('self_select');
+  const [maxPlayersPerTeam, setMaxPlayersPerTeam] = useState(10);
+  const [teams, setTeamsList] = useState([
+    { name: 'Red Team', color: '#e53935' },
+    { name: 'Blue Team', color: '#1e88e5' },
+    { name: 'Green Team', color: '#43a047' }
+  ]);
   const [steps, setSteps] = useState([
     { sequence_order: 1, clue: '', pin_id: '', trail_id: '', point_rules: { check_in: 100 }, type: 'GPS', expected_answer: '', choices: [] }
   ]);
@@ -133,10 +140,22 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         reward_voucher: rewardVoucher.trim() || null,
         completion_message: completionMessage || null,
         completion_url: completionUrl || null,
-        hide_spoilers: hideSpoilers
+        hide_spoilers: hideSpoilers,
+        team_assignment_mode: visibility === 'private' ? teamAssignmentMode : null,
+        max_players_per_team: visibility === 'private' ? maxPlayersPerTeam : null
       };
 
       const createdHunt = await api.createHunt(huntPayload);
+
+      if (visibility === 'private' && teams.length > 0) {
+        const teamPayloads = teams.map(t => ({
+          hunt_id: createdHunt.id,
+          name: t.name.trim() || 'Unnamed Team',
+          color: t.color,
+          creator: uname
+        }));
+        await api.createHuntTeams(teamPayloads);
+      }
 
       const stepPayloads = steps.map(s => ({
         hunt_id: createdHunt.id,
@@ -350,10 +369,112 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         e('option', { value: 'FREE_ROAMING' }, lang === 'es' ? "Ruta Libre — resolver en cualquier orden" : "Free Roaming — solve in any order")
       ),
 
-      // Team Play Info Card
-      e('div', {
+      // Team Play Info / Configurations
+      visibility === 'private' ? e('div', {
         style: {
-          background: 'rgba(46, 125, 50, 0.05)',
+          background: 'rgba(46, 125, 50, 0.03)',
+          border: `1px solid ${T.border}`,
+          borderRadius: 12,
+          padding: '12px 14px',
+          marginTop: 6,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10
+        }
+      },
+        e('div', { style: { fontSize: 13.5, fontWeight: 800, color: T.forest } }, lang === 'es' ? "Configuración de Equipos" : "Teams Configuration"),
+        
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
+          e('label', { style: { fontSize: 11.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Modo de Asignación de Equipos" : "Team Assignment Mode"),
+          e('select', {
+            value: teamAssignmentMode,
+            onChange: (ev) => setTeamAssignmentMode(ev.target.value),
+            style: Object.assign({}, S.input, { height: 38 })
+          },
+            e('option', { value: 'self_select' }, lang === 'es' ? "Los jugadores eligen equipo" : "Players choose their own team"),
+            e('option', { value: 'manual' }, lang === 'es' ? "Asignación manual por el creador" : "Manually assigned by creator")
+          )
+        ),
+
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
+          e('label', { style: { fontSize: 11.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Máx. jugadores por equipo" : "Max players per team"),
+          e('input', {
+            type: 'number',
+            min: 1,
+            value: maxPlayersPerTeam,
+            onChange: (ev) => setMaxPlayersPerTeam(parseInt(ev.target.value) || 10),
+            style: Object.assign({}, S.input, { height: 38 })
+          })
+        ),
+
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
+          e('div', { style: { fontSize: 11.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Lista de Equipos" : "Teams List"),
+          teams.map((team, tIdx) => e('div', { key: tIdx, style: { display: 'flex', gap: 6, alignItems: 'center' } },
+            e('input', {
+              type: 'text',
+              value: team.name,
+              placeholder: `Team ${tIdx + 1}`,
+              onChange: (ev) => {
+                const newT = [...teams];
+                newT[tIdx].name = ev.target.value;
+                setTeamsList(newT);
+              },
+              style: Object.assign({}, S.input, { flex: 1, height: 34 })
+            }),
+            e('input', {
+              type: 'color',
+              value: team.color,
+              onChange: (ev) => {
+                const newT = [...teams];
+                newT[tIdx].color = ev.target.value;
+                setTeamsList(newT);
+              },
+              style: { width: 34, height: 34, padding: 0, border: `1px solid ${T.border}`, borderRadius: 6, cursor: 'pointer' }
+            }),
+            teams.length > 2 && e('button', {
+              type: 'button',
+              onClick: () => {
+                setTeamsList(teams.filter((_, i) => i !== tIdx));
+              },
+              style: {
+                background: 'rgba(211, 47, 47, 0.08)',
+                color: '#d32f2f',
+                border: 'none',
+                borderRadius: 6,
+                width: 34,
+                height: 34,
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }
+            }, '✕')
+          )),
+          e('button', {
+            type: 'button',
+            onClick: () => {
+              const defaultColors = ['#e53935', '#1e88e5', '#43a047', '#fdd835', '#8e24aa', '#fb8c00', '#00acc1'];
+              const randomColor = defaultColors[teams.length % defaultColors.length];
+              setTeamsList([...teams, { name: `Team ${teams.length + 1}`, color: randomColor }]);
+            },
+            style: {
+              background: 'none',
+              border: `1px dashed ${T.forest}`,
+              color: T.forest,
+              borderRadius: 8,
+              padding: '6px 12px',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              marginTop: 4,
+              alignSelf: 'flex-start'
+            }
+          }, "+ " + (lang === 'es' ? "Añadir Equipo" : "Add Team"))
+        )
+      ) : e('div', {
+        style: {
+          background: 'rgba(239, 108, 0, 0.05)',
           border: `1px solid ${T.border}`,
           borderRadius: 10,
           padding: '10px 12px',
@@ -363,10 +484,10 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
           lineHeight: 1.4
         }
       },
-        e('span', { style: { fontWeight: 700, color: T.forest } }, "👥 " + (lang === 'es' ? "Modo Multijugador/Equipos:" : "Team Play Support:")),
+        e('span', { style: { fontWeight: 700, color: '#e65100' } }, "👥 " + (lang === 'es' ? "Modo Equipos No Disponible:" : "Team Play Not Available:")),
         " " + (lang === 'es' 
-          ? "Esta cacería admite juego individual o en equipo. Al unirse, los jugadores podrán crear o unirse a un equipo con un código para compartir el progreso y puntuación en tiempo real." 
-          : "This scavenger hunt supports both Solo and Team play. Upon enrolling, participants can create or join a team using a code to synchronize progress and scores in real-time.")
+          ? "Los equipos solo están disponibles en búsquedas privadas. Cambia la visibilidad a Privada para habilitar los equipos." 
+          : "Teams are strictly reserved for private hunts. Switch visibility to Private to enable team play configuration.")
       ),
 
       // Hide Spoilers Toggle Checkbox

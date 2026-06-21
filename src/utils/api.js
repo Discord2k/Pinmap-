@@ -517,6 +517,48 @@ export const api = {
       members: (membersRes.data || []).map(m => m.username)
     };
   },
+  getHuntTeams: function(huntId) {
+    return sb.from("hunt_teams").select("*").eq("hunt_id", huntId).then(function(r) { if (r.error) throw r.error; return r.data || []; });
+  },
+  createHuntTeams: function(teams) {
+    return sb.from("hunt_teams").insert(teams).select().then(function(r) { if (r.error) throw r.error; return r.data || []; });
+  },
+  deleteHuntTeamsForHunt: function(huntId) {
+    return sb.from("hunt_teams").delete().eq("hunt_id", huntId).then(function(r) { if (r.error) throw r.error; return r.data; });
+  },
+  updateTeamName: function(teamId, newName) {
+    return sb.from("hunt_teams").update({ name: newName }).eq("id", teamId).select().then(function(r) { if (r.error) throw r.error; return r.data[0]; });
+  },
+  assignParticipantToTeam: async function(participantId, teamId, username) {
+    if (!teamId) {
+      const partRes = await sb.from("hunt_participants").select("hunt_id").eq("id", participantId).single();
+      if (partRes.data) {
+        const hId = partRes.data.hunt_id;
+        const siblingTeams = await sb.from("hunt_teams").select("id").eq("hunt_id", hId);
+        if (siblingTeams.data) {
+          const siblingIds = siblingTeams.data.map(t => t.id);
+          await sb.from("hunt_team_members").delete().in("team_id", siblingIds).eq("username", username);
+        }
+      }
+      const partUpdate = await sb.from("hunt_participants").update({ team_id: null }).eq("id", participantId).select();
+      if (partUpdate.error) throw partUpdate.error;
+      return partUpdate.data[0];
+    }
+    const teamDetails = await sb.from("hunt_teams").select("hunt_id").eq("id", teamId).single();
+    if (teamDetails.data) {
+      const hId = teamDetails.data.hunt_id;
+      const siblingTeams = await sb.from("hunt_teams").select("id").eq("hunt_id", hId);
+      if (siblingTeams.data) {
+        const siblingIds = siblingTeams.data.map(t => t.id);
+        await sb.from("hunt_team_members").delete().in("team_id", siblingIds).eq("username", username);
+      }
+    }
+    const memRes = await sb.from("hunt_team_members").insert({ team_id: teamId, username: username }).select();
+    if (memRes.error) throw memRes.error;
+    const partRes = await sb.from("hunt_participants").update({ team_id: teamId }).eq("id", participantId).select();
+    if (partRes.error) throw partRes.error;
+    return partRes.data[0];
+  },
   enrollInHunt: function(huntId, userId, joinMethod) {
     return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },

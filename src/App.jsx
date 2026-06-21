@@ -525,7 +525,8 @@ function App() {
               totalSteps: steps.length || 1,
               activePinId: activePinId,
               activeCheckinLogged: activeCheckinLogged,
-              steps: steps
+              steps: steps,
+              start_time: activeHunt.start_time
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -541,7 +542,8 @@ function App() {
               totalSteps: 1,
               activePinId: null,
               activeCheckinLogged: false,
-              steps: []
+              steps: [],
+              start_time: activeHunt.start_time
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -2648,6 +2650,7 @@ function App() {
 
     // Hunt filtering logic
     var huntActive = quickHunts && quickHunts.active;
+    var huntStarted = !huntActive || !huntActive.start_time || new Date(huntActive.start_time) <= new Date();
     if (huntActive && huntActive.steps && huntActive.steps.length > 0) {
       var activeHuntPinsMap = {};
       huntActive.steps.forEach(function(s, idx) {
@@ -2657,6 +2660,7 @@ function App() {
       displayedPins = displayedPins.filter(function(p) {
         var hStep = activeHuntPinsMap[p.id];
         if (!hStep) return true; // Keep normal pins on the map
+        if (!huntStarted) return false; // Hide all hunt steps until start time is reached
         
         var routingMode = huntActive.routing_mode || 'LINEAR';
         if (routingMode === 'LINEAR') {
@@ -4068,7 +4072,8 @@ function App() {
 
     quickHunts.active && !open && (function() {
       var activeHunt = quickHunts.active;
-      var activeStep = (activeHunt && activeHunt.steps) ? activeHunt.steps[activeHunt.participantStep - 1] : null;
+      var huntStarted = !activeHunt || !activeHunt.start_time || new Date(activeHunt.start_time) <= new Date();
+      var activeStep = (activeHunt && activeHunt.steps && huntStarted) ? activeHunt.steps[activeHunt.participantStep - 1] : null;
       var pct = activeHunt.totalSteps > 0 
         ? Math.round((activeHunt.participantStep - (activeHunt.activeCheckinLogged ? 0 : 1)) / activeHunt.totalSteps * 100)
         : 0;
@@ -4157,10 +4162,12 @@ function App() {
         
         // Progress bar and Clue details (always visible at top of HUD card)
         e("div", {style: {marginTop: 6, display: "flex", flexDirection: "column", gap: 6}},
-          activeStep && e("div", {style: {fontSize: 11.5, color: T.ink2, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, 
+          !huntStarted ? e("div", {style: {fontSize: 11.5, color: "#d32f2f", fontWeight: 700}}, 
+            lang === 'es' ? "⏳ La cacería comenzará pronto. Toca para ver el temporizador." : "⏳ Hunt starts soon. Tap to view timer."
+          ) : (activeStep && e("div", {style: {fontSize: 11.5, color: T.ink2, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, 
             (lang === 'es' ? "Pista: " : "Clue: ") + activeStep.clue
-          ),
-          e("div", {style: {display: "flex", alignItems: "center", gap: 8}},
+          )),
+          huntStarted && e("div", {style: {display: "flex", alignItems: "center", gap: 8}},
             e("div", {style: {flex: 1, height: 5, background: T.borderSoft, borderRadius: 2.5, overflow: "hidden"}},
               e("div", {style: {width: pct + "%", height: "100%", background: T.forest, transition: "width 0.4s"}})
             ),
