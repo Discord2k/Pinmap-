@@ -1544,7 +1544,19 @@ function App() {
           if (wasFollowing) {
             followUserRef.current = false;
             if (window._setFollowUser) window._setFollowUser(false);
-            if (window._flash) window._flash("🗺️ Free explore — tap 📍 to re-center");
+            if (window._flash) {
+              window._flash(
+                React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } },
+                  "🗺️ Free explore — tap ",
+                  React.createElement("svg", { width: 14, height: 14, viewBox: "0 0 24 24", style: { display: "inline-block", verticalAlign: "middle" } },
+                    React.createElement("circle", { cx: 12, cy: 12, r: 3, fill: "#2a5d3c" }),
+                    React.createElement("circle", { cx: 12, cy: 12, r: 7, stroke: "#2a5d3c", strokeWidth: 1.5, fill: "none" }),
+                    React.createElement("path", { d: "M12 2v4M12 18v4M2 12h4M18 12h4", stroke: "#2a5d3c", strokeWidth: 1.5, strokeLinecap: "round" })
+                  ),
+                  " to re-center"
+                )
+              );
+            }
           }
         }
       });
@@ -4267,7 +4279,16 @@ function App() {
             setGpsTracking(true);
             followUserRef.current = true;
             setFollowUser(true);
-            flash("📍 Following your location — map will stay centered");
+            flash(
+              React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } },
+                React.createElement("svg", { width: 14, height: 14, viewBox: "0 0 24 24", style: { display: "inline-block", verticalAlign: "middle" } },
+                  React.createElement("circle", { cx: 12, cy: 12, r: 3, fill: "#2a5d3c" }),
+                  React.createElement("circle", { cx: 12, cy: 12, r: 7, stroke: "#2a5d3c", strokeWidth: 1.5, fill: "none" }),
+                  React.createElement("path", { d: "M12 2v4M12 18v4M2 12h4M18 12h4", stroke: "#2a5d3c", strokeWidth: 1.5, strokeLinecap: "round" })
+                ),
+                " Following your location — map will stay centered"
+              )
+            );
           } else {
             if (followUser) {
               navigator.geolocation.clearWatch(gpsWatchIdRef.current);
@@ -4288,7 +4309,16 @@ function App() {
               if (userLL && mapObj.current) {
                 mapObj.current.setView([userLL.lat, userLL.lng], 15);
               }
-              flash("📍 Re-centering — following your location again");
+              flash(
+                React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } },
+                  React.createElement("svg", { width: 14, height: 14, viewBox: "0 0 24 24", style: { display: "inline-block", verticalAlign: "middle" } },
+                    React.createElement("circle", { cx: 12, cy: 12, r: 3, fill: "#2a5d3c" }),
+                    React.createElement("circle", { cx: 12, cy: 12, r: 7, stroke: "#2a5d3c", strokeWidth: 1.5, fill: "none" }),
+                    React.createElement("path", { d: "M12 2v4M12 18v4M2 12h4M18 12h4", stroke: "#2a5d3c", strokeWidth: 1.5, strokeLinecap: "round" })
+                  ),
+                  " Re-centering — following your location again"
+                )
+              );
             }
           }
         },
