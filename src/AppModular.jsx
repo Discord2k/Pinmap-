@@ -284,6 +284,10 @@ function App() {
   var followUserRef = useRef(false);
   useEffect(function() {
     followUserRef.current = followUser;
+    var coneEl = document.getElementById("user-direction-cone");
+    if (coneEl) {
+      coneEl.style.display = followUser ? "block" : "none";
+    }
   }, [followUser]);
   useEffect(function() {
     window._setFollowUser = setFollowUser;
@@ -3293,6 +3297,7 @@ function App() {
         var coneEl = document.getElementById("user-direction-cone");
         if (coneEl) {
           coneEl.style.transform = "rotate(" + Math.round(window._userHeading) + "deg)";
+          coneEl.style.display = followUserRef.current ? "block" : "none";
         }
       }
       return;
@@ -3303,7 +3308,7 @@ function App() {
     markerEl.style.pointerEvents = 'none';
     markerEl.innerHTML =
       '<div style="position: relative; width: 0px; height: 0px;">' +
-      '  <svg id="user-direction-cone" style="position: absolute; width: 100px; height: 100px; left: -50px; top: -50px; transform-origin: 50% 50%; pointer-events: none; transition: transform 0.1s ease-out; transform: rotate(' + (window._userHeading !== undefined ? Math.round(window._userHeading) : 0) + 'deg);" viewBox="0 0 100 100">' +
+      '  <svg id="user-direction-cone" style="position: absolute; width: 100px; height: 100px; left: -50px; top: -50px; transform-origin: 50% 50%; pointer-events: none; transition: transform 0.1s ease-out; display: ' + (followUserRef.current ? 'block' : 'none') + '; transform: rotate(' + (window._userHeading !== undefined ? Math.round(window._userHeading) : 0) + 'deg);" viewBox="0 0 100 100">' +
       '    <defs>' +
       '      <radialGradient id="coneGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">' +
       '        <stop offset="0%" stop-color="#2979ff" stop-opacity="0.4"/>' +
