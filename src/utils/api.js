@@ -34,7 +34,54 @@ export const api = {
   checkin:        function(pinId,visitor,lat,lng){ return sb.from("checkins").insert({pin_id:pinId,visitor:visitor,lat:lat,lng:lng}).select().then(function(r){return r.data[0];}); },
   getPinCheckinsCount: function(pinId)  { return sb.from("checkins").select("*", { count: "exact", head: true }).eq("pin_id", pinId).then(function(r){return r.count||0;}); },
   deleteExpired:  function()            { return sb.from("pins").delete().lt("expires_at",new Date().toISOString()).not("expires_at","is",null); },
-  remove:         function(id,uname)   { return sbWithUser(uname).from("pins").delete().eq("id",id); },
+  remove:         async function(id,uname)   {
+    try {
+      // 1. Fetch pin details to retrieve storage image URLs
+      const pinRes = await sb.from("pins").select("photo, photo_2, photo_3").eq("id", id).single();
+      if (pinRes.data) {
+        const pin = pinRes.data;
+        const pinPaths = [];
+        ['photo', 'photo_2', 'photo_3'].forEach(f => {
+          if (pin[f]) {
+            const marker = "/storage/v1/object/public/pin-images/";
+            const idx = pin[f].indexOf(marker);
+            if (idx !== -1) {
+              pinPaths.push(decodeURIComponent(pin[f].substring(idx + marker.length)));
+            }
+          }
+        });
+        if (pinPaths.length > 0) {
+          await sb.storage.from("pin-images").remove(pinPaths).catch(e => console.error("Pin images delete error:", e));
+        }
+      }
+
+      // 2. Fetch comments to delete comment photos
+      const commentsRes = await sb.from("comments").select("body").eq("pin_id", id);
+      if (commentsRes.data) {
+        const commentPaths = [];
+        commentsRes.data.forEach(c => {
+          const body = c.body || "";
+          if (body.includes("[photo]")) {
+            const parts = body.split("[photo]");
+            const photoUrl = parts[1] ? parts[1].trim() : null;
+            if (photoUrl) {
+              const marker = "/storage/v1/object/public/journal-photos/";
+              const idx = photoUrl.indexOf(marker);
+              if (idx !== -1) {
+                commentPaths.push(decodeURIComponent(photoUrl.substring(idx + marker.length)));
+              }
+            }
+          }
+        });
+        if (commentPaths.length > 0) {
+          await sb.storage.from("journal-photos").remove(commentPaths).catch(e => console.error("Journal photos delete error:", e));
+        }
+      }
+    } catch (err) {
+      console.error("Cleanup associated storage files failed:", err);
+    }
+    return sbWithUser(uname).from("pins").delete().eq("id",id);
+  },
   search:         function(tag)        { return sb.from("pins").select("*").contains("tags",[tag]).in("privacy",["public","insider"]).then(function(r){return r.data||[];}); },
   getComments:    function(pinId)      { return sb.from("comments").select("*").eq("pin_id",pinId).order("created_at",{ascending:true}).then(function(r){ if (r.error) throw r.error; return (r.data||[]).map(parseComment);}); },
   upvoteComment:  function(id,upvotes) { return sb.from("comments").update({upvotes:upvotes}).eq("id",id).then(function(r) { if (r.error) throw r.error; return r.data; }); },
@@ -426,8 +473,56 @@ export const api = {
   updateSubmissionComments: function(id, comments) {
     return sb.from("hunt_submissions").update({ comments: comments }).eq("id", id).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },
+  updateSubmissionStatus: function(id, status) {
+    return sb.from("hunt_submissions").update({ status: status }).eq("id", id).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  createTeam: async function(huntId, name, creator) {
+    const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const teamRes = await sb.from("hunt_teams").insert({ hunt_id: huntId, name: name, invite_code: inviteCode, creator: creator }).select();
+    if (teamRes.error) throw teamRes.error;
+    const team = teamRes.data[0];
+    
+    const memRes = await sb.from("hunt_team_members").insert({ team_id: team.id, username: creator });
+    if (memRes.error) throw memRes.error;
+    
+    const part = await sb.from("hunt_participants").select("*").eq("hunt_id", huntId).eq("user_id", creator).maybeSingle();
+    if (part.data) {
+      await sb.from("hunt_participants").update({ team_id: team.id }).eq("id", part.data.id);
+    }
+    return team;
+  },
+  joinTeam: async function(inviteCode, username) {
+    const codeClean = inviteCode.trim().toUpperCase();
+    const teamRes = await sb.from("hunt_teams").select("*").eq("invite_code", codeClean).maybeSingle();
+    if (teamRes.error) throw teamRes.error;
+    if (!teamRes.data) throw new Error("Invalid invite code");
+    const team = teamRes.data;
+    
+    const memRes = await sb.from("hunt_team_members").insert({ team_id: team.id, username: username });
+    if (memRes.error) throw memRes.error;
+    
+    const part = await sb.from("hunt_participants").select("*").eq("hunt_id", team.hunt_id).eq("user_id", username).maybeSingle();
+    if (part.data) {
+      await sb.from("hunt_participants").update({ team_id: team.id }).eq("id", part.data.id);
+    }
+    return team;
+  },
+  getTeamDetails: async function(teamId) {
+    const teamRes = await sb.from("hunt_teams").select("*").eq("id", teamId).single();
+    if (teamRes.error) throw teamRes.error;
+    const membersRes = await sb.from("hunt_team_members").select("username").eq("team_id", teamId);
+    if (membersRes.error) throw membersRes.error;
+    return {
+      team: teamRes.data,
+      members: (membersRes.data || []).map(m => m.username)
+    };
+  },
   enrollInHunt: function(huntId, userId, joinMethod) {
     return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  leaveHunt: async function(participantId) {
+    await sb.from("hunt_activity_logs").delete().eq("participant_id", participantId);
+    return sb.from("hunt_participants").delete().eq("id", participantId).then(function(r){ if (r.error) throw r.error; return r.data; });
   },
   getParticipant: function(huntId, userId) {
     return sb.from("hunt_participants").select("*").eq("hunt_id", huntId).eq("user_id", userId).maybeSingle().then(function(r){ if (r.error) throw r.error; return r.data; });
@@ -442,6 +537,21 @@ export const api = {
     return sb.from("hunt_participants").update(updatePayload).eq("id", participantId).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },
   logHuntActivity: function(participantId, stepId, activityType, pointsAwarded) {
+    const logItem = {
+      id: "activity_log_" + Math.random().toString(36).slice(2,10),
+      participant_id: participantId,
+      step_id: stepId,
+      activity_type: activityType,
+      points_awarded: pointsAwarded,
+      created_at: new Date().toISOString()
+    };
+    if (navigator && navigator.onLine === false) {
+      // Dynamic offline queue cache trigger
+      const { dbPut } = require('./helpers');
+      return dbPut("hunt_activity_logs", logItem).then(function() {
+        return logItem;
+      });
+    }
     return sb.from("hunt_activity_logs").insert({
       participant_id: participantId,
       step_id: stepId,
@@ -449,8 +559,16 @@ export const api = {
       points_awarded: pointsAwarded
     }).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },
-  getHuntActivityLogs: function(participantId) {
-    return sb.from("hunt_activity_logs").select("*").eq("participant_id", participantId).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  getHuntActivityLogs: async function(participantId) {
+    const dbLogs = await sb.from("hunt_activity_logs").select("*").eq("participant_id", participantId).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+    try {
+      const { dbGetAll } = require('./helpers');
+      const localLogs = await dbGetAll("hunt_activity_logs");
+      const matchedLocal = localLogs.filter(l => l.participant_id === participantId);
+      return dbLogs.concat(matchedLocal);
+    } catch(e) {
+      return dbLogs;
+    }
   },
   getHuntLeaderboard: function(huntId) {
     return sb.from("hunt_participants").select("user_id, status, total_points, profiles(id, bio, location, avatar_url)").eq("hunt_id", huntId).order("total_points", {ascending: false}).then(function(r){ if (r.error) throw r.error; return r.data||[]; });

@@ -927,17 +927,18 @@ function App() {
 
   // Update queue count on load
   useEffect(function(){
-    Promise.all([dbGetAll("pins"), dbGetAll("comments")]).then(function(r){
-      setQueueCount((r[0]||[]).length + (r[1]||[]).length);
+    Promise.all([dbGetAll("pins"), dbGetAll("comments"), dbGetAll("hunt_activity_logs")]).then(function(r){
+      setQueueCount((r[0]||[]).length + (r[1]||[]).length + (r[2]||[]).length);
     });
   },[]);
 
   // Sync offline queue to Supabase
   function syncOfflineQueue(){
-    Promise.all([dbGetAll("pins"), dbGetAll("comments")]).then(function(results){
+    Promise.all([dbGetAll("pins"), dbGetAll("comments"), dbGetAll("hunt_activity_logs")]).then(function(results){
       var pendingPins = results[0]||[];
       var pendingComments = results[1]||[];
-      var total = pendingPins.length + pendingComments.length;
+      var pendingLogs = results[2]||[];
+      var total = pendingPins.length + pendingComments.length + pendingLogs.length;
       if(!total) return;
       flash(t("toast_syncing_items", {count: total}));
       var pinPromises = pendingPins.map(function(pin){
@@ -946,7 +947,16 @@ function App() {
       var commentPromises = pendingComments.map(function(c){
         return api.addComment(c).then(function(){ return dbDelete("comments", c.id); });
       });
-      Promise.all(pinPromises.concat(commentPromises)).then(function(){
+      var logPromises = pendingLogs.map(function(l){
+        const prevOnLine = navigator.onLine;
+        Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+        return api.logHuntActivity(l.participant_id, l.step_id, l.activity_type, l.points_awarded)
+          .then(function(){ 
+            Object.defineProperty(navigator, 'onLine', { value: prevOnLine, configurable: true });
+            return dbDelete("hunt_activity_logs", l.id); 
+          });
+      });
+      Promise.all(pinPromises.concat(commentPromises).concat(logPromises)).then(function(){
         setQueueCount(0);
         flash(t("toast_sync_success", {count: total}));
         api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });

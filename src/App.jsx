@@ -9,6 +9,7 @@ import { PinCard } from './components/PinCard';
 import { ProfilePanel } from './components/ProfilePanel';
 import { MineTab } from './components/MineTab';
 import { HuntJoinModal } from './components/HuntJoinModal';
+import { ScavengerHuntsPanel } from './components/ScavengerHuntsPanel';
 
 import { BottomNav } from './components/ui/BottomNav';
 
@@ -398,6 +399,7 @@ function App() {
   var [activeTrail, setActiveTrail] = useState(null);
   var [trailInfoExpanded, setTrailInfoExpanded] = useState(false);
   var [showTrailQuestPanel, setShowTrailQuestPanel] = useState(false);
+  var [showHuntOverlay, setShowHuntOverlay] = useState(false);
   var [quickHunts, setQuickHunts] = useState({ active: null, publicList: [], loading: false });
   var [profileHuntsTab, setProfileHuntsTab] = useState(null); // null = don't auto-open, 'my_hunts' = auto-open to My Hunts
   var [huntsUpdateTrigger, setHuntsUpdateTrigger] = useState(0);
@@ -448,9 +450,9 @@ function App() {
     }
   }, [tab, profileHuntsTab]);
 
-  // Load quick hunt summary when the panel opens
+  // Load quick hunt summary when the user is logged in
   React.useEffect(function() {
-    if (!showTrailQuestPanel || !uname || uname === 'guest') return;
+    if (!uname || uname === 'guest') return;
     setQuickHunts(function(prev){ return Object.assign({},prev,{loading:true}); });
     Promise.all([
       api.listHunts(),
@@ -508,10 +510,12 @@ function App() {
               id: activeHunt.id,
               name: activeHunt.name,
               visibility: activeHunt.visibility,
+              routing_mode: activeHunt.routing_mode || 'LINEAR',
               participantStep: currentStepNum,
               totalSteps: steps.length || 1,
               activePinId: activePinId,
-              activeCheckinLogged: activeCheckinLogged
+              activeCheckinLogged: activeCheckinLogged,
+              steps: steps
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -522,10 +526,12 @@ function App() {
               id: activeHunt.id,
               name: activeHunt.name,
               visibility: activeHunt.visibility,
+              routing_mode: activeHunt.routing_mode || 'LINEAR',
               participantStep: 1,
               totalSteps: 1,
               activePinId: null,
-              activeCheckinLogged: false
+              activeCheckinLogged: false,
+              steps: []
             },
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
@@ -1046,17 +1052,18 @@ function App() {
 
   // Update queue count on load
   useEffect(function(){
-    Promise.all([dbGetAll("pins"), dbGetAll("comments")]).then(function(r){
-      setQueueCount((r[0]||[]).length + (r[1]||[]).length);
+    Promise.all([dbGetAll("pins"), dbGetAll("comments"), dbGetAll("hunt_activity_logs")]).then(function(r){
+      setQueueCount((r[0]||[]).length + (r[1]||[]).length + (r[2]||[]).length);
     });
   },[]);
 
   // Sync offline queue to Supabase
   function syncOfflineQueue(){
-    Promise.all([dbGetAll("pins"), dbGetAll("comments")]).then(function(results){
+    Promise.all([dbGetAll("pins"), dbGetAll("comments"), dbGetAll("hunt_activity_logs")]).then(function(results){
       var pendingPins = results[0]||[];
       var pendingComments = results[1]||[];
-      var total = pendingPins.length + pendingComments.length;
+      var pendingLogs = results[2]||[];
+      var total = pendingPins.length + pendingComments.length + pendingLogs.length;
       if(!total) return;
       flash(t("toast_syncing_items", {count: total}));
       var pinPromises = pendingPins.map(function(pin){
@@ -1065,10 +1072,21 @@ function App() {
       var commentPromises = pendingComments.map(function(c){
         return api.addComment(c).then(function(){ return dbDelete("comments", c.id); });
       });
-      Promise.all(pinPromises.concat(commentPromises)).then(function(){
+      var logPromises = pendingLogs.map(function(l){
+        // Force onLine to true temporarily so API doesn't queue-recurse
+        const prevOnLine = navigator.onLine;
+        Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+        return api.logHuntActivity(l.participant_id, l.step_id, l.activity_type, l.points_awarded)
+          .then(function(){ 
+            Object.defineProperty(navigator, 'onLine', { value: prevOnLine, configurable: true });
+            return dbDelete("hunt_activity_logs", l.id); 
+          });
+      });
+      Promise.all(pinPromises.concat(commentPromises).concat(logPromises)).then(function(){
         setQueueCount(0);
         flash(t("toast_sync_success", {count: total}));
         api.list().then(function(data){ if(Array.isArray(data)) setPins(data); });
+        setHuntsUpdateTrigger(function(t_val){ return t_val + 1; });
       }).catch(function(){ flash(t("toast_sync_failed")); });
     });
   }
@@ -2618,6 +2636,39 @@ function App() {
       });
     }
 
+    // Hunt filtering logic
+    var huntActive = quickHunts && quickHunts.active;
+    if (huntActive && huntActive.steps && huntActive.steps.length > 0) {
+      var activeHuntPinsMap = {};
+      huntActive.steps.forEach(function(s, idx) {
+        activeHuntPinsMap[s.pin_id] = { index: idx, step: s };
+      });
+
+      displayedPins = displayedPins.filter(function(p) {
+        var hStep = activeHuntPinsMap[p.id];
+        if (!hStep) return true; // Keep normal pins on the map
+        
+        var routingMode = huntActive.routing_mode || 'LINEAR';
+        if (routingMode === 'LINEAR') {
+          // Keep only current and completed steps (indices less than or equal to current active index)
+          var activeIdx = huntActive.participantStep - 1;
+          return hStep.index <= activeIdx;
+        }
+        // FREE_ROAMING displays all hunt pins
+        return true;
+      });
+
+      // Enhance pin objects with their hunt points if FREE_ROAMING for custom label styling
+      displayedPins = displayedPins.map(function(p) {
+        var hStep = activeHuntPinsMap[p.id];
+        if (hStep && huntActive.routing_mode === 'FREE_ROAMING') {
+          var points = hStep.step.point_rules ? (hStep.step.point_rules.check_in || 100) : 100;
+          return Object.assign({}, p, { _huntPoints: points });
+        }
+        return p;
+      });
+    }
+
     // Clear ALL existing markers atomically
     if (window._clearMapLibreMarkers) {
       window._clearMapLibreMarkers();
@@ -2729,9 +2780,15 @@ function App() {
       var innerHtml = hasEmoji
         ? '<foreignObject x="3" y="3" width="20" height="20"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:12px;text-align:center;line-height:20px">'+pinEmoji+'</div></foreignObject>'
         : '<circle cx="13" cy="13" r="4" fill="white"/>';
+      
+      var pointsBadge = "";
+      if (pin._huntPoints) {
+        pointsBadge = '<foreignObject x="-5" y="-12" width="36" height="16"><div xmlns="http://www.w3.org/1999/xhtml" style="background:#2e7d32;color:#fff;font-size:8px;font-weight:bold;border-radius:8px;padding:1px 3px;text-align:center;border:1px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3)">+' + pin._huntPoints + '</div></foreignObject>';
+      }
+
       var icon=window.L.divIcon({
         className:"pm-pin pm-map-pin",
-        html:'<svg width="30" height="38" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/>'+innerHtml+'</svg>',
+        html:'<svg width="30" height="38" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg" style="position:relative"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21S26 22.75 26 13C26 5.82 20.18 0 13 0z" fill="'+color+'" stroke="white" stroke-width="1.5"/>'+innerHtml+pointsBadge+'</svg>',
         iconSize:[30,38],
         iconAnchor:[15,38]
       });
@@ -3465,6 +3522,22 @@ function App() {
               flash("You cannot check in to your own pin!");
               return;
             }
+
+            if (isHuntStep && huntGlobal) {
+              var now = new Date();
+              var startTimeLimit = huntGlobal.start_time || huntGlobal.start_date;
+              var endTimeLimit = huntGlobal.end_time || huntGlobal.end_date;
+              
+              if (startTimeLimit && new Date(startTimeLimit) > now) {
+                flash(lang === 'es' ? "Esta cacería no ha comenzado todavía." : "This hunt hasn't started yet.");
+                return;
+              }
+              if (endTimeLimit && new Date(endTimeLimit) < now) {
+                flash(lang === 'es' ? "Esta cacería ha finalizado." : "This hunt has already ended.");
+                return;
+              }
+            }
+
             proceedCheckin();
           }).catch(function(err) {
             console.error("Error checking enrollments:", err);
@@ -3983,6 +4056,138 @@ function App() {
       }, "✕ Exit")
     ),
 
+    quickHunts.active && !open && (function() {
+      var activeHunt = quickHunts.active;
+      var activeStep = (activeHunt && activeHunt.steps) ? activeHunt.steps[activeHunt.participantStep - 1] : null;
+      var pct = activeHunt.totalSteps > 0 
+        ? Math.round((activeHunt.participantStep - (activeHunt.activeCheckinLogged ? 0 : 1)) / activeHunt.totalSteps * 100)
+        : 0;
+      var topOffset = "max(16px, env(safe-area-inset-top, 0px))";
+      if (activeMapPack && activeQuest) {
+        topOffset = "calc(220px + max(16px, env(safe-area-inset-top, 0px)))";
+      } else if (activeMapPack || activeQuest) {
+        topOffset = "calc(110px + max(16px, env(safe-area-inset-top, 0px)))";
+      }
+      return e("div", {
+        id: "active-hunt-hud-bar",
+        style: {
+          position: "absolute",
+          top: topOffset,
+          left: 16,
+          right: 64,
+          maxWidth: 480,
+          margin: "0 auto",
+          background: "rgba(246, 241, 228, 0.98)",
+          backdropFilter: "blur(12px)",
+          border: "2px solid " + T.forest,
+          borderRadius: 16,
+          padding: "12px 14px",
+          zIndex: 1000,
+          boxShadow: T.shadowLg,
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: showHuntOverlay ? "calc(100vh - 200px)" : "auto",
+          overflow: "hidden",
+          transition: "max-height 0.25s ease-out",
+          cursor: "default"
+        }
+      },
+        // Header
+        e("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            cursor: "pointer",
+            width: "100%",
+            userSelect: "none"
+          },
+          onClick: function(ev) {
+            if (ev.target.closest("button") || ev.target.closest("a")) return;
+            setShowHuntOverlay(function(v) { return !v; });
+          }
+        },
+          e("div", {style: {flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6}},
+            e("svg", {width: 12, height: 12, viewBox: "0 0 24 24", fill: "none", stroke: T.forest, strokeWidth: 2.5, strokeLinecap: "round", strokeLinejoin: "round", style: {marginRight: 2}},
+              e("path", {d: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6"}),
+              e("path", {d: "M18 9h1.5a2.5 2.5 0 0 0 0-5H18"}),
+              e("path", {d: "M4 22h16"}),
+              e("path", {d: "M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"}),
+              e("path", {d: "M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"}),
+              e("path", {d: "M18 2H6v7a6 6 0 0 0 12 0V2z"})
+            ),
+            e("span", {style: {fontSize: 10, background: T.forest, color: "#fff", padding: "2px 6px", borderRadius: 10, fontFamily: T.mono, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0}}, 
+              lang === 'es' ? "Caza Activa" : "Active Hunt"
+            ),
+            e("span", {style: {fontWeight: 700, fontSize: 13.5, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, activeHunt.name)
+          ),
+          e("button", {
+            onClick: function(ev) {
+              ev.stopPropagation();
+              setShowHuntOverlay(function(v) { return !v; });
+            },
+            style: {
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: T.ink3,
+              fontSize: 12,
+              padding: "4px 8px",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontFamily: T.mono,
+              fontWeight: 700
+            }
+          }, 
+            showHuntOverlay ? (lang === 'es' ? "Colapsar ▲" : "Collapse ▲") : (lang === 'es' ? "Expandir ▼" : "Expand ▼")
+          )
+        ),
+        
+        // Progress bar and Clue details (always visible at top of HUD card)
+        e("div", {style: {marginTop: 6, display: "flex", flexDirection: "column", gap: 6}},
+          activeStep && e("div", {style: {fontSize: 11.5, color: T.ink2, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, 
+            (lang === 'es' ? "Pista: " : "Clue: ") + activeStep.clue
+          ),
+          e("div", {style: {display: "flex", alignItems: "center", gap: 8}},
+            e("div", {style: {flex: 1, height: 5, background: T.borderSoft, borderRadius: 2.5, overflow: "hidden"}},
+              e("div", {style: {width: pct + "%", height: "100%", background: T.forest, transition: "width 0.4s"}})
+            ),
+            e("span", {style: {fontSize: 10, color: T.ink2, fontFamily: T.mono, flexShrink: 0}}, 
+              (activeHunt.participantStep - (activeHunt.activeCheckinLogged ? 0 : 1)) + " / " + activeHunt.totalSteps
+            )
+          )
+        ),
+
+        // Expanded view details: full dashboard container
+        showHuntOverlay && e("div", {
+          style: {
+            flex: 1,
+            overflowY: "auto",
+            marginTop: 10,
+            borderTop: "1px solid " + T.borderSoft,
+            paddingTop: 8,
+            maxHeight: 400
+          }
+        },
+          e(ScavengerHuntsPanel, {
+            uname: uname,
+            userLL: userLL,
+            pins: pins,
+            trails: trails,
+            lang: lang,
+            flash: flash,
+            initialHuntsTab: 'active_play',
+            huntsUpdateTrigger: huntsUpdateTrigger,
+            onHuntProgress: function() {
+              setHuntsUpdateTrigger(function(t) { return t + 1; });
+            }
+          })
+        )
+      );
+    })(),
+
     activeQuest && e("div", {
       style: {
         position: "absolute",
@@ -4203,14 +4408,7 @@ function App() {
 
 
 
-    e("div",{style:{position:"absolute",top:"calc(16px + env(safe-area-inset-top,0px))",left:16,right:16,zIndex:999}},
-      e("div",{style:{display:"flex",alignItems:"center",gap:8,background:"rgba(246,241,228,0.96)",backdropFilter:"blur(12px)",border:"1px solid "+T.border,borderRadius:12,padding:"10px 14px",boxShadow:T.shadow,cursor:"pointer"},
-        onClick:function(){setSearchMode("tags");setTab("search");setOpen(true);}},
-        e("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none"},e("circle",{cx:"11",cy:"11",r:"8",stroke:T.ink3,strokeWidth:2}),e("path",{d:"M21 21l-4.35-4.35",stroke:T.ink3,strokeWidth:2,strokeLinecap:"round"})),
-        e("span",{style:{fontSize:15,color:T.ink3,flex:1}},t("map_search_placeholder")),
-        !open&&unreadCount>0&&e("div",{style:{width:8,height:8,borderRadius:"50%",background:"#b85c2a",flexShrink:0}})
-      )
-    ),
+
     // Active filter chips on map
     !open && (activeFilter || focusedUser) && e("div",{style:{
       position:"absolute",
@@ -4288,6 +4486,45 @@ function App() {
 
     // Right-side map controls
     e("div",{style:{position:"absolute",top:"calc(80px + env(safe-area-inset-top,0px))",right:14,zIndex:999,display:"flex",flexDirection:"column",gap:8}},
+
+      quickHunts.active && e("button", {
+        id: "btn-active-hunt-fab",
+        className: "pm-hunt-fab",
+        onClick: function() {
+          setShowHuntOverlay(function(v) {
+            var next = !v;
+            if (next) {
+              setOpen(false);
+              setShowTrailQuestPanel(false);
+            }
+            return next;
+          });
+        },
+        style: {
+          width: 40,
+          height: 40,
+          borderRadius: 10,
+          background: "linear-gradient(135deg, " + T.forest + ", #d4af37)",
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          boxShadow: "0 0 12px rgba(212, 175, 55, 0.6)",
+          color: "#fff",
+          outline: "none"
+        },
+        title: lang === 'es' ? "Ver Búsqueda Activa" : "View Active Hunt"
+      },
+        e("svg", {width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round"},
+          e("path", {d: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6"}),
+          e("path", {d: "M18 9h1.5a2.5 2.5 0 0 0 0-5H18"}),
+          e("path", {d: "M4 22h16"}),
+          e("path", {d: "M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"}),
+          e("path", {d: "M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"}),
+          e("path", {d: "M18 2H6v7a6 6 0 0 0 12 0V2z"})
+        )
+      ),
 
       // Pin layer toggle: All → Mine → Off
       e("button",{
@@ -4499,69 +4736,7 @@ function App() {
             },t("manage_btn"))
           ),
 
-          // ── Hunts section ──────────────────────────────────────────
-          e("div",{style:{borderBottom:"1px solid "+T.borderSoft}},
-            // Section header
-            e("div",{style:{padding:"8px 14px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
-              e("div",{style:{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,fontFamily:T.mono,color:T.ink3}},
-                "🏟️ " + (lang === 'es' ? "Cacerías" : "Hunts")
-              ),
-              e("button",{
-                style:{padding:"4px 10px",borderRadius:6,border:"none",background:T.forest,color:T.paper,fontSize:10,fontWeight:700,cursor:"pointer"},
-                onClick:function(){ setShowTrailQuestPanel(false); setTab("add"); setAddTabMode("hunt"); setOpen(true); }
-              }, lang === 'es' ? "+ Crear" : "+ Create")
-            ),
 
-            // Active hunt summary (loaded from quickHunts)
-            (function(){
-              if (quickHunts.loading) {
-                return e("div",{style:{padding:"8px 14px 10px",fontSize:12,color:T.ink4,fontStyle:"italic"}}, lang === 'es' ? "Cargando..." : "Loading...");
-              }
-              if (!quickHunts.active) {
-                return e("div",{style:{padding:"4px 14px 10px",fontSize:12,color:T.ink4,fontStyle:"italic"}},
-                  lang === 'es' ? "No estás inscrito en ninguna cacería activa." : "You aren't enrolled in any active hunt."
-                );
-              }
-              var ah = quickHunts.active;
-              var stepNum = ah.participantStep || 1;
-              var totalSteps = ah.totalSteps || 1;
-              var pct = Math.round((stepNum - 1) / totalSteps * 100);
-              return e("div",{style:{margin:"0 14px 10px",background:"rgba(46,125,50,0.07)",border:"1px solid rgba(46,125,50,0.18)",borderRadius:10,padding:"10px 12px"}},
-                e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}},
-                  e("div",null,
-                    e("div",{style:{fontSize:13,fontWeight:700,color:T.ink,marginBottom:1}}, ah.name),
-                    e("div",{style:{fontSize:11,color:T.ink3,fontFamily:T.mono}},
-                      lang === 'es' ? ("Paso "+stepNum+" de "+totalSteps) : ("Step "+stepNum+" of "+totalSteps)
-                    )
-                  ),
-                  // Radar shortcut
-                  e("button",{
-                    onClick:function(){ setShowTrailQuestPanel(false); setTab("profile"); setOpen(true); },
-                    title: lang === 'es' ? "Abrir Radar de Caza" : "Open Hunt Radar",
-                    style:{background:"linear-gradient(135deg,#1a3a22,#2e7d32)",border:"none",borderRadius:8,
-                      padding:"6px 10px",fontSize:13,cursor:"pointer",color:"#fff",fontWeight:700,
-                      boxShadow:"0 2px 8px rgba(46,125,50,0.35)"}
-                  }, "🧭")
-                ),
-                // Progress bar
-                e("div",{style:{width:"100%",height:4,background:T.borderSoft,borderRadius:2,overflow:"hidden"}},
-                  e("div",{style:{width:pct+"%",height:"100%",background:T.forest,borderRadius:2,transition:"width 0.4s"}})
-                )
-              );
-            }()),
-
-            // Quick-action buttons row
-            e("div",{style:{display:"flex",gap:6,padding:"0 14px 10px"}},
-              e("button",{
-                style:{flex:1,padding:"7px 8px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"center"},
-                onClick:function(){ setShowTrailQuestPanel(false); setProfileHuntsTab('my_hunts'); setTab("profile"); setOpen(true); }
-              }, lang === 'es' ? "🗺️ Mis Cacerías" : "🗺️ My Hunts"),
-              e("button",{
-                style:{flex:1,padding:"7px 8px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink2,fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"center"},
-                onClick:function(){ setShowTrailQuestPanel(false); setSearchMode("hunts"); setTab("search"); setOpen(true); }
-              }, lang === 'es' ? "🔍 Explorar" : "🔍 Discover")
-            )
-          ),
 
           e("div",{style:{padding:"8px 14px 4px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid "+T.borderSoft}},
             e("div",{
@@ -5045,6 +5220,8 @@ function App() {
 
     
 
+
+
       selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null), activeHuntCheckinLogged: (quickHunts.active ? quickHunts.active.activeCheckinLogged : false), onHuntProgress: function() { setHuntsUpdateTrigger(function(t){ return t + 1; }); } }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
@@ -5054,8 +5231,10 @@ function App() {
       lang: lang,
       flash: flash,
       onJoined: function(hunt, participant) {
+        setHuntsUpdateTrigger(function(t) { return t + 1; });
+        setShowHuntOverlay(true);
         setTab("profile");
-        setOpen(true);
+        setOpen(false);
       },
       onClose: function() {
         setPendingHuntId("");

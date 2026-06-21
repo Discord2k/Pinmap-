@@ -14,6 +14,15 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
     return nextWeek.toISOString().split('T')[0];
   });
   const [visibility, setVisibility] = useState('public');
+  const [routingMode, setRoutingMode] = useState('LINEAR');
+  const [startTime, setStartTime] = useState(() => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  });
+  const [endTime, setEndTime] = useState('23:59');
+  const [rewardVoucher, setRewardVoucher] = useState('');
   const [completionMessage, setCompletionMessage] = useState('');
   const [completionUrl, setCompletionUrl] = useState('');
   const [hideSpoilers, setHideSpoilers] = useState(true);
@@ -99,10 +108,13 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       flash(lang === 'es' ? "Por favor selecciona una fecha de finalización." : "Please select an end date.");
       return;
     }
-    let sDateObj = new Date(startDate);
-    let eDateObj = new Date(endDate);
+    
+    // Replace dashes with slashes to ensure the date is parsed in local time, preventing UTC timezone shifts
+    let sDateObj = new Date(`${startDate.replace(/-/g, '/')} ${startTime || '00:00'}`);
+    let eDateObj = new Date(`${endDate.replace(/-/g, '/')} ${endTime || '23:59'}`);
+    
     if (isNaN(sDateObj.getTime()) || isNaN(eDateObj.getTime())) {
-      flash(lang === 'es' ? "Fecha inválida." : "Invalid date value.");
+      flash(lang === 'es' ? "Fecha o hora inválida." : "Invalid date or time value.");
       return;
     }
 
@@ -114,7 +126,11 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         description: description,
         start_date: sDateObj.toISOString(),
         end_date: eDateObj.toISOString(),
+        start_time: sDateObj.toISOString(),
+        end_time: eDateObj.toISOString(),
         visibility: visibility,
+        routing_mode: routingMode,
+        reward_voucher: rewardVoucher.trim() || null,
         completion_message: completionMessage || null,
         completion_url: completionUrl || null,
         hide_spoilers: hideSpoilers
@@ -274,7 +290,7 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       }),
 
       e('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
-        e('div', null,
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
           e('label', { htmlFor: 'hunt-start-date-input', style: { fontSize: 12, fontWeight: 700, color: T.ink3 } }, lang === 'es' ? "Fecha de Inicio" : "Start Date"),
           e('input', {
             id: 'hunt-start-date-input',
@@ -283,9 +299,15 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
             value: startDate,
             onChange: (e) => setStartDate(e.target.value),
             style: S.input
+          }),
+          e('input', {
+            type: 'time',
+            value: startTime,
+            onChange: (e) => setStartTime(e.target.value),
+            style: Object.assign({}, S.input, { marginTop: 4 })
           })
         ),
-        e('div', null,
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
           e('label', { htmlFor: 'hunt-end-date-input', style: { fontSize: 12, fontWeight: 700, color: T.ink3 } }, lang === 'es' ? "Fecha Límite" : "End Date"),
           e('input', {
             id: 'hunt-end-date-input',
@@ -294,6 +316,12 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
             value: endDate,
             onChange: (e) => setEndDate(e.target.value),
             style: S.input
+          }),
+          e('input', {
+            type: 'time',
+            value: endTime,
+            onChange: (e) => setEndTime(e.target.value),
+            style: Object.assign({}, S.input, { marginTop: 4 })
           })
         )
       ),
@@ -308,6 +336,18 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       },
         e('option', { value: 'public' }, lang === 'es' ? "Pública — todos pueden participar" : "Public — open to everyone"),
         e('option', { value: 'private' }, lang === 'es' ? "Privada — acceso con link de invitación" : "Private — shared link only")
+      ),
+
+      e('label', { htmlFor: 'hunt-routing-mode-input', style: { fontSize: 12.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Modo de Ruta" : "Routing Mode"),
+      e('select', {
+        id: 'hunt-routing-mode-input',
+        name: 'hunt_routing_mode',
+        value: routingMode,
+        onChange: (e) => setRoutingMode(e.target.value),
+        style: Object.assign({}, S.input, { height: 46 })
+      },
+        e('option', { value: 'LINEAR' }, lang === 'es' ? "Ruta Lineal — objetivos en secuencia" : "Linear Path — sequential objectives"),
+        e('option', { value: 'FREE_ROAMING' }, lang === 'es' ? "Ruta Libre — resolver en cualquier orden" : "Free Roaming — solve in any order")
       ),
 
       // Hide Spoilers Toggle Checkbox
@@ -342,6 +382,16 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         placeholder: "https://example.com/reward",
         value: completionUrl,
         onChange: (e) => setCompletionUrl(e.target.value),
+        style: S.input
+      }),
+
+      e('label', { htmlFor: 'hunt-reward-voucher-input', style: { fontSize: 12.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Vale / Código de Recompensa (Voucher)" : "Completion Reward Voucher"),
+      e('input', {
+        id: 'hunt-reward-voucher-input',
+        type: 'text',
+        placeholder: "e.g. FREEBEER2026, DISCOUNT50",
+        value: rewardVoucher,
+        onChange: (e) => setRewardVoucher(e.target.value),
         style: S.input
       })
     ),

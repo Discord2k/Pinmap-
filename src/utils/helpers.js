@@ -290,7 +290,7 @@ export function formatLL(lat, lng, prec) {
   return Math.abs(lat).toFixed(prec)+"°"+(lat>=0?"N":"S")+" "+Math.abs(lng).toFixed(prec)+"°"+(lng>=0?"E":"W"); 
 }
 
-const DB_NAME = "pinmap-offline", DB_VER = 1;
+const DB_NAME = "pinmap-offline", DB_VER = 2;
 let offlineDB = null;
 
 export function openDB() {
@@ -301,6 +301,7 @@ export function openDB() {
       var db = e.target.result;
       if(!db.objectStoreNames.contains("pins"))     db.createObjectStore("pins",     {keyPath:"id"});
       if(!db.objectStoreNames.contains("comments")) db.createObjectStore("comments", {keyPath:"id"});
+      if(!db.objectStoreNames.contains("hunt_activity_logs")) db.createObjectStore("hunt_activity_logs", {keyPath:"id"});
     };
     req.onsuccess  = function(e) { offlineDB = e.target.result; res(offlineDB); };
     req.onerror    = function(e) { rej(e); };

@@ -90,6 +90,17 @@ export function ProfilePanel(props) {
     }
   });
 
+  React.useEffect(function() {
+    var handleStorage = function() {
+      try {
+        var saved = localStorage.getItem("pinmap_tracked_quests");
+        setTrackedQuestIds(saved ? JSON.parse(saved) : []);
+      } catch(e) {}
+    };
+    window.addEventListener("storage", handleStorage);
+    return function() { window.removeEventListener("storage", handleStorage); };
+  }, []);
+
   var deletedQuestIds = props.deletedQuestIds || [];
   var setDeletedQuestIds = props.setDeletedQuestIds || function(){};
 
@@ -855,6 +866,34 @@ export function ProfilePanel(props) {
                                     >
                                       {activeQuestId === ch.id ? "🎯 " + t('active') : t('start')}
                                     </button>
+                                    {activeQuestId === ch.id && (
+                                      <button
+                                        style={{
+                                          background: "rgba(211, 47, 47, 0.08)",
+                                          color: "#d32f2f",
+                                          border: "none",
+                                          padding: "4px 8px",
+                                          borderRadius: 6,
+                                          fontSize: 11,
+                                          fontWeight: 700,
+                                          cursor: "pointer",
+                                          marginLeft: 4
+                                        }}
+                                        onClick={function(e) {
+                                          e.stopPropagation();
+                                          if (window.confirm(t("confirm_exit_quest"))) {
+                                            setActiveQuestId("");
+                                            localStorage.setItem("pinmap_active_quest_id", "");
+                                            if (trackedQuestIds.indexOf(ch.id) >= 0) {
+                                              toggleTrackQuest(ch.id);
+                                            }
+                                            flash(t("exit_quest") + ".");
+                                          }
+                                        }}
+                                      >
+                                        🚪 {t("exit_quest")}
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               </div>

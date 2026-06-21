@@ -5,6 +5,7 @@ import { distKm } from '../utils/helpers';
 import { HuntRadarOverlay } from './HuntRadarOverlay';
 import { QRScannerModal } from './QRScannerModal';
 import { PhotostreamTab } from './PhotostreamTab';
+import TeamRegistrationCard from './TeamRegistrationCard';
 
 const e = React.createElement;
 
@@ -16,6 +17,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   // Active Play states
   const [selectedHunt, setSelectedHunt] = useState(null);
   const [participant, setParticipant] = useState(null);
+  const [teamDetails, setTeamDetails] = useState(null); // { team: {name, invite_code, ...}, members: [...] }
+  const [showEnrollCard, setShowEnrollCard] = useState(false);
   const [huntSteps, setHuntSteps] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -81,10 +84,23 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
 
   // Sync if initialHuntsTab changes (e.g. deep-link from quick panel)
   useEffect(() => {
-    if (initialHuntsTab && activeSubTab === 'my_hunts') {
+    if (initialHuntsTab) {
       setActiveSubTab(initialHuntsTab);
     }
   }, [initialHuntsTab]);
+
+  // Auto-select active enrolled hunt if opening active play tab directly
+  useEffect(() => {
+    if (activeSubTab === 'active_play' && !selectedHunt && hunts.length > 0 && userEnrollments.length > 0) {
+      const activeEnroll = userEnrollments.find(e => e.status === 'enrolled');
+      if (activeEnroll) {
+        const activeHuntObj = hunts.find(h => h.id === activeEnroll.hunt_id);
+        if (activeHuntObj) {
+          handleSelectHunt(activeHuntObj);
+        }
+      }
+    }
+  }, [activeSubTab, hunts, userEnrollments, selectedHunt]);
 
   // Sync state if check-in happens outside of this component (e.g., from map check-ins)
   useEffect(() => {
@@ -114,14 +130,41 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     }
     setEditSaving(true);
     try {
+      let sTimePart = "00:00";
+      if (editingHunt.start_time) {
+        const oldSDate = new Date(editingHunt.start_time);
+        if (!isNaN(oldSDate.getTime())) {
+          const hours = String(oldSDate.getHours()).padStart(2, '0');
+          const minutes = String(oldSDate.getMinutes()).padStart(2, '0');
+          sTimePart = `${hours}:${minutes}`;
+        }
+      }
+      let eTimePart = "23:59";
+      if (editingHunt.end_time) {
+        const oldEDate = new Date(editingHunt.end_time);
+        if (!isNaN(oldEDate.getTime())) {
+          const hours = String(oldEDate.getHours()).padStart(2, '0');
+          const minutes = String(oldEDate.getMinutes()).padStart(2, '0');
+          eTimePart = `${hours}:${minutes}`;
+        }
+      }
+
+      const sDateObj = new Date(`${editingHunt.start_date_local.replace(/-/g, '/')} ${sTimePart}`);
+      const eDateObj = new Date(`${editingHunt.end_date_local.replace(/-/g, '/')} ${eTimePart}`);
+
       await api.updateHunt(editingHunt.id, {
         name: editingHunt.name,
         description: editingHunt.description,
-        start_date: new Date(editingHunt.start_date_local).toISOString(),
-        end_date: new Date(editingHunt.end_date_local).toISOString(),
+        start_date: sDateObj.toISOString(),
+        end_date: eDateObj.toISOString(),
+        start_time: sDateObj.toISOString(),
+        end_time: eDateObj.toISOString(),
         visibility: editingHunt.visibility,
         completion_message: editingHunt.completion_message || null,
-        completion_url: editingHunt.completion_url || null
+        completion_url: editingHunt.completion_url || null,
+        routing_mode: editingHunt.routing_mode || 'LINEAR',
+        hide_spoilers: editingHunt.hide_spoilers === undefined ? true : editingHunt.hide_spoilers,
+        reward_voucher: editingHunt.reward_voucher || null
       });
 
       if (editingHunt.steps) {
@@ -142,7 +185,10 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           clue: s.clue,
           pin_id: s.pin_id,
           trail_id: s.trail_id || null,
-          point_rules: s.point_rules
+          point_rules: s.point_rules,
+          type: s.type || 'GPS',
+          expected_answer: s.expected_answer || null,
+          choices: s.choices || null
         }));
         
         await api.upsertHuntSteps(stepsPayload);
@@ -184,6 +230,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       const steps = await api.getHuntSteps(hunt.id);
       setHuntSteps(steps);
       setSelectedStepId(null);
+      setTeamDetails(null);
+      setShowEnrollCard(false);
 
       // Check if user is enrolled
       const part = await api.getParticipant(hunt.id, uname);
@@ -192,6 +240,15 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       if (part) {
         const logs = await api.getHuntActivityLogs(part.id);
         setActivityLogs(logs);
+        
+        if (part.team_id) {
+          try {
+            const teamInfo = await api.getTeamDetails(part.team_id);
+            setTeamDetails(teamInfo);
+          } catch (tErr) {
+            console.error("Failed to load team details:", tErr);
+          }
+        }
       }
 
       const board = await api.getHuntLeaderboard(hunt.id);
@@ -489,6 +546,20 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   };
 
   const performCheckIn = async (bypassProximity = false) => {
+    // 1. Scheduled Time Check Limits
+    const now = new Date();
+    const startTimeLimit = selectedHunt.start_time || selectedHunt.start_date;
+    const endTimeLimit = selectedHunt.end_time || selectedHunt.end_date;
+
+    if (startTimeLimit && new Date(startTimeLimit) > now) {
+      flash(lang === 'es' ? "Esta búsqueda no ha comenzado todavía." : "This hunt hasn't started yet.");
+      return;
+    }
+    if (endTimeLimit && new Date(endTimeLimit) < now) {
+      flash(lang === 'es' ? "Esta búsqueda ha finalizado." : "This hunt has already ended.");
+      return;
+    }
+
     if (!bypassProximity && !isWithin65Ft) {
       flash(lang === 'es' ? "Debes estar a menos de 65 pies del objetivo." : "You must be within 65 feet of the objective.");
       return;
@@ -659,6 +730,18 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     } catch(err) {
       console.error(err);
       loadSubmissions();
+    }
+  };
+
+  const handleReviewSubmission = async (subId, status) => {
+    setSubmissions(submissions.map(s => s.id === subId ? { ...s, status } : s));
+    try {
+      await api.updateSubmissionStatus(subId, status);
+      flash(lang === 'es' ? "¡Estado de envío actualizado!" : "Submission status updated successfully!");
+    } catch(err) {
+      console.error(err);
+      loadSubmissions();
+      flash(lang === 'es' ? "Error al actualizar envío" : "Error updating submission review status");
     }
   };
 
@@ -1052,6 +1135,40 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             style: Object.assign({}, S.input, { marginTop: 4 })
           })
         ),
+        // Routing Mode
+        e('div', null,
+          e('label', { style: { fontSize: 12, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Modo de Ruta" : "Routing Mode"),
+          e('select', {
+            value: editingHunt.routing_mode || 'LINEAR',
+            onChange: (ev) => setEditingHunt(eh => ({ ...eh, routing_mode: ev.target.value })),
+            style: Object.assign({}, S.input, { height: 42, marginTop: 4 })
+          },
+            e('option', { value: 'LINEAR' }, lang === 'es' ? "Ruta Lineal — objetivos en secuencia" : "Linear Path — sequential objectives"),
+            e('option', { value: 'FREE_ROAMING' }, lang === 'es' ? "Ruta Libre — resolver en cualquier orden" : "Free Roaming — solve in any order")
+          )
+        ),
+        // Hide Spoilers Toggle Checkbox
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 6, margin: '6px 0' } },
+          e('label', { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 700, color: T.ink2, cursor: 'pointer' } },
+            e('input', {
+              type: 'checkbox',
+              checked: editingHunt.hide_spoilers === undefined ? true : editingHunt.hide_spoilers,
+              onChange: (ev) => setEditingHunt(eh => ({ ...eh, hide_spoilers: ev.target.checked }))
+            }),
+            lang === 'es' ? "Ocultar Spoilers (difuminar fotos de pasos bloqueados)" : "Hide Photo Spoilers (blur images from locked steps)"
+          )
+        ),
+        // Reward Voucher
+        e('div', null,
+          e('label', { style: { fontSize: 12, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Vale / Código de Recompensa (Voucher)" : "Completion Reward Voucher"),
+          e('input', {
+            type: 'text',
+            placeholder: "e.g. FREEBEER2026, DISCOUNT50",
+            value: editingHunt.reward_voucher || '',
+            onChange: (ev) => setEditingHunt(eh => ({ ...eh, reward_voucher: ev.target.value })),
+            style: Object.assign({}, S.input, { marginTop: 4 })
+          })
+        ),
 
         // Steps list header
         e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, borderTop: `1px solid ${T.borderSoft}`, paddingTop: 16 } },
@@ -1194,6 +1311,103 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                   e('option', { value: '' }, lang === 'es' ? "-- Ninguna ruta --" : "-- No trail --"),
                   myTrails.map(t => e('option', { key: t.id, value: t.id }, t.name))
                 )
+              ),
+
+              // Challenge / Verification Type
+              e('div', null,
+                e('label', { htmlFor: `edit-step-type-select-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Tipo de Desafío" : "Challenge Verification Type"),
+                e('select', {
+                  id: `edit-step-type-select-${idx}`,
+                  value: step.type || 'GPS',
+                  onChange: (e) => {
+                    const newSteps = [...editingHunt.steps];
+                    newSteps[idx].type = e.target.value;
+                    newSteps[idx].expected_answer = '';
+                    newSteps[idx].choices = [];
+                    setEditingHunt({ ...editingHunt, steps: newSteps });
+                  },
+                  style: Object.assign({}, S.input, { height: 42, marginBottom: 0 })
+                },
+                  e('option', { value: 'GPS' }, lang === 'es' ? "📍 Ubicación GPS" : "📍 GPS Location Check-in"),
+                  e('option', { value: 'QR_CODE' }, lang === 'es' ? "📷 Escanear Código QR" : "📷 Scan QR Code"),
+                  e('option', { value: 'TRIVIA' }, lang === 'es' ? "❓ Trivia / Pregunta" : "❓ Trivia / Riddle Answer"),
+                  e('option', { value: 'MULTIPLE_CHOICE' }, lang === 'es' ? "📝 Opción Múltiple" : "📝 Multiple Choice")
+                )
+              ),
+
+              // Conditional inputs based on Challenge Type
+              step.type === 'QR_CODE' && e('div', null,
+                e('label', { htmlFor: `edit-step-qr-answer-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Valor de QR Esperado" : "Expected QR Code Text"),
+                e('input', {
+                  id: `edit-step-qr-answer-${idx}`,
+                  type: 'text',
+                  placeholder: lang === 'es' ? "Ej: pinmap-secret-123" : "e.g. pinmap-secret-123",
+                  value: step.expected_answer || '',
+                  onChange: (e) => {
+                    const newSteps = [...editingHunt.steps];
+                    newSteps[idx].expected_answer = e.target.value;
+                    setEditingHunt({ ...editingHunt, steps: newSteps });
+                  },
+                  style: S.input
+                })
+              ),
+
+              step.type === 'TRIVIA' && e('div', null,
+                e('label', { htmlFor: `edit-step-trivia-answer-${idx}`, style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Respuesta correcta a la Trivia" : "Expected Trivia Answer"),
+                e('input', {
+                  id: `edit-step-trivia-answer-${idx}`,
+                  type: 'text',
+                  placeholder: lang === 'es' ? "Ej: París" : "e.g. Paris",
+                  value: step.expected_answer || '',
+                  onChange: (e) => {
+                    const newSteps = [...editingHunt.steps];
+                    newSteps[idx].expected_answer = e.target.value;
+                    setEditingHunt({ ...editingHunt, steps: newSteps });
+                  },
+                  style: S.input
+                })
+              ),
+
+              step.type === 'MULTIPLE_CHOICE' && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+                e('label', { style: { fontSize: 11.5, color: T.ink3, fontWeight: 700, display: 'block', marginBottom: 4 } },
+                  lang === 'es' ? "Opciones y Respuesta Correcta" : "Options & Correct Answer"),
+                e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+                  [0, 1, 2, 3].map((optIdx) => {
+                    const choices = step.choices || [];
+                    const optionVal = choices[optIdx] || '';
+                    return e('div', { key: optIdx, style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                      e('input', {
+                        type: 'radio',
+                        name: `edit_correct_choice_${idx}`,
+                        checked: step.expected_answer === optionVal && optionVal !== '',
+                        onChange: () => {
+                          const newSteps = [...editingHunt.steps];
+                          newSteps[idx].expected_answer = optionVal;
+                          setEditingHunt({ ...editingHunt, steps: newSteps });
+                        },
+                        disabled: optionVal === ''
+                      }),
+                      e('input', {
+                        type: 'text',
+                        placeholder: `${lang === 'es' ? "Opción" : "Option"} ${optIdx + 1}`,
+                        value: optionVal,
+                        onChange: (e) => {
+                          const newSteps = [...editingHunt.steps];
+                          const newChoices = [...choices];
+                          newChoices[optIdx] = e.target.value;
+                          newSteps[idx].choices = newChoices;
+                          setEditingHunt({ ...editingHunt, steps: newSteps });
+                        },
+                        style: Object.assign({}, S.input, { height: 36, flex: 1, marginBottom: 0 })
+                      })
+                    );
+                  })
+                ),
+                e('span', { style: { fontSize: 11, color: T.ink3 } },
+                  lang === 'es' ? "* Escribe opciones y marca el botón de opción circular para la respuesta correcta." : "* Fill choices and mark the radio button next to the correct answer.")
               ),
 
               // Objectives / Point rules
@@ -1487,41 +1701,99 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           ), lang === 'es' ? 'Radar' : 'Radar')
       ),
 
-      // Enrollment Call-To-Action if not enrolled
-      !participant && e('div', {
-        style: {
-          background: 'rgba(46,125,50,0.06)', border: `1px dashed ${T.forest}`,
-          borderRadius: 14, padding: 18, textAlign: 'center',
-          display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4
-        }
-      },
-        e('div', { style: { fontSize: 14.5, fontWeight: 700, color: T.forest, lineHeight: 1.4 } },
-          selectedHunt.creator === uname 
-            ? (lang === 'es' ? "Eres el creador de esta búsqueda. Inscríbete para probarla y verificar los check-ins." : "You are the creator of this hunt. Enroll to play/test it and verify check-ins.")
-            : (lang === 'es' ? "Aún no te has inscrito en esta búsqueda." : "You are not enrolled in this hunt yet.")
-        ),
-        e('button', {
-          onClick: () => handleEnroll(selectedHunt),
-          style: Object.assign({}, S.btn, {
-            background: T.forest, color: T.paper, border: 'none',
-            alignSelf: 'center', padding: '10px 24px', borderRadius: 10,
-            fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(46,125,50,0.25)'
-          })
-        }, lang === 'es' ? "Inscribirse y Empezar" : "Enroll & Start")
-      ),
+      // Enrollment Call-To-Action or TeamRegistrationCard if not enrolled
+      !participant && (showEnrollCard ? (
+        e(TeamRegistrationCard, {
+          huntId: selectedHunt.id,
+          username: uname,
+          onEnrolled: (teamId) => {
+            setShowEnrollCard(false);
+            handleSelectHunt(selectedHunt);
+          },
+          onBack: () => setShowEnrollCard(false)
+        })
+      ) : (
+        e('div', {
+          style: {
+            background: 'rgba(46,125,50,0.06)', border: `1px dashed ${T.forest}`,
+            borderRadius: 14, padding: 18, textAlign: 'center',
+            display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4
+          }
+        },
+          e('div', { style: { fontSize: 14.5, fontWeight: 700, color: T.forest, lineHeight: 1.4 } },
+            selectedHunt.creator === uname 
+              ? (lang === 'es' ? "Eres el creador de esta búsqueda. Inscríbete para probarla y verificar los check-ins." : "You are the creator of this hunt. Enroll to play/test it and verify check-ins.")
+              : (lang === 'es' ? "Aún no te has inscrito en esta búsqueda." : "You are not enrolled in this hunt yet.")
+          ),
+          e('button', {
+            onClick: () => setShowEnrollCard(true),
+            style: Object.assign({}, S.btn, {
+              background: T.forest, color: T.paper, border: 'none',
+              alignSelf: 'center', padding: '10px 24px', borderRadius: 10,
+              fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(46,125,50,0.25)'
+            })
+          }, lang === 'es' ? "Inscribirse y Empezar" : "Enroll & Start")
+        )
+      )),
 
       // Progress Tracker Card
-      participant && e('div', { style: { background: T.paper3, borderRadius: 14, padding: 14 } },
+      participant && e('div', { style: { background: T.paper3, borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 } },
         e('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.ink3 } },
           e('span', null, lang === 'es' ? "Tus Puntos" : "Your points"),
           e('span', null, lang === 'es' ? "Progreso" : "Progress")
         ),
-        e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 4 } },
+        e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 2 } },
           e('span', { style: { fontSize: 20, fontWeight: 800, color: T.forest } },
             `${participant ? participant.total_points : 0} pts`),
           e('span', { style: { fontSize: 14, fontWeight: 700, color: T.ink } },
             `${stepsStatus.filter(s => s.isCompleted).length} / ${huntSteps.length} Steps`)
-        )
+        ),
+        teamDetails && e('div', {
+          style: {
+            borderTop: `1px solid ${T.borderSoft}`,
+            paddingTop: 10,
+            marginTop: 6,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4
+          }
+        },
+          e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            e('span', { style: { fontSize: 13, fontWeight: 800, color: T.ink } },
+              `${lang === 'es' ? 'Equipo: ' : 'Team: '}${teamDetails.team.name}`
+            ),
+            e('span', { style: { fontSize: 11, fontFamily: T.mono, color: T.forest, background: T.forestPale, padding: '2px 6px', borderRadius: 4 } },
+              `${lang === 'es' ? 'Código: ' : 'Code: '}${teamDetails.team.invite_code}`
+            )
+          ),
+          e('div', { style: { fontSize: 11.5, color: T.ink3, marginTop: 2 } },
+            `${lang === 'es' ? 'Miembros: ' : 'Members: '}${teamDetails.members.join(', ')}`
+          )
+        ),
+        e('button', {
+          onClick: function() {
+            if (window.confirm(lang === 'es' ? "¿Estás seguro de que deseas salir de este reto?" : "Are you sure you want to leave this quest?")) {
+              api.leaveHunt(participant.id).then(function() {
+                setSelectedHunt(null);
+                setActiveSubTab('my_hunts');
+                if (props.onHuntProgress) props.onHuntProgress();
+                flash(lang === 'es' ? "Has salido del reto." : "You left the quest.");
+              });
+            }
+          },
+          style: {
+            background: 'rgba(211, 47, 47, 0.08)',
+            border: 'none',
+            color: '#d32f2f',
+            fontWeight: 700,
+            fontSize: 11,
+            padding: '6px 12px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            marginTop: 6,
+            alignSelf: 'flex-start'
+          }
+        }, "🚪 " + (lang === 'es' ? "Abandonar Reto" : "Leave Quest"))
       ),
 
       // Play Tab Bar Toggle
@@ -1552,7 +1824,20 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             color: playTab === 'photostream' ? T.forest : T.ink3,
             fontFamily: T.font
           }
-        }, lang === 'es' ? "Fotos" : "Photostream")
+        }, lang === 'es' ? "Fotos" : "Photostream"),
+        selectedHunt.creator === uname && e('button', {
+          onClick: () => {
+            setPlayTab('organizer');
+            loadSubmissions();
+          },
+          style: {
+            flex: 1, padding: '10px 0', border: 'none', background: 'none',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            borderBottom: playTab === 'organizer' ? `3px solid ${T.forest}` : 'none',
+            color: playTab === 'organizer' ? T.forest : T.ink3,
+            fontFamily: T.font
+          }
+        }, lang === 'es' ? "Organizador" : "Console")
       ),
 
       // Play Tab Content Window
@@ -1568,6 +1853,78 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           onLike: handleLikeSubmission,
           onComment: handleCommentSubmission
         })
+        :
+        playTab === 'organizer' ?
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+          e('div', { style: { fontSize: 14, fontWeight: 800, color: T.ink } },
+            lang === 'es' ? "Consola del Organizador — Envíos" : "Organizer Review Console — Submissions"
+          ),
+          submissions.length === 0 ?
+            e('div', { style: { padding: '24px 0', textAlign: 'center', color: T.ink3, fontStyle: 'italic', fontSize: 13 } },
+              lang === 'es' ? "Aún no hay fotos enviadas." : "No submitted photos yet."
+            )
+            :
+            submissions.map(sub => {
+              const stepObj = huntSteps.find(s => s.id === sub.step_id);
+              const stepOrder = stepObj ? stepObj.sequence_order : '?';
+              const isPending = sub.status === 'PENDING' || !sub.status;
+              const isApproved = sub.status === 'APPROVED';
+              const isRejected = sub.status === 'REJECTED';
+
+              return e('div', {
+                key: sub.id,
+                style: {
+                  background: T.paper2,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 14,
+                  padding: 12,
+                  display: 'flex',
+                  gap: 12,
+                  alignItems: 'flex-start'
+                }
+              },
+                sub.photo_url && e('img', {
+                  src: sub.photo_url,
+                  alt: 'submission',
+                  style: { width: 70, height: 70, borderRadius: 10, objectFit: 'cover', background: '#ccc' }
+                }),
+                e('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', gap: 3 } },
+                  e('div', { style: { fontSize: 13, fontWeight: 700 } },
+                    `${lang === 'es' ? 'Paso' : 'Step'} ${stepOrder} • ${sub.username}`
+                  ),
+                  sub.caption && e('div', { style: { fontSize: 12, color: T.ink2 } }, `"${sub.caption}"`),
+                  e('div', { style: { display: 'flex', gap: 8, marginTop: 6 } },
+                    e('button', {
+                      onClick: () => handleReviewSubmission(sub.id, 'APPROVED'),
+                      style: {
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        border: 'none',
+                        background: isApproved ? '#2e7d32' : 'rgba(46,125,50,0.1)',
+                        color: isApproved ? '#fff' : '#2e7d32',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }
+                    }, lang === 'es' ? "Aprobar" : "Approve"),
+                    e('button', {
+                      onClick: () => handleReviewSubmission(sub.id, 'REJECTED'),
+                      style: {
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        border: 'none',
+                        background: isRejected ? '#c62828' : 'rgba(198,40,40,0.1)',
+                        color: isRejected ? '#fff' : '#c62828',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }
+                    }, lang === 'es' ? "Rechazar" : "Reject")
+                  )
+                )
+              );
+            })
+        )
         :
         (stepsStatus.every(s => s.isCompleted) ?
           e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
@@ -1597,7 +1954,28 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
               e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
               e('polyline', { points: '15 3 21 3 21 9' }),
               e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
-            ))
+            )),
+            selectedHunt.reward_voucher && e('div', {
+              style: {
+                marginTop: 14,
+                padding: '12px 20px',
+                background: T.paper,
+                border: `2px dashed ${T.forest}`,
+                borderRadius: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+              }
+            },
+              e('span', { style: { fontSize: 11, fontWeight: 700, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.05em' } },
+                lang === 'es' ? "CÓDIGO DE RECOMPENSA" : "REWARD VOUCHER CODE"
+              ),
+              e('span', { style: { fontSize: 18, fontWeight: 800, color: T.forest, fontFamily: T.mono, marginTop: 4, letterSpacing: '0.1em' } },
+                selectedHunt.reward_voucher
+              )
+            )
           )
           :
           // Active Step Details
