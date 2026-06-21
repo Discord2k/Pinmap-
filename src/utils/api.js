@@ -720,3 +720,17 @@ export async function uploadJournalPhoto(dataUrl, pinId) {
   var urlRes = sb.storage.from('journal-photos').getPublicUrl(filename);
   return urlRes.data.publicUrl;
 }
+
+export async function uploadCompletionPhoto(dataUrl, huntId) {
+  var parts = dataUrl.split(',');
+  var mime = parts[0].match(/:(.*?);/)[1];
+  var binary = atob(parts[1]);
+  var array = new Uint8Array(binary.length);
+  for(var i=0;i<binary.length;i++) array[i]=binary.charCodeAt(i);
+  var blob = new Blob([array], {type:mime});
+  var filename = 'completion/' + huntId + '_' + Date.now() + '.jpg';
+  var res = await sb.storage.from('pin-images').upload(filename, blob, {contentType:'image/jpeg',upsert:true});
+  if(res.error) throw res.error;
+  var urlRes = sb.storage.from('pin-images').getPublicUrl(filename);
+  return urlRes.data.publicUrl;
+}

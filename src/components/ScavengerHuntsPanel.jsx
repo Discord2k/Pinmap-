@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, sb } from '../utils/api';
+import { api, sb, uploadCompletionPhoto } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { distKm } from '../utils/helpers';
 import { HuntRadarOverlay } from './HuntRadarOverlay';
@@ -8,6 +8,109 @@ import { PhotostreamTab } from './PhotostreamTab';
 import TeamRegistrationCard from './TeamRegistrationCard';
 
 const e = React.createElement;
+
+function FireworksCanvas() {
+  const canvasRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    let width = (canvas.width = canvas.offsetWidth);
+    let height = (canvas.height = canvas.offsetHeight);
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        width = canvas.width = entry.contentRect.width;
+        height = canvas.height = entry.contentRect.height;
+      }
+    });
+    resizeObserver.observe(canvas);
+
+    const particles = [];
+    const colors = ['#FF5722', '#FFEB3B', '#4CAF50', '#00BCD4', '#9C27B0', '#E91E63', '#FF9800'];
+
+    class Particle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 1;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.015 + 0.01;
+        this.gravity = 0.04;
+      }
+      update() {
+        this.vy += this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    const spawns = [];
+    let ticks = 0;
+
+    function loop() {
+      ctx.clearRect(0, 0, width, height);
+
+      ticks++;
+      if (ticks % 35 === 0 || (ticks < 10 && ticks % 2 === 0)) {
+        const fireworkX = Math.random() * width;
+        const fireworkY = Math.random() * (height * 0.6) + height * 0.1;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        for (let i = 0; i < 40; i++) {
+          particles.push(new Particle(fireworkX, fireworkY, color));
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update();
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+        } else {
+          p.draw(ctx);
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(loop);
+    }
+
+    loop();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  return e('canvas', {
+    ref: canvasRef,
+    style: {
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      zIndex: 1
+    }
+  });
+}
 
 export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lang = 'en', flash, initialHuntsTab = 'my_hunts', huntsUpdateTrigger, onHuntProgress }) {
   const [activeSubTab, setActiveSubTab] = useState(initialHuntsTab); // my_hunts, active_play
@@ -59,6 +162,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     accrued_points: 0,
     badge_levels: {}
   });
+
+  const [showCompletionModal, setShowCompletionModal] = useState(true);
 
   const loadHuntsData = async () => {
     setLoading(true);
@@ -162,6 +267,15 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       const sDateObj = new Date(`${editingHunt.start_date_local.replace(/-/g, '/')} ${sTimePart}`);
       const eDateObj = new Date(`${editingHunt.end_date_local.replace(/-/g, '/')} ${eTimePart}`);
 
+      let finalImgUrl = editingHunt.completion_image_url || null;
+      if (editingHunt.new_completion_image) {
+        try {
+          finalImgUrl = await uploadCompletionPhoto(editingHunt.new_completion_image, editingHunt.id);
+        } catch (imgErr) {
+          console.error("Failed to upload completion image:", imgErr);
+        }
+      }
+
       await api.updateHunt(editingHunt.id, {
         name: editingHunt.name,
         description: editingHunt.description,
@@ -172,6 +286,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         visibility: editingHunt.visibility,
         completion_message: editingHunt.completion_message || null,
         completion_url: editingHunt.completion_url || null,
+        completion_image_url: finalImgUrl,
         routing_mode: editingHunt.routing_mode || 'LINEAR',
         hide_spoilers: editingHunt.hide_spoilers === undefined ? true : editingHunt.hide_spoilers,
         reward_voucher: editingHunt.reward_voucher || null
@@ -234,58 +349,6 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       flash(lang === 'es' ? 'Error al eliminar la cacería.' : 'Error deleting the hunt.');
     } finally {
       setDeleteSaving(false);
-    }
-  };
-
-  const handleSelectHunt = async (hunt) => {
-    setLoading(true);
-    try {
-      setPlayTab('objectives');
-      setSelectedHunt(hunt);
-      const steps = await api.getHuntSteps(hunt.id);
-      setHuntSteps(steps);
-      const teams = await api.getHuntTeams(hunt.id);
-      setHuntTeams(teams);
-      setSelectedStepId(null);
-      setTeamDetails(null);
-      setShowEnrollCard(false);
-
-      // Check if user is enrolled
-      const part = await api.getParticipant(hunt.id, uname);
-      setParticipant(part);
-
-      if (part) {
-        const logs = await api.getHuntActivityLogs(part.id);
-        setActivityLogs(logs);
-        
-        if (part.team_id) {
-          try {
-            const teamInfo = await api.getTeamDetails(part.team_id);
-            setTeamDetails(teamInfo);
-          } catch (tErr) {
-            console.error("Failed to load team details:", tErr);
-          }
-        }
-      }
-
-      if (hunt.creator === uname) {
-        try {
-          const allPartsRes = await sb.from("hunt_participants").select("*").eq("hunt_id", hunt.id);
-          setParticipants(allPartsRes.data || []);
-        } catch (pErr) {
-          console.error("Failed to load participants list:", pErr);
-        }
-      }
-
-      const board = await api.getHuntLeaderboard(hunt.id);
-      setLeaderboard(board);
-
-      setActiveSubTab('active_play');
-    } catch (err) {
-      console.error("Failed to load hunt details:", err);
-      flash(lang === 'es' ? "Error al cargar la búsqueda." : "Error loading hunt details.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1165,6 +1228,29 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             type: 'url', value: editingHunt.completion_url || '',
             onChange: (ev) => setEditingHunt(eh => ({ ...eh, completion_url: ev.target.value })),
             style: Object.assign({}, S.input, { marginTop: 4 })
+          })
+        ),
+        e('div', null,
+          e('label', { style: { fontSize: 12, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? 'Imagen de Finalización' : 'Completion Image'),
+          e('input', {
+            type: 'file',
+            accept: 'image/*',
+            onChange: (ev) => {
+              const file = ev.target.files[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (readEv) => {
+                  setEditingHunt(eh => ({ ...eh, new_completion_image: readEv.target.result }));
+                };
+                reader.readAsDataURL(file);
+              }
+            },
+            style: Object.assign({}, S.input, { padding: '8px 10px', height: 'auto', marginTop: 4 })
+          }),
+          (editingHunt.new_completion_image || editingHunt.completion_image_url) && e('img', {
+            src: editingHunt.new_completion_image || editingHunt.completion_image_url,
+            alt: 'completion preview',
+            style: { width: '100%', maxHeight: 120, objectFit: 'contain', borderRadius: 8, marginTop: 4, border: `1px solid ${T.border}` }
           })
         ),
         // Routing Mode
@@ -2218,53 +2304,63 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         )
         :
         (stepsStatus.every(s => s.isCompleted) ?
-          e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
-            e('svg', { width: 42, height: 42, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, style: { color: T.forest } },
-              e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
-              e('path', { d: 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18' }),
-              e('path', { d: 'M4 22h16' }),
-              e('path', { d: 'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22' }),
-              e('path', { d: 'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22' }),
-              e('path', { d: 'M18 2H6v7a6 6 0 0 0 12 0V2z' })
-            ),
-            e('div', { style: { fontSize: 18, fontWeight: 800, color: T.forest } },
-              lang === 'es' ? "¡Búsqueda Completada!" : "Hunt Completed!"),
-            e('div', { style: { fontSize: 14, color: T.ink2, lineHeight: 1.5 } },
-              selectedHunt.completion_message || (lang === 'es' ? "¡Has completado todos los pasos de este recorrido del tesoro!" : "You have finished all objectives for this hunt!")),
-            selectedHunt.completion_url && e('a', {
-              href: selectedHunt.completion_url,
-              target: '_blank',
-              rel: 'noopener noreferrer',
-              style: {
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                background: T.forest, color: T.paper, textDecoration: 'none',
-                padding: '10px 20px', borderRadius: 10, fontSize: 13.5, fontWeight: 700,
-                boxShadow: '0 2px 8px rgba(46,125,50,0.35)', marginTop: 4, cursor: 'pointer'
-              }
-            }, lang === 'es' ? "Ver Recompensa / Enlace " : "Claim Reward / View Link ", e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { marginLeft: 4, display: 'inline-block', verticalAlign: 'middle' } },
-              e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
-              e('polyline', { points: '15 3 21 3 21 9' }),
-              e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
-            )),
-            selectedHunt.reward_voucher && e('div', {
-              style: {
-                marginTop: 14,
-                padding: '12px 20px',
-                background: T.paper,
-                border: `2px dashed ${T.forest}`,
-                borderRadius: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-              }
-            },
-              e('span', { style: { fontSize: 11, fontWeight: 700, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.05em' } },
-                lang === 'es' ? "CÓDIGO DE RECOMPENSA" : "REWARD VOUCHER CODE"
+          e('div', { style: { position: 'relative', overflow: 'hidden', background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
+            e(FireworksCanvas),
+            e('div', { style: { position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
+              e('svg', { width: 42, height: 42, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, style: { color: T.forest } },
+                e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
+                e('path', { d: 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18' }),
+                e('path', { d: 'M4 22h16' }),
+                e('path', { d: 'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22' }),
+                e('path', { d: 'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22' }),
+                e('path', { d: 'M18 2H6v7a6 6 0 0 0 12 0V2z' })
               ),
-              e('span', { style: { fontSize: 18, fontWeight: 800, color: T.forest, fontFamily: T.mono, marginTop: 4, letterSpacing: '0.1em' } },
-                selectedHunt.reward_voucher
+              e('div', { style: { fontSize: 18, fontWeight: 800, color: T.forest } },
+                lang === 'es' ? "¡Búsqueda Completada!" : "Hunt Completed!"),
+              e('div', { style: { fontSize: 14, color: T.ink2, lineHeight: 1.5 } },
+                selectedHunt.completion_message || (lang === 'es' ? "¡Has completado todos los pasos de este recorrido del tesoro!" : "You have finished all objectives for this hunt!")),
+              selectedHunt.completion_image_url && e('button', {
+                onClick: () => setShowCompletionModal(true),
+                style: {
+                  background: 'none', border: 'none', color: T.forest, textDecoration: 'underline',
+                  fontWeight: 700, fontSize: 12.5, cursor: 'pointer', marginTop: 4
+                }
+              }, lang === 'es' ? "Ver Imagen de Celebración" : "View Celebration Image"),
+              selectedHunt.completion_url && e('a', {
+                href: selectedHunt.completion_url,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                style: {
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: T.forest, color: T.paper, textDecoration: 'none',
+                  padding: '10px 20px', borderRadius: 10, fontSize: 13.5, fontWeight: 700,
+                  boxShadow: '0 2px 8px rgba(46,125,50,0.35)', marginTop: 4, cursor: 'pointer'
+                }
+              }, lang === 'es' ? "Ver Recompensa / Enlace " : "Claim Reward / View Link ", e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { marginLeft: 4, display: 'inline-block', verticalAlign: 'middle' } },
+                e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
+                e('polyline', { points: '15 3 21 3 21 9' }),
+                e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
+              )),
+              selectedHunt.reward_voucher && e('div', {
+                style: {
+                  marginTop: 14,
+                  padding: '12px 20px',
+                  background: T.paper,
+                  border: `2px dashed ${T.forest}`,
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                }
+              },
+                e('span', { style: { fontSize: 11, fontWeight: 700, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.05em' } },
+                  lang === 'es' ? "CÓDIGO DE RECOMPENSA" : "REWARD VOUCHER CODE"
+                ),
+                e('span', { style: { fontSize: 18, fontWeight: 800, color: T.forest, fontFamily: T.mono, marginTop: 4, letterSpacing: '0.1em' } },
+                  selectedHunt.reward_voucher
+                )
               )
             )
           )
@@ -2577,7 +2673,59 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     onClose: () => setIsQrScannerOpen(false),
     onScanSuccess: handleQRScanSuccess,
     lang: lang
-  })
+  }),
+
+  // Hunt Completion Overlay Modal
+  (showCompletionModal && selectedHunt && stepsStatus && stepsStatus.every(s => s.isCompleted)) && e('div', {
+    style: {
+      position: 'fixed', inset: 0, background: 'rgba(26,32,28,0.7)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20000, padding: 16
+    }
+  },
+    e('div', {
+      style: {
+        background: T.paper, border: `2px solid ${T.forest}`, borderRadius: 24,
+        boxShadow: '0 12px 40px rgba(0,0,0,0.3)', width: '100%', maxWidth: 460,
+        position: 'relative', overflow: 'hidden', padding: '30px 24px', boxSizing: 'border-box',
+        display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', textAlign: 'center'
+      }
+    },
+      e(FireworksCanvas),
+      e('div', { style: { position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', width: '100%' } },
+        e('div', { style: { fontSize: 44, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.15))' } }, '🏆'),
+        e('div', { style: { fontSize: 22, fontWeight: 900, color: T.forest, letterSpacing: '-0.02em' } },
+          lang === 'es' ? "¡Felicidades!" : "Congratulations!"),
+        e('div', { style: { fontSize: 14.5, color: T.ink, fontWeight: 600, lineHeight: 1.5 } },
+          selectedHunt.completion_message || (lang === 'es' ? "¡Has completado toda la búsqueda del tesoro con éxito!" : "You have successfully completed the entire scavenger hunt!")),
+        selectedHunt.completion_image_url && e('img', {
+          src: selectedHunt.completion_image_url,
+          alt: 'completion celebration',
+          style: { width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 16, border: `2px solid ${T.borderSoft}`, boxShadow: T.shadowLg }
+        }),
+        selectedHunt.reward_voucher && e('div', {
+          style: {
+            background: T.paper3, border: `2px dashed ${T.forest}`, borderRadius: 14,
+            padding: '12px 20px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4
+          }
+        },
+          e('span', { style: { fontSize: 10, fontWeight: 700, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.05em' } },
+            lang === 'es' ? "CÓDIGO DE RECOMPENSA" : "REWARD VOUCHER CODE"
+          ),
+          e('span', { style: { fontSize: 18, fontWeight: 800, color: T.forest, fontFamily: T.mono, letterSpacing: '0.1em' } },
+            selectedHunt.reward_voucher
+          )
+        ),
+        e('button', {
+          onClick: () => setShowCompletionModal(false),
+          style: Object.assign({}, S.btn, {
+            background: T.forest, color: T.paper, border: 'none',
+            padding: '12px 30px', borderRadius: 12, fontWeight: 800, fontSize: 14,
+            cursor: 'pointer', boxShadow: '0 4px 12px rgba(46,125,50,0.3)', width: '100%', marginTop: 8
+          })
+        }, lang === 'es' ? "Cerrar" : "Close")
+      )
+    )
+  )
 
   ); // end Fragment
 }

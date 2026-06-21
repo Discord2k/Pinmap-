@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from '../../utils/api';
+import { api, uploadCompletionPhoto } from '../../utils/api';
 import { T, S } from '../../utils/styles';
 
 const e = React.createElement;
@@ -25,6 +25,7 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
   const [rewardVoucher, setRewardVoucher] = useState('');
   const [completionMessage, setCompletionMessage] = useState('');
   const [completionUrl, setCompletionUrl] = useState('');
+  const [completionImage, setCompletionImage] = useState(null);
   const [hideSpoilers, setHideSpoilers] = useState(true);
   const [teamAssignmentMode, setTeamAssignmentMode] = useState('self_select');
   const [maxPlayersPerTeam, setMaxPlayersPerTeam] = useState(10);
@@ -146,6 +147,17 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       };
 
       const createdHunt = await api.createHunt(huntPayload);
+
+      let finalImageUrl = null;
+      if (completionImage) {
+        try {
+          finalImageUrl = await uploadCompletionPhoto(completionImage, createdHunt.id);
+          await api.updateHunt(createdHunt.id, { completion_image_url: finalImageUrl });
+          createdHunt.completion_image_url = finalImageUrl;
+        } catch (imgErr) {
+          console.error("Failed to upload completion photo:", imgErr);
+        }
+      }
 
       if (visibility === 'private' && teams.length > 0) {
         const teamPayloads = teams.map(t => ({
@@ -523,6 +535,28 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         value: completionUrl,
         onChange: (e) => setCompletionUrl(e.target.value),
         style: S.input
+      }),
+
+      e('label', { style: { fontSize: 12.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Imagen de Finalización" : "Completion Image"),
+      e('input', {
+        type: 'file',
+        accept: 'image/*',
+        onChange: (ev) => {
+          const file = ev.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              setCompletionImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
+          }
+        },
+        style: Object.assign({}, S.input, { padding: '8px 10px', height: 'auto' })
+      }),
+      completionImage && e('img', {
+        src: completionImage,
+        alt: 'completion preview',
+        style: { width: '100%', maxHeight: 150, objectFit: 'contain', borderRadius: 8, marginTop: 4, border: `1px solid ${T.border}` }
       }),
 
       e('label', { htmlFor: 'hunt-reward-voucher-input', style: { fontSize: 12.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Vale / Código de Recompensa (Voucher)" : "Completion Reward Voucher"),
