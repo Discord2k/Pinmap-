@@ -4,6 +4,7 @@ import { T, S } from '../utils/styles';
 import { distKm } from '../utils/helpers';
 import { HuntRadarOverlay } from './HuntRadarOverlay';
 import { QRScannerModal } from './QRScannerModal';
+import { PhotostreamTab } from './PhotostreamTab';
 
 const e = React.createElement;
 
@@ -27,6 +28,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const [triviaAnswer, setTriviaAnswer] = useState('');
   const [selectedMCQ, setSelectedMCQ] = useState(null);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [playTab, setPlayTab] = useState('objectives');
+  const [submissions, setSubmissions] = useState([]);
   const [editingHunt, setEditingHunt] = useState(null); // hunt object being edited
   const [editSaving, setEditSaving] = useState(false);
   const [deletingHunt, setDeletingHunt] = useState(null); // hunt object queued for deletion
@@ -176,6 +179,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   const handleSelectHunt = async (hunt) => {
     setLoading(true);
     try {
+      setPlayTab('objectives');
       setSelectedHunt(hunt);
       const steps = await api.getHuntSteps(hunt.id);
       setHuntSteps(steps);
@@ -609,6 +613,52 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       flash(lang === 'es' ? "Error al verificar código QR" : "Error verifying QR Code");
     } finally {
       setCheckingIn(false);
+    }
+  };
+
+  const loadSubmissions = async () => {
+    if (!selectedHunt) return;
+    try {
+      const data = await api.getHuntSubmissions(selectedHunt.id);
+      setSubmissions(data);
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const handleLikeSubmission = async (subId, hasLiked) => {
+    const sub = submissions.find(s => s.id === subId);
+    if (!sub) return;
+    let newLikes = [];
+    if (hasLiked) {
+      newLikes = sub.likes.filter(u => u !== uname);
+    } else {
+      newLikes = [...sub.likes, uname];
+    }
+    setSubmissions(submissions.map(s => s.id === subId ? { ...s, likes: newLikes } : s));
+    try {
+      await api.updateSubmissionLikes(subId, newLikes);
+    } catch(err) {
+      console.error(err);
+      loadSubmissions();
+    }
+  };
+
+  const handleCommentSubmission = async (subId, text) => {
+    const sub = submissions.find(s => s.id === subId);
+    if (!sub) return;
+    const newComment = {
+      username: uname,
+      body: text,
+      created_at: new Date().toISOString()
+    };
+    const newComments = [...(sub.comments || []), newComment];
+    setSubmissions(submissions.map(s => s.id === subId ? { ...s, comments: newComments } : s));
+    try {
+      await api.updateSubmissionComments(subId, newComments);
+    } catch(err) {
+      console.error(err);
+      loadSubmissions();
     }
   };
 
@@ -1474,40 +1524,84 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         )
       ),
 
-      // Check if Completed
-      participant && (stepsStatus.every(s => s.isCompleted) ?
-        e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
-          e('svg', { width: 42, height: 42, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, style: { color: T.forest } },
-            e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
-            e('path', { d: 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18' }),
-            e('path', { d: 'M4 22h16' }),
-            e('path', { d: 'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22' }),
-            e('path', { d: 'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22' }),
-            e('path', { d: 'M18 2H6v7a6 6 0 0 0 12 0V2z' })
-          ),
-          e('div', { style: { fontSize: 18, fontWeight: 800, color: T.forest } },
-            lang === 'es' ? "¡Búsqueda Completada!" : "Hunt Completed!"),
-          e('div', { style: { fontSize: 14, color: T.ink2, lineHeight: 1.5 } },
-            selectedHunt.completion_message || (lang === 'es' ? "¡Has completado todos los pasos de este recorrido del tesoro!" : "You have finished all objectives for this hunt!")),
-          selectedHunt.completion_url && e('a', {
-            href: selectedHunt.completion_url,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-            style: {
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: T.forest, color: T.paper, textDecoration: 'none',
-              padding: '10px 20px', borderRadius: 10, fontSize: 13.5, fontWeight: 700,
-              boxShadow: '0 2px 8px rgba(46,125,50,0.35)', marginTop: 4, cursor: 'pointer'
-            }
-          }, lang === 'es' ? "Ver Recompensa / Enlace " : "Claim Reward / View Link ", e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { marginLeft: 4, display: 'inline-block', verticalAlign: 'middle' } },
-            e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
-            e('polyline', { points: '15 3 21 3 21 9' }),
-            e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
-          ))
-        )
+      // Play Tab Bar Toggle
+      participant && e('div', {
+        style: {
+          display: 'flex', borderBottom: `1px solid ${T.borderSoft}`, marginBottom: 8, marginTop: 4
+        }
+      },
+        e('button', {
+          onClick: () => setPlayTab('objectives'),
+          style: {
+            flex: 1, padding: '10px 0', border: 'none', background: 'none',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            borderBottom: playTab === 'objectives' ? `3px solid ${T.forest}` : 'none',
+            color: playTab === 'objectives' ? T.forest : T.ink3,
+            fontFamily: T.font
+          }
+        }, lang === 'es' ? "Objetivos" : "Objectives"),
+        e('button', {
+          onClick: () => {
+            setPlayTab('photostream');
+            loadSubmissions();
+          },
+          style: {
+            flex: 1, padding: '10px 0', border: 'none', background: 'none',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            borderBottom: playTab === 'photostream' ? `3px solid ${T.forest}` : 'none',
+            color: playTab === 'photostream' ? T.forest : T.ink3,
+            fontFamily: T.font
+          }
+        }, lang === 'es' ? "Fotos" : "Photostream")
+      ),
+
+      // Play Tab Content Window
+      participant && (playTab === 'photostream' ?
+        e(PhotostreamTab, {
+          submissions: submissions,
+          huntSteps: huntSteps,
+          activeStep: activeStep,
+          participant: participant,
+          hideSpoilers: selectedHunt.hide_spoilers !== false,
+          uname: uname,
+          lang: lang,
+          onLike: handleLikeSubmission,
+          onComment: handleCommentSubmission
+        })
         :
-        // Active Step Details
-        activeStep && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        (stepsStatus.every(s => s.isCompleted) ?
+          e('div', { style: { background: 'rgba(76, 175, 80, 0.08)', border: '1px solid rgba(76,175,80,0.15)', borderRadius: 16, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' } },
+            e('svg', { width: 42, height: 42, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, style: { color: T.forest } },
+              e('path', { d: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6' }),
+              e('path', { d: 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18' }),
+              e('path', { d: 'M4 22h16' }),
+              e('path', { d: 'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22' }),
+              e('path', { d: 'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22' }),
+              e('path', { d: 'M18 2H6v7a6 6 0 0 0 12 0V2z' })
+            ),
+            e('div', { style: { fontSize: 18, fontWeight: 800, color: T.forest } },
+              lang === 'es' ? "¡Búsqueda Completada!" : "Hunt Completed!"),
+            e('div', { style: { fontSize: 14, color: T.ink2, lineHeight: 1.5 } },
+              selectedHunt.completion_message || (lang === 'es' ? "¡Has completado todos los pasos de este recorrido del tesoro!" : "You have finished all objectives for this hunt!")),
+            selectedHunt.completion_url && e('a', {
+              href: selectedHunt.completion_url,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              style: {
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: T.forest, color: T.paper, textDecoration: 'none',
+                padding: '10px 20px', borderRadius: 10, fontSize: 13.5, fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(46,125,50,0.35)', marginTop: 4, cursor: 'pointer'
+              }
+            }, lang === 'es' ? "Ver Recompensa / Enlace " : "Claim Reward / View Link ", e('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, style: { marginLeft: 4, display: 'inline-block', verticalAlign: 'middle' } },
+              e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
+              e('polyline', { points: '15 3 21 3 21 9' }),
+              e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
+            ))
+          )
+          :
+          // Active Step Details
+          activeStep && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
           // Step Selector Tabs
           e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 4 } },
             e('div', { style: { fontSize: 12, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Objetivos de la Búsqueda" : "Hunt Objectives"),
@@ -1770,7 +1864,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                   lang === 'es' ? "(En el detalle del pin)" : "(From pin detail)")
             )
           )
-        )),
+        ))),
 
       // Leaderboard section for this hunt
       leaderboard.length > 0 && e('div', { style: { marginTop: 16 } },

@@ -154,6 +154,13 @@ export function Comments(props) {
                           var photoPoints = activeStep.point_rules.photo_upload || 50;
                           addedPoints += photoPoints;
                           promises.push(api.logHuntActivity(enroll.id, activeStep.id, 'photo_upload', photoPoints));
+                          promises.push(api.createHuntSubmission({
+                            hunt_id: enroll.hunt_id,
+                            step_id: activeStep.id,
+                            username: uname,
+                            photo_url: photoUrl,
+                            caption: trimmedDraft || null
+                          }));
                         }
                       }
 

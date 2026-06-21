@@ -16,6 +16,7 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
   const [visibility, setVisibility] = useState('public');
   const [completionMessage, setCompletionMessage] = useState('');
   const [completionUrl, setCompletionUrl] = useState('');
+  const [hideSpoilers, setHideSpoilers] = useState(true);
   const [steps, setSteps] = useState([
     { sequence_order: 1, clue: '', pin_id: '', trail_id: '', point_rules: { check_in: 100 }, type: 'GPS', expected_answer: '', choices: [] }
   ]);
@@ -115,7 +116,8 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         end_date: eDateObj.toISOString(),
         visibility: visibility,
         completion_message: completionMessage || null,
-        completion_url: completionUrl || null
+        completion_url: completionUrl || null,
+        hide_spoilers: hideSpoilers
       };
 
       const createdHunt = await api.createHunt(huntPayload);
@@ -306,6 +308,19 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
       },
         e('option', { value: 'public' }, lang === 'es' ? "Pública — todos pueden participar" : "Public — open to everyone"),
         e('option', { value: 'private' }, lang === 'es' ? "Privada — acceso con link de invitación" : "Private — shared link only")
+      ),
+
+      // Hide Spoilers Toggle Checkbox
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 6, margin: '6px 0' } },
+        e('label', { htmlFor: 'hunt-hide-spoilers-checkbox', style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 700, color: T.ink2, cursor: 'pointer' } },
+          e('input', {
+            id: 'hunt-hide-spoilers-checkbox',
+            type: 'checkbox',
+            checked: hideSpoilers,
+            onChange: (e) => setHideSpoilers(e.target.checked)
+          }),
+          lang === 'es' ? "Ocultar Spoilers (difuminar fotos de pasos bloqueados)" : "Hide Photo Spoilers (blur images from locked steps)"
+        )
       ),
 
       e('label', { htmlFor: 'hunt-completion-message-input', style: { fontSize: 12.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Mensaje de Finalización" : "Completion Message"),

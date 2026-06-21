@@ -414,6 +414,18 @@ export const api = {
       return r.data;
     });
   },
+  getHuntSubmissions: function(huntId) {
+    return sb.from("hunt_submissions").select("*").eq("hunt_id", huntId).order("created_at", {ascending: false}).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
+  },
+  createHuntSubmission: function(sub) {
+    return sb.from("hunt_submissions").insert(sub).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  updateSubmissionLikes: function(id, likes) {
+    return sb.from("hunt_submissions").update({ likes: likes }).eq("id", id).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
+  updateSubmissionComments: function(id, comments) {
+    return sb.from("hunt_submissions").update({ comments: comments }).eq("id", id).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+  },
   enrollInHunt: function(huntId, userId, joinMethod) {
     return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },
