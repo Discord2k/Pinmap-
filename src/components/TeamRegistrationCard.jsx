@@ -15,7 +15,7 @@ export default function TeamRegistrationCard({ huntId, username, onEnrolled, onB
     setError(null);
     try {
       // First enroll in the hunt
-      await api.enrollInHunt(huntId, username, 'SOLO');
+      await api.enrollInHunt(huntId, username, 'BROWSE_PUBLIC');
       if (onEnrolled) onEnrolled(null); // enrolled solo (no team ID)
     } catch (err) {
       console.error(err);
