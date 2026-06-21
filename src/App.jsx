@@ -5248,7 +5248,7 @@ function App() {
       onJoined: function(hunt, participant) {
         setHuntsUpdateTrigger(function(t) { return t + 1; });
         setShowHuntOverlay(true);
-        setTab("profile");
+        setTab("map");
         setOpen(false);
       },
       onClose: function() {

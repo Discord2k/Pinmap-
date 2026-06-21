@@ -2000,7 +2000,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           )
         ),
 
-        teamDetails && e('div', {
+        (selectedHunt.creator === uname) && teamDetails && e('div', {
           style: {
             width: '100%', borderTop: `1px solid ${T.borderSoft}`, paddingTop: 12, marginTop: 4,
             display: 'flex', flexDirection: 'column', gap: 6
@@ -2131,7 +2131,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           e('span', { style: { fontSize: 14, fontWeight: 700, color: T.ink } },
             `${stepsStatus.filter(s => s.isCompleted).length} / ${huntSteps.length} Steps`)
         ),
-        teamDetails && e('div', {
+        (selectedHunt.creator === uname) && teamDetails && e('div', {
           style: {
             borderTop: `1px solid ${T.borderSoft}`,
             paddingTop: 10,
