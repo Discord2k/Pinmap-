@@ -163,7 +163,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     badge_levels: {}
   });
 
-  const [showCompletionModal, setShowCompletionModal] = useState(true);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
 
   const loadHuntsData = async () => {
     setLoading(true);
@@ -938,21 +939,33 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
 
     // Sub Tabs Menu — Discover removed (lives in Search screen)
     activeSubTab !== 'active_play' && e('div', {
-      style: { display: 'flex', background: T.paper3, borderRadius: 12, padding: 4, marginBottom: 16 }
+      style: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }
     },
-      [
-        { id: 'my_hunts', label: lang === 'es' ? "Mis Cacerías" : "My Hunts" }
-      ].map(tabItem =>
-        e('button', {
-          key: tabItem.id,
-          onClick: () => setActiveSubTab(tabItem.id),
-          style: {
-            flex: 1, padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer',
-            background: activeSubTab === tabItem.id ? T.paper2 : 'transparent',
-            color: activeSubTab === tabItem.id ? T.forest : T.ink2
-          }
-        }, tabItem.label)
-      )
+      e('div', {
+        style: { display: 'flex', flex: 1, background: T.paper3, borderRadius: 12, padding: 4 }
+      },
+        [
+          { id: 'my_hunts', label: lang === 'es' ? "Mis Cacerías" : "My Hunts" }
+        ].map(tabItem =>
+          e('button', {
+            key: tabItem.id,
+            onClick: () => setActiveSubTab(tabItem.id),
+            style: {
+              flex: 1, padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer',
+              background: activeSubTab === tabItem.id ? T.paper2 : 'transparent',
+              color: activeSubTab === tabItem.id ? T.forest : T.ink2
+            }
+          }, tabItem.label)
+        )
+      ),
+      e('button', {
+        onClick: () => setShowTutorialModal(true),
+        style: {
+          display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 12,
+          fontSize: 13, fontWeight: 700, border: `1px solid ${T.forest}`, cursor: 'pointer',
+          background: 'transparent', color: T.forest, height: 38
+        }
+      }, '📖 ' + (lang === 'es' ? 'Tutorial' : 'Tutorial'))
     ),
 
     // Loading / Empty States
@@ -2724,6 +2737,68 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           })
         }, lang === 'es' ? "Cerrar" : "Close")
       )
+    )
+  ),
+
+  // Scavenger Hunts Tutorial Overlay Modal
+  showTutorialModal && e('div', {
+    style: {
+      position: 'fixed', inset: 0, background: 'rgba(26,32,28,0.7)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20000, padding: 16
+    }
+  },
+    e('div', {
+      style: {
+        background: T.paper, border: `2px solid ${T.forest}`, borderRadius: 24,
+        boxShadow: '0 12px 40px rgba(0,0,0,0.3)', width: '100%', maxWidth: 500,
+        position: 'relative', overflow: 'hidden', padding: '30px 24px', boxSizing: 'border-box',
+        display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'left', maxHeight: '85vh'
+      }
+    },
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T.borderSoft}`, paddingBottom: 12 } },
+        e('div', { style: { fontSize: 18, fontWeight: 800, color: T.forest, display: 'flex', alignItems: 'center', gap: 6 } }, '🏆 ' + (lang === 'es' ? "Tutorial de Búsquedas" : "Scavenger Hunts Tutorial")),
+        e('button', {
+          onClick: () => setShowTutorialModal(false),
+          style: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: T.ink3 }
+        }, '✕')
+      ),
+      e('div', { style: { overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingRight: 4, fontSize: 13.5, color: T.ink2, lineHeight: 1.5 } },
+        
+        e('div', null,
+          e('div', { style: { fontWeight: 700, color: T.ink, marginBottom: 4 } }, lang === 'es' ? "✨ Características para Jugadores" : "✨ Features for Players"),
+          e('ul', { style: { margin: 0, paddingLeft: 20 } },
+            e('li', null, lang === 'es' ? "Celebración y fuegos artificiales al completar" : "Celebration overlay and fireworks upon completion"),
+            e('li', null, lang === 'es' ? "Voucher de recompensa e imagen conmemorativa" : "Reward voucher support and commemoration image"),
+            e('li', null, lang === 'es' ? "Modo multijugador para jugar y sincronizar en equipo" : "Multiplayer support to register and sync team progress")
+          )
+        ),
+        
+        e('div', null,
+          e('div', { style: { fontWeight: 700, color: T.ink, marginBottom: 4 } }, lang === 'es' ? "🛠️ Herramientas para Creadores" : "🛠️ Creator Customizations"),
+          e('ul', { style: { margin: 0, paddingLeft: 20 } },
+            e('li', null, lang === 'es' ? "Mensaje e Imagen de finalización personalizables" : "Custom completion messages and uploaded images"),
+            e('li', null, lang === 'es' ? "Ocultar spoilers (difumina fotos de pasos bloqueados)" : "Hide photo spoilers (blur target images for locked steps)"),
+            e('li', null, lang === 'es' ? "Modos de ruta lineal o libre para resolver objetivos" : "Linear path sequential orders or free-roaming objectives")
+          )
+        ),
+
+        e('div', null,
+          e('div', { style: { fontWeight: 700, color: T.ink, marginBottom: 4 } }, lang === 'es' ? "🚀 ¿Cómo empezar?" : "🚀 How to start?"),
+          e('ol', { style: { margin: 0, paddingLeft: 20 } },
+            e('li', null, lang === 'es' ? "Elige una búsqueda de la lista y presiona Participar" : "Enroll in an existing hunt from the list"),
+            e('li', null, lang === 'es' ? "Sigue las pistas para ir a las coordenadas en el mapa" : "Follow clues to find the physical coordinates"),
+            e('li', null, lang === 'es' ? "Haz check-in o resuelve trivias para desbloquear el siguiente paso" : "Check-in or solve trivia questions to unlock next steps")
+          )
+        )
+      ),
+      e('button', {
+        onClick: () => setShowTutorialModal(false),
+        style: Object.assign({}, S.btn, {
+          background: T.forest, color: T.paper, border: 'none',
+          padding: '10px 24px', borderRadius: 10, fontWeight: 700,
+          cursor: 'pointer', marginTop: 6, textAlign: 'center'
+        })
+      }, lang === 'es' ? "¡Entendido!" : "Got it!")
     )
   )
 
