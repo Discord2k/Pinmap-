@@ -1772,12 +1772,12 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         ),
         e('button', {
           onClick: function() {
-            if (window.confirm(lang === 'es' ? "¿Estás seguro de que deseas salir de este reto?" : "Are you sure you want to leave this quest?")) {
+            if (window.confirm(lang === 'es' ? "¿Estás seguro de que deseas salir de esta cacería?" : "Are you sure you want to leave this hunt?")) {
               api.leaveHunt(participant.id).then(function() {
                 setSelectedHunt(null);
                 setActiveSubTab('my_hunts');
                 if (props.onHuntProgress) props.onHuntProgress();
-                flash(lang === 'es' ? "Has salido del reto." : "You left the quest.");
+                flash(lang === 'es' ? "Has salido de la cacería." : "You left the hunt.");
               });
             }
           },
@@ -1793,7 +1793,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             marginTop: 6,
             alignSelf: 'flex-start'
           }
-        }, "🚪 " + (lang === 'es' ? "Abandonar Reto" : "Leave Quest"))
+        }, "🚪 " + (lang === 'es' ? "Abandonar Cacería" : "Leave Hunt"))
       ),
 
       // Play Tab Bar Toggle
