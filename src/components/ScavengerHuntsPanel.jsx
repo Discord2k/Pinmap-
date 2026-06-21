@@ -2307,7 +2307,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             e('span', { style: { fontSize: 13, fontWeight: 800, color: T.ink } },
               `${lang === 'es' ? 'Equipo: ' : 'Team: '}${teamDetails.team.name}`
             ),
-            e('span', { style: { fontSize: 11, fontFamily: T.mono, color: T.forest, background: T.forestPale, padding: '2px 6px', borderRadius: 4 } },
+            teamDetails.team.invite_code && e('span', { style: { fontSize: 11, fontFamily: T.mono, color: T.forest, background: T.forestPale, padding: '2px 6px', borderRadius: 4 } },
               `${lang === 'es' ? 'Código: ' : 'Code: '}${teamDetails.team.invite_code}`
             )
           ),
