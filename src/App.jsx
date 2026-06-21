@@ -279,6 +279,21 @@ function App() {
   var s15=useState("");      var toast=s15[0];         var setToast=s15[1];
   var s16=useState(null);    var userLL=s16[0];        var setUserLL=s16[1];
   var s17=useState(false);   var locating=s17[0];      var setLocating=s17[1];
+  var [followUser, setFollowUser] = useState(false);
+  var [gpsTracking, setGpsTracking] = useState(false);
+  var gpsWatchIdRef = useRef(null);
+  var followUserRef = useRef(false);
+  useEffect(function() {
+    followUserRef.current = followUser;
+  }, [followUser]);
+  useEffect(function() {
+    window._setFollowUser = setFollowUser;
+    window._flash = flash;
+    return function() {
+      window._setFollowUser = null;
+      window._flash = null;
+    };
+  }, []);
   var s18=useState(10);      var nearbyKm=s18[0];      var setNearbyKm=s18[1];
   var s19=useState(null);    var nearbyRes=s19[0];     var setNearbyRes=s19[1];
   var initialTutorial = localStorage.getItem("pm-onboarded-welcome") ? null : "welcome";
@@ -1676,6 +1691,17 @@ function App() {
         setOpen(true);
         flash("📍 Location set — fill details in Drop tab");
       });
+      map.on("movestart", function(e) {
+        if (e.originalEvent) {
+          var wasFollowing = followUserRef.current;
+          if (window._setFollowUser) {
+            window._setFollowUser(false);
+          }
+          if (wasFollowing && window._flash) {
+            window._flash("🗺️ Free explore — tap 📍 to re-center");
+          }
+        }
+      });
       map.on("moveend",function(){
         var c = map.getCenter();
         setMapCenter({lat: c.lat, lng: c.lng});
@@ -1732,6 +1758,11 @@ function App() {
     if(splashDone) tryInit();
     return function(){
       if (timer) clearTimeout(timer);
+      if (gpsWatchIdRef.current) {
+        navigator.geolocation.clearWatch(gpsWatchIdRef.current);
+        gpsWatchIdRef.current = null;
+        setGpsTracking(false);
+      }
       if (mapObj.current) {
         try { mapObj.current.remove(); } catch(e){}
         mapObj.current = null;
@@ -3536,17 +3567,58 @@ function App() {
     if(!results.length) flash("No pins within "+nearbyKm+" miles");
   }
 
+  var hasAbsolute = false;
+  function handleOrientation(event) {
+    var heading = null;
+    if (event.type === 'deviceorientationabsolute') {
+      hasAbsolute = true;
+      if (event.alpha !== null) {
+        heading = 360 - event.alpha;
+      }
+    } else if (event.type === 'deviceorientation') {
+      if (hasAbsolute) return;
+      if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+        heading = event.webkitCompassHeading;
+      } else if (event.alpha !== null) {
+        heading = 360 - event.alpha;
+      }
+    }
+    if (heading !== null) {
+      window._userHeading = heading;
+      var coneEl = document.getElementById("user-direction-cone");
+      if (coneEl) {
+        coneEl.style.transform = "rotate(" + Math.round(heading) + "deg)";
+      }
+    }
+  }
+
   function updateUserLocationMarker(lat, lng) {
     if (!window.L || !mapObj.current) return;
-    if (window._gpsM) {
-      try { window._gpsM.remove(); } catch(e) {}
-    }
     if (window._userDotMarker) {
-      try { window._userDotMarker.remove(); } catch(e) {}
+      window._userDotMarker.setLngLat([lng, lat]);
+      if (window._userHeading !== undefined && window._userHeading !== null) {
+        var coneEl = document.getElementById("user-direction-cone");
+        if (coneEl) {
+          coneEl.style.transform = "rotate(" + Math.round(window._userHeading) + "deg)";
+        }
+      }
+      return;
     }
     var dotIcon = window.L.divIcon({
       className: "",
-      html: '<div style="width:16px;height:16px;border-radius:50%;background:#2979ff;border:3px solid #fff;box-shadow:0 0 0 4px rgba(41,121,255,0.25);animation:pmpulse 2s infinite"></div>',
+      html: '<div style="position: relative; width: 0px; height: 0px; display: flex; align-items: center; justify-content: center;">' +
+            '  <svg id="user-direction-cone" style="position: absolute; width: 100px; height: 100px; left: -50px; top: -50px; transform-origin: 50% 50%; pointer-events: none; transition: transform 0.1s ease-out; transform: rotate(' + (window._userHeading !== undefined ? Math.round(window._userHeading) : 0) + 'deg);" viewBox="0 0 100 100">' +
+            '    <defs>' +
+            '      <radialGradient id="coneGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">' +
+            '        <stop offset="0%" stop-color="#2979ff" stop-opacity="0.4"/>' +
+            '        <stop offset="60%" stop-color="#2979ff" stop-opacity="0.15"/>' +
+            '        <stop offset="100%" stop-color="#2979ff" stop-opacity="0"/>' +
+            '      </radialGradient>' +
+            '    </defs>' +
+            '    <path d="M 50 50 L 21.13 0 A 50 50 0 0 1 78.87 0 Z" fill="url(#coneGradient)" />' +
+            '  </svg>' +
+            '  <div style="position: absolute; width: 16px; height: 16px; left: -8px; top: -8px; border-radius: 50%; background: #2979ff; border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(41,121,255,0.25); animation: pmpulse 2s infinite; pointer-events: none;"></div>' +
+            '</div>',
       iconSize: [16, 16],
       iconAnchor: [8, 8]
     });
@@ -4518,29 +4590,81 @@ function App() {
       e("button",{
         onClick:function(){
           if(!navigator.geolocation){flash(t("toast_geo_not_supported"));return;}
-          navigator.geolocation.getCurrentPosition(
-            function(pos){
-              var lat=pos.coords.latitude, lng=pos.coords.longitude;
-              if(mapObj.current){
-                mapObj.current.setView([lat,lng],15);
+          
+          if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+              .then(function(state) {
+                if (state === 'granted') {
+                  window.addEventListener('deviceorientation', handleOrientation, true);
+                }
+              })
+              .catch(function(e) { console.error("Orientation permission error", e); });
+          } else {
+            if (!window._orientationListenerAdded) {
+              window._orientationListenerAdded = true;
+              window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+              window.addEventListener('deviceorientation', handleOrientation, true);
+            }
+          }
+
+          if (gpsWatchIdRef.current === null) {
+            setLocating(true);
+            var watchId = navigator.geolocation.watchPosition(
+              function(pos) {
+                var lat = pos.coords.latitude, lng = pos.coords.longitude;
+                setUserLL({lat:lat,lng:lng});
+                updateUserLocationMarker(lat, lng);
+                setLocating(false);
+                if (followUserRef.current) {
+                  if (mapObj.current) {
+                    mapObj.current.setView([lat, lng]);
+                  }
+                }
+              },
+              function(err) {
+                setLocating(false);
+                flash(t("toast_location_unavailable"));
+              },
+              {enableHighAccuracy:true,timeout:10000,maximumAge:0}
+            );
+            gpsWatchIdRef.current = watchId;
+            setGpsTracking(true);
+            setFollowUser(true);
+            flash("📍 Following your location — map will stay centered");
+          } else {
+            if (followUser) {
+              navigator.geolocation.clearWatch(gpsWatchIdRef.current);
+              gpsWatchIdRef.current = null;
+              setGpsTracking(false);
+              setFollowUser(false);
+              setUserLL(null);
+              if (window._userDotMarker) {
+                try { window._userDotMarker.remove(); } catch(e){}
+                window._userDotMarker = null;
+                window._gpsM = null;
               }
-              updateUserLocationMarker(lat, lng);
-              setUserLL({lat:lat,lng:lng});
-              flash(t("toast_your_location"));
-            },
-            function(err){flash(t("toast_location_unavailable"));},
-            {enableHighAccuracy:true,timeout:8000}
-          );
+              flash("⛔ GPS tracking stopped");
+            } else {
+              setFollowUser(true);
+              if (userLL && mapObj.current) {
+                mapObj.current.setView([userLL.lat, userLL.lng], 15);
+              }
+              flash("📍 Re-centering — following your location again");
+            }
+          }
         },
         style:{width:40,height:40,borderRadius:10,
-          background:"rgba(246,241,228,0.95)",backdropFilter:"blur(12px)",
-          border:"1px solid "+T.border,
-          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:T.shadow}
+          background: gpsTracking && followUser ? T.forest : "rgba(246,241,228,0.95)",
+          backdropFilter:"blur(12px)",
+          border:"1px solid "+(gpsTracking && !followUser ? T.forest : T.border),
+          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:T.shadow,
+          transition:"background 0.2s, border 0.2s"},
+        title: !gpsTracking ? "Start GPS Tracking" : (followUser ? "Stop GPS Tracking" : "Recenter on GPS")
       },
         e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none"},
-          e("circle",{cx:"12",cy:"12",r:"3",fill:T.forest}),
-          e("circle",{cx:"12",cy:"12",r:"7",stroke:T.forest,strokeWidth:1.5,fill:"none"}),
-          e("path",{d:"M12 2v4M12 18v4M2 12h4M18 12h4",stroke:T.ink2,strokeWidth:1.5,strokeLinecap:"round"})
+          e("circle",{cx:"12",cy:"12",r:"3",fill: gpsTracking && followUser ? "#fff" : T.forest}),
+          e("circle",{cx:"12",cy:"12",r:"7",stroke: gpsTracking && followUser ? "#fff" : T.forest,strokeWidth:1.5,fill:"none"}),
+          e("path",{d:"M12 2v4M12 18v4M2 12h4M18 12h4",stroke: gpsTracking ? (followUser ? "#fff" : T.forest) : T.ink2,strokeWidth:1.5,strokeLinecap:"round"})
         )
       )
     ),
