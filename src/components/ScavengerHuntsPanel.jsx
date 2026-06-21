@@ -290,8 +290,45 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         completion_image_url: finalImgUrl,
         routing_mode: editingHunt.routing_mode || 'LINEAR',
         hide_spoilers: editingHunt.hide_spoilers === undefined ? true : editingHunt.hide_spoilers,
-        reward_voucher: editingHunt.reward_voucher || null
+        reward_voucher: editingHunt.reward_voucher || null,
+        team_assignment_mode: editingHunt.visibility === 'private' ? editingHunt.team_assignment_mode : null,
+        max_players_per_team: editingHunt.visibility === 'private' ? editingHunt.max_players_per_team : null
       });
+
+      if (editingHunt.visibility === 'private') {
+        const dbTeams = await api.getHuntTeams(editingHunt.id);
+        const currentTeamIds = (editingHunt.teams || []).map(t => t.id).filter(Boolean);
+        const deletedTeamIds = dbTeams.map(t => t.id).filter(id => !currentTeamIds.includes(id));
+        
+        if (deletedTeamIds.length > 0) {
+          await sb.from("hunt_teams").delete().in("id", deletedTeamIds);
+        }
+
+        const teamsToInsert = [];
+        const teamsToUpdate = [];
+
+        (editingHunt.teams || []).forEach(t => {
+          if (t.id) {
+            teamsToUpdate.push(t);
+          } else {
+            teamsToInsert.push({
+              hunt_id: editingHunt.id,
+              name: t.name.trim() || 'Unnamed Team',
+              color: t.color,
+              creator: uname
+            });
+          }
+        });
+
+        if (teamsToInsert.length > 0) {
+          await api.createHuntTeams(teamsToInsert);
+        }
+        for (const t of teamsToUpdate) {
+          await sb.from("hunt_teams").update({ name: t.name.trim(), color: t.color }).eq("id", t.id);
+        }
+      } else {
+        await api.deleteHuntTeamsForHunt(editingHunt.id);
+      }
 
       if (editingHunt.steps) {
         // Find existing step IDs in db to see if any were deleted
@@ -1060,11 +1097,30 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                         const sd = h.start_date ? h.start_date.slice(0,10) : '';
                         const ed = h.end_date ? h.end_date.slice(0,10) : '';
                         try {
-                          const steps = await api.getHuntSteps(h.id);
-                          setEditingHunt({ ...h, start_date_local: sd, end_date_local: ed, steps: steps });
+                          const [steps, teams] = await Promise.all([
+                            api.getHuntSteps(h.id),
+                            api.getHuntTeams(h.id)
+                          ]);
+                          setEditingHunt({
+                            ...h,
+                            start_date_local: sd,
+                            end_date_local: ed,
+                            steps: steps,
+                            teams: teams,
+                            team_assignment_mode: h.team_assignment_mode || 'self_select',
+                            max_players_per_team: h.max_players_per_team || 10
+                          });
                         } catch (err) {
-                          console.error("Failed to fetch steps for editing:", err);
-                          setEditingHunt({ ...h, start_date_local: sd, end_date_local: ed, steps: [] });
+                          console.error("Failed to fetch steps or teams for editing:", err);
+                          setEditingHunt({
+                            ...h,
+                            start_date_local: sd,
+                            end_date_local: ed,
+                            steps: [],
+                            teams: [],
+                            team_assignment_mode: h.team_assignment_mode || 'self_select',
+                            max_players_per_team: h.max_players_per_team || 10
+                          });
                         }
                       },
                       title: lang === 'es' ? 'Editar cacería' : 'Edit hunt',
@@ -1330,24 +1386,130 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
             e('option', { value: 'FREE_ROAMING' }, lang === 'es' ? "Ruta Libre — resolver en cualquier orden" : "Free Roaming — solve in any order")
           )
         ),
-        // Team Play Info Card
-        e('div', {
+        // Team Play Info / Configurations
+        editingHunt.visibility === 'private' ? e('div', {
           style: {
-            background: 'rgba(46, 125, 50, 0.05)',
+            background: 'rgba(46, 125, 50, 0.03)',
+            border: `1px solid ${T.border}`,
+            borderRadius: 12,
+            padding: '12px 14px',
+            marginTop: 6,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10
+          }
+        },
+          e('div', { style: { fontSize: 13.5, fontWeight: 800, color: T.forest } }, lang === 'es' ? "Configuración de Equipos" : "Teams Configuration"),
+          
+          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
+            e('label', { style: { fontSize: 11.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Modo de Asignación de Equipos" : "Team Assignment Mode"),
+            e('select', {
+              value: editingHunt.team_assignment_mode,
+              onChange: (ev) => setEditingHunt(eh => ({ ...eh, team_assignment_mode: ev.target.value })),
+              style: Object.assign({}, S.input, { height: 38 })
+            },
+              e('option', { value: 'self_select' }, lang === 'es' ? "Los jugadores eligen equipo" : "Players choose their own team"),
+              e('option', { value: 'manual' }, lang === 'es' ? "Asignación manual por el creador" : "Manually assigned by creator")
+            )
+          ),
+
+          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
+            e('label', { style: { fontSize: 11.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Máx. jugadores por equipo" : "Max players per team"),
+            e('input', {
+              type: 'number',
+              min: 1,
+              value: editingHunt.max_players_per_team,
+              onChange: (ev) => setEditingHunt(eh => ({ ...eh, max_players_per_team: parseInt(ev.target.value) || 10 })),
+              style: Object.assign({}, S.input, { height: 38 })
+            })
+          ),
+
+          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
+            e('div', { style: { fontSize: 11.5, fontWeight: 700, color: T.ink2 } }, lang === 'es' ? "Lista de Equipos" : "Teams List"),
+            (editingHunt.teams || []).map((team, tIdx) => e('div', { key: tIdx, style: { display: 'flex', gap: 6, alignItems: 'center' } },
+              e('input', {
+                type: 'text',
+                value: team.name,
+                placeholder: `Team ${tIdx + 1}`,
+                onChange: (ev) => {
+                  const newT = [...(editingHunt.teams || [])];
+                  newT[tIdx].name = ev.target.value;
+                  setEditingHunt(eh => ({ ...eh, teams: newT }));
+                },
+                style: Object.assign({}, S.input, { flex: 1, height: 34 })
+              }),
+              e('input', {
+                type: 'color',
+                value: team.color || '#cccccc',
+                onChange: (ev) => {
+                  const newT = [...(editingHunt.teams || [])];
+                  newT[tIdx].color = ev.target.value;
+                  setEditingHunt(eh => ({ ...eh, teams: newT }));
+                },
+                style: { width: 34, height: 34, padding: 0, border: `1px solid ${T.border}`, borderRadius: 6, cursor: 'pointer' }
+              }),
+              (editingHunt.teams || []).length > 2 && e('button', {
+                type: 'button',
+                onClick: () => {
+                  const newT = (editingHunt.teams || []).filter((_, i) => i !== tIdx);
+                  setEditingHunt(eh => ({ ...eh, teams: newT }));
+                },
+                style: {
+                  background: 'rgba(211, 47, 47, 0.08)',
+                  color: '#d32f2f',
+                  border: 'none',
+                  borderRadius: 6,
+                  width: 34,
+                  height: 34,
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }
+              }, '✕')
+            )),
+            e('button', {
+              type: 'button',
+              onClick: () => {
+                const currentTeams = editingHunt.teams || [];
+                const defaultColors = ['#e53935', '#1e88e5', '#43a047', '#fdd835', '#8e24aa', '#fb8c00', '#00acc1'];
+                const randomColor = defaultColors[currentTeams.length % defaultColors.length];
+                setEditingHunt(eh => ({
+                  ...eh,
+                  teams: [...currentTeams, { name: `Team ${currentTeams.length + 1}`, color: randomColor }]
+                }));
+              },
+              style: {
+                background: 'none',
+                border: `1px dashed ${T.forest}`,
+                color: T.forest,
+                borderRadius: 8,
+                padding: '6px 12px',
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginTop: 4,
+                alignSelf: 'flex-start'
+              }
+            }, "+ " + (lang === 'es' ? "Añadir Equipo" : "Add Team"))
+          )
+        ) : e('div', {
+          style: {
+            background: 'rgba(239, 108, 0, 0.05)',
             border: `1px solid ${T.border}`,
             borderRadius: 10,
             padding: '10px 12px',
             marginTop: 4,
-            marginBottom: 8,
             fontSize: 12,
             color: T.ink2,
             lineHeight: 1.4
           }
         },
-          e('span', { style: { fontWeight: 700, color: T.forest } }, "👥 " + (lang === 'es' ? "Modo Multijugador/Equipos:" : "Team Play Support:")),
+          e('span', { style: { fontWeight: 700, color: '#e65100' } }, "👥 " + (lang === 'es' ? "Modo Equipos No Disponible:" : "Team Play Not Available:")),
           " " + (lang === 'es' 
-            ? "Esta cacería admite juego individual o en equipo. Al unirse, los jugadores podrán crear o unirse a un equipo con un código para compartir el progreso y puntuación en tiempo real." 
-            : "This scavenger hunt supports both Solo and Team play. Upon enrolling, participants can create or join a team using a code to synchronize progress and scores in real-time.")
+            ? "Los equipos solo están disponibles en búsquedas privadas. Cambia la visibilidad a Privada para habilitar los equipos." 
+            : "Teams are strictly reserved for private hunts. Switch visibility to Private to enable team play configuration.")
         ),
         // Hide Spoilers Toggle Checkbox
         e('div', { style: { display: 'flex', alignItems: 'center', gap: 6, margin: '6px 0' } },
@@ -2131,7 +2293,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           e('span', { style: { fontSize: 14, fontWeight: 700, color: T.ink } },
             `${stepsStatus.filter(s => s.isCompleted).length} / ${huntSteps.length} Steps`)
         ),
-        (selectedHunt.creator === uname) && teamDetails && e('div', {
+        teamDetails && e('div', {
           style: {
             borderTop: `1px solid ${T.borderSoft}`,
             paddingTop: 10,
@@ -2152,7 +2314,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           e('div', { style: { fontSize: 11.5, color: T.ink3, marginTop: 2 } },
             `${lang === 'es' ? 'Miembros: ' : 'Members: '}${teamDetails.members.join(', ')}`
           ),
-          e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 } },
+          (selectedHunt.creator === uname) && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 } },
             e('label', { style: { fontSize: 10, color: T.ink3, fontWeight: 700, textTransform: 'uppercase' } },
               lang === 'es' ? "Renombrar Equipo" : "Rename Team"
             ),
