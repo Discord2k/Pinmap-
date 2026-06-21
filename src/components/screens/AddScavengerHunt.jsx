@@ -350,6 +350,25 @@ export function AddScavengerHunt({ uname, pins = [], trails = [], lang = 'en', o
         e('option', { value: 'FREE_ROAMING' }, lang === 'es' ? "Ruta Libre — resolver en cualquier orden" : "Free Roaming — solve in any order")
       ),
 
+      // Team Play Info Card
+      e('div', {
+        style: {
+          background: 'rgba(46, 125, 50, 0.05)',
+          border: `1px solid ${T.border}`,
+          borderRadius: 10,
+          padding: '10px 12px',
+          marginTop: 4,
+          fontSize: 12,
+          color: T.ink2,
+          lineHeight: 1.4
+        }
+      },
+        e('span', { style: { fontWeight: 700, color: T.forest } }, "👥 " + (lang === 'es' ? "Modo Multijugador/Equipos:" : "Team Play Support:")),
+        " " + (lang === 'es' 
+          ? "Esta cacería admite juego individual o en equipo. Al unirse, los jugadores podrán crear o unirse a un equipo con un código para compartir el progreso y puntuación en tiempo real." 
+          : "This scavenger hunt supports both Solo and Team play. Upon enrolling, participants can create or join a team using a code to synchronize progress and scores in real-time.")
+      ),
+
       // Hide Spoilers Toggle Checkbox
       e('div', { style: { display: 'flex', alignItems: 'center', gap: 6, margin: '6px 0' } },
         e('label', { htmlFor: 'hunt-hide-spoilers-checkbox', style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 700, color: T.ink2, cursor: 'pointer' } },
