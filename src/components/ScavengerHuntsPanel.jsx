@@ -353,6 +353,58 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     }
   };
 
+  const handleSelectHunt = async (hunt) => {
+    setLoading(true);
+    try {
+      setPlayTab('objectives');
+      setSelectedHunt(hunt);
+      const steps = await api.getHuntSteps(hunt.id);
+      setHuntSteps(steps);
+      const teams = await api.getHuntTeams(hunt.id);
+      setHuntTeams(teams);
+      setSelectedStepId(null);
+      setTeamDetails(null);
+      setShowEnrollCard(false);
+
+      // Check if user is enrolled
+      const part = await api.getParticipant(hunt.id, uname);
+      setParticipant(part);
+
+      if (part) {
+        const logs = await api.getHuntActivityLogs(part.id);
+        setActivityLogs(logs);
+        
+        if (part.team_id) {
+          try {
+            const teamInfo = await api.getTeamDetails(part.team_id);
+            setTeamDetails(teamInfo);
+          } catch (tErr) {
+            console.error("Failed to load team details:", tErr);
+          }
+        }
+      }
+
+      if (hunt.creator === uname) {
+        try {
+          const allPartsRes = await sb.from("hunt_participants").select("*").eq("hunt_id", hunt.id);
+          setParticipants(allPartsRes.data || []);
+        } catch (pErr) {
+          console.error("Failed to load participants list:", pErr);
+        }
+      }
+
+      const board = await api.getHuntLeaderboard(hunt.id);
+      setLeaderboard(board);
+
+      setActiveSubTab('active_play');
+    } catch (err) {
+      console.error("Failed to load hunt details:", err);
+      flash(lang === 'es' ? "Error al cargar la búsqueda." : "Error loading hunt details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEnroll = async (hunt) => {
     if (!uname || uname === 'guest') {
       flash(lang === 'es' ? "Inicia sesión para participar." : "Sign in to participate.");
