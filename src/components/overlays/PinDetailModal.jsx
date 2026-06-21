@@ -60,8 +60,7 @@ export function PinDetailModal(props) {
           style:{color:"#2a5d3c",cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted",display:"inline-flex",alignItems:"center",gap:4},
           onClick:function(){loadUserProfile(selPin.owner);}
         },
-          e("span",{style:{cursor:"pointer",fontWeight:700,color:T.ink}},(selPinOwnerProfile && selPinOwnerProfile.full_name) || selPin.owner),
-          e("span",{style:{cursor:"pointer",fontSize:11,color:T.ink3}},"@"+selPin.owner)
+          e("span",{style:{cursor:"pointer",fontWeight:700,color:T.ink}},"@" + ((selPinOwnerProfile && selPinOwnerProfile.full_name) || selPin.owner))
         ),
         selPin.owner!==uname&&e("span",{
           style:{fontSize:10,marginLeft:6,padding:"1px 6px",borderRadius:6,cursor:"pointer",
