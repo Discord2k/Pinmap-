@@ -1073,9 +1073,14 @@ function App() {
   },[splashDone, pins]);
 
   function applyStyleWithFallback(map, styleUrlOrObject) {
+    if (map._currentStyleUrl === styleUrlOrObject) {
+      console.log("Style is already set to:", styleUrlOrObject);
+      return;
+    }
     if (typeof styleUrlOrObject === 'string' && styleUrlOrObject.startsWith('http')) {
       if (window._ofmFailed) {
         console.log("Using cached fallback style for OpenFreeMap.");
+        map._currentStyleUrl = OSM_FALLBACK_STYLE;
         map.setStyle(OSM_FALLBACK_STYLE);
         return;
       }
@@ -1084,14 +1089,16 @@ function App() {
         if (!loaded) {
           console.warn("Style load timed out, falling back to OSM raster style:", styleUrlOrObject);
           window._ofmFailed = true;
+          map._currentStyleUrl = OSM_FALLBACK_STYLE;
           map.setStyle(OSM_FALLBACK_STYLE);
           flash("⚠️ Standard map style took too long to load. Using fallback map.");
         }
-      }, 2500);
+      }, 12000); // 12 seconds
 
       var onLoad = function() {
         loaded = true;
         clearTimeout(timeoutId);
+        map._currentStyleUrl = styleUrlOrObject;
         map.off('style.load', onLoad);
       };
       
@@ -1101,6 +1108,7 @@ function App() {
           clearTimeout(timeoutId);
           console.warn("Style load failed, falling back to OSM raster style:", styleUrlOrObject, e.error);
           window._ofmFailed = true;
+          map._currentStyleUrl = OSM_FALLBACK_STYLE;
           map.setStyle(OSM_FALLBACK_STYLE);
           flash("⚠️ Standard map style failed to load. Using fallback map.");
           map.off('style.load', onLoad);
@@ -1110,6 +1118,8 @@ function App() {
 
       map.on('style.load', onLoad);
       map.on('error', onError);
+    } else {
+      map._currentStyleUrl = styleUrlOrObject;
     }
     map.setStyle(styleUrlOrObject);
   }
@@ -1352,6 +1362,7 @@ function App() {
           maxBounds: [[-179.9, -85], [179.9, 85]],
           antialias: true
         });
+        map._currentStyleUrl = initialStyle;
 
         // Set timeout and error listener for initial load if loading remote style
         if (initialStyle === "https://tiles.openfreemap.org/styles/liberty") {
@@ -1360,14 +1371,16 @@ function App() {
             if (!loaded) {
               console.warn("Initial style load timed out, falling back to OSM raster style.");
               window._ofmFailed = true;
+              map._currentStyleUrl = OSM_FALLBACK_STYLE;
               map.setStyle(OSM_FALLBACK_STYLE);
               flash("⚠️ Standard map style took too long to load. Using fallback map.");
             }
-          }, 5500);
+          }, 18000); // 18 seconds
 
           var onLoad = function() {
             loaded = true;
             clearTimeout(timeoutId);
+            map._currentStyleUrl = initialStyle;
             map.off('style.load', onLoad);
           };
           
@@ -1377,6 +1390,7 @@ function App() {
               clearTimeout(timeoutId);
               console.warn("Initial style load failed, falling back to OSM raster style.", e.error);
               window._ofmFailed = true;
+              map._currentStyleUrl = OSM_FALLBACK_STYLE;
               map.setStyle(OSM_FALLBACK_STYLE);
               flash("⚠️ Standard map style failed to load. Using fallback map.");
               map.off('style.load', onLoad);
@@ -1829,6 +1843,7 @@ function App() {
         ]
       };
       map.setStyle(cyclingStyle);
+      map._currentStyleUrl = cyclingStyle;
     } else if (baseLayer === "satellite") {
       var satelliteStyle = {
         "version": 8,
@@ -1853,6 +1868,7 @@ function App() {
         ]
       };
       map.setStyle(satelliteStyle);
+      map._currentStyleUrl = satelliteStyle;
     } else if (baseLayer === "topo") {
       var topoStyle = {
         "version": 8,
@@ -1879,6 +1895,7 @@ function App() {
         ]
       };
       map.setStyle(topoStyle);
+      map._currentStyleUrl = topoStyle;
     }
     
     // Preserve camera location and orientation across layer switches
