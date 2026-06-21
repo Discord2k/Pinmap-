@@ -403,6 +403,16 @@ function App() {
   var [quickHunts, setQuickHunts] = useState({ active: null, publicList: [], loading: false });
   var [profileHuntsTab, setProfileHuntsTab] = useState(null); // null = don't auto-open, 'my_hunts' = auto-open to My Hunts
   var [huntsUpdateTrigger, setHuntsUpdateTrigger] = useState(0);
+
+  function handleHuntProgress(action) {
+    if (action === 'leave') {
+      setQuickHunts(function(prev) {
+        return Object.assign({}, prev, { active: null });
+      });
+      setShowHuntOverlay(false);
+    }
+    setHuntsUpdateTrigger(function(t) { return t + 1; });
+  }
   var [recordingTrail, setRecordingTrail] = useState(false);
   var [isRecordingPaused, setIsRecordingPaused] = useState(false);
   var [recordedPoints, setRecordedPoints] = useState([]);
@@ -466,10 +476,10 @@ function App() {
         return h.creator === uname || enrolledIds.indexOf(h.id) >= 0; 
       });
       
-      var activeEnroll = enrollments.find(function(e_rec) { return e_rec.status === 'enrolled'; }) || enrollments[0];
+      var activeEnroll = enrollments.find(function(e_rec) { return e_rec.status === 'enrolled'; });
       var activeHunt = activeEnroll 
         ? allHunts.find(function(h){ return h.id === activeEnroll.hunt_id; })
-        : enrolledHunts.find(function(h){ return h.creator === uname; });
+        : null;
         
       if (activeHunt) {
         Promise.all([
@@ -4180,9 +4190,7 @@ function App() {
             flash: flash,
             initialHuntsTab: 'active_play',
             huntsUpdateTrigger: huntsUpdateTrigger,
-            onHuntProgress: function() {
-              setHuntsUpdateTrigger(function(t) { return t + 1; });
-            }
+            onHuntProgress: handleHuntProgress
           })
         )
       );
@@ -5211,7 +5219,7 @@ function App() {
           openHuntsExpanded:!!profileHuntsTab,
           initialHuntsTab:profileHuntsTab || 'my_hunts',
           huntsUpdateTrigger:huntsUpdateTrigger,
-          onHuntProgress: function() { setHuntsUpdateTrigger(function(t){ return t + 1; }); }
+          onHuntProgress: handleHuntProgress
         })
         )
 
@@ -5222,7 +5230,7 @@ function App() {
 
 
 
-      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null), activeHuntCheckinLogged: (quickHunts.active ? quickHunts.active.activeCheckinLogged : false), onHuntProgress: function() { setHuntsUpdateTrigger(function(t){ return t + 1; }); } }),
+      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null), activeHuntCheckinLogged: (quickHunts.active ? quickHunts.active.activeCheckinLogged : false), onHuntProgress: handleHuntProgress }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
     pendingHuntId && e(HuntJoinModal, {

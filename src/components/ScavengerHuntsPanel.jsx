@@ -1800,7 +1800,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
               api.leaveHunt(participant.id).then(function() {
                 setSelectedHunt(null);
                 setActiveSubTab('my_hunts');
-                if (onHuntProgress) onHuntProgress();
+                if (onHuntProgress) onHuntProgress('leave');
                 flash(lang === 'es' ? "Has salido de la cacería." : "You left the hunt.");
               });
             }
