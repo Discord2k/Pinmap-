@@ -2058,14 +2058,20 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
                   value: p.team_id || '',
                   onChange: async (ev) => {
                     const selectedTeamId = ev.target.value || null;
+                    const oldTeamId = p.team_id;
                     const updatedParts = participants.map(part => part.id === p.id ? { ...part, team_id: selectedTeamId } : part);
                     setParticipants(updatedParts);
                     try {
-                      await api.assignParticipantToTeam(p.id, selectedTeamId, p.user_id);
+                      const res = await api.assignParticipantToTeam(p.id, selectedTeamId, p.user_id);
+                      if (res && res.error) {
+                        throw new Error(res.error.message || "Failed to assign team in database.");
+                      }
                       flash(lang === 'es' ? "Equipo asignado." : "Team assigned successfully.");
                     } catch (err) {
                       console.error(err);
-                      flash(lang === 'es' ? "Error al asignar equipo." : "Error assigning team.");
+                      // Revert state back to original
+                      setParticipants(participants.map(part => part.id === p.id ? { ...part, team_id: oldTeamId } : part));
+                      flash(lang === 'es' ? "Error al asignar equipo." : `Error assigning team: ${err.message || err}`);
                     }
                   },
                   style: {

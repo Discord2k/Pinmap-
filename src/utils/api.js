@@ -510,11 +510,33 @@ export const api = {
   getTeamDetails: async function(teamId) {
     const teamRes = await sb.from("hunt_teams").select("*").eq("id", teamId).single();
     if (teamRes.error) throw teamRes.error;
-    const membersRes = await sb.from("hunt_team_members").select("username").eq("team_id", teamId);
-    if (membersRes.error) throw membersRes.error;
+    
+    let members = [];
+    // Try to get members from hunt_team_members first
+    try {
+      const membersRes = await sb.from("hunt_team_members").select("username").eq("team_id", teamId);
+      if (!membersRes.error && membersRes.data && membersRes.data.length > 0) {
+        members = membersRes.data.map(m => m.username);
+      }
+    } catch (e) {
+      console.warn("Could not load from hunt_team_members:", e);
+    }
+    
+    // Fallback to hunt_participants (which is much more reliable and contains the team assignments)
+    if (members.length === 0) {
+      try {
+        const partsRes = await sb.from("hunt_participants").select("user_id").eq("team_id", teamId);
+        if (!partsRes.error && partsRes.data) {
+          members = partsRes.data.map(p => p.user_id);
+        }
+      } catch (e) {
+        console.error("Could not fallback to hunt_participants:", e);
+      }
+    }
+
     return {
       team: teamRes.data,
-      members: (membersRes.data || []).map(m => m.username)
+      members: members
     };
   },
   getHuntTeams: function(huntId) {
