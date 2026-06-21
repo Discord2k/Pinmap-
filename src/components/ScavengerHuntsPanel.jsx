@@ -2162,34 +2162,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           )
         ),
 
-        (selectedHunt.creator === uname) && teamDetails && e('div', {
-          style: {
-            width: '100%', borderTop: `1px solid ${T.borderSoft}`, paddingTop: 12, marginTop: 4,
-            display: 'flex', flexDirection: 'column', gap: 6
-          }
-        },
-          e('label', { style: { fontSize: 11, color: T.ink3, textTransform: 'uppercase', fontWeight: 700 } },
-            lang === 'es' ? "Renombrar Equipo" : "Rename Team"
-          ),
-          e('div', { style: { display: 'flex', gap: 6 } },
-            e('input', {
-              type: 'text',
-              value: teamDetails.team.name,
-              placeholder: lang === 'es' ? "Nombre del equipo..." : "Team name...",
-              onChange: async (ev) => {
-                const newName = ev.target.value;
-                const updatedTeam = { ...teamDetails.team, name: newName };
-                setTeamDetails({ ...teamDetails, team: updatedTeam });
-                try {
-                  await api.updateTeamName(teamDetails.team.id, newName);
-                } catch (err) {
-                  console.error(err);
-                }
-              },
-              style: Object.assign({}, S.input, { height: 34, fontSize: 12 })
-            })
-          )
-        ),
+
 
         // Creator Manual Team Assignment Manager
         (selectedHunt.creator === uname && selectedHunt.team_assignment_mode === 'manual') && e('div', {
@@ -2314,27 +2287,6 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
           e('div', { style: { fontSize: 11.5, color: T.ink3, marginTop: 2 } },
             `${lang === 'es' ? 'Miembros: ' : 'Members: '}${teamDetails.members.join(', ')}`
           ),
-          (selectedHunt.creator === uname) && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 } },
-            e('label', { style: { fontSize: 10, color: T.ink3, fontWeight: 700, textTransform: 'uppercase' } },
-              lang === 'es' ? "Renombrar Equipo" : "Rename Team"
-            ),
-            e('input', {
-              type: 'text',
-              value: teamDetails.team.name,
-              placeholder: lang === 'es' ? "Nombre del equipo..." : "Team name...",
-              onChange: async (ev) => {
-                const newName = ev.target.value;
-                const updatedTeam = { ...teamDetails.team, name: newName };
-                setTeamDetails({ ...teamDetails, team: updatedTeam });
-                try {
-                  await api.updateTeamName(teamDetails.team.id, newName);
-                } catch (err) {
-                  console.error(err);
-                }
-              },
-              style: Object.assign({}, S.input, { height: 32, fontSize: 11.5, padding: '4px 8px' })
-            })
-          )
         ),
         e('button', {
           onClick: function() {

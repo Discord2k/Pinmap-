@@ -481,73 +481,76 @@ function App() {
         ? allHunts.find(function(h){ return h.id === activeEnroll.hunt_id; })
         : null;
         
-      if (activeHunt) {
-        Promise.all([
-          api.getHuntSteps(activeHunt.id),
-          activeEnroll ? api.getHuntActivityLogs(activeEnroll.id) : Promise.resolve([])
-        ]).then(function(stepsAndLogs) {
-          var steps = stepsAndLogs[0];
-          var logs = stepsAndLogs[1];
-          steps.sort(function(a,b){ return a.sequence_order - b.sequence_order; });
-          
-          var activeStep = null;
-          var nextStepIdx = -1;
-          for (var i = 0; i < steps.length; i++) {
-            var step = steps[i];
-            var stepLogs = logs.filter(function(l) { return l.step_id === step.id; });
-            var loggedTypes = stepLogs.map(function(l) { return l.activity_type; });
-            var requiredTypes = Object.keys(step.point_rules || {});
-            var remainingTypes = requiredTypes.filter(function(t) { return loggedTypes.indexOf(t) < 0; });
-            if (remainingTypes.length > 0) {
-              activeStep = step;
-              nextStepIdx = i;
-              break;
+      if (activeHunt) {          Promise.all([
+            api.getHuntSteps(activeHunt.id),
+            activeEnroll ? api.getHuntActivityLogs(activeEnroll.id) : Promise.resolve([]),
+            activeEnroll && activeEnroll.team_id ? api.getTeamDetails(activeEnroll.team_id) : Promise.resolve(null)
+          ]).then(function(stepsAndLogs) {
+            var steps = stepsAndLogs[0];
+            var logs = stepsAndLogs[1];
+            var teamInfo = stepsAndLogs[2];
+            steps.sort(function(a,b){ return a.sequence_order - b.sequence_order; });
+            
+            var activeStep = null;
+            var nextStepIdx = -1;
+            for (var i = 0; i < steps.length; i++) {
+              var step = steps[i];
+              var stepLogs = logs.filter(function(l) { return l.step_id === step.id; });
+              var loggedTypes = stepLogs.map(function(l) { return l.activity_type; });
+              var requiredTypes = Object.keys(step.point_rules || {});
+              var remainingTypes = requiredTypes.filter(function(t) { return loggedTypes.indexOf(t) < 0; });
+              if (remainingTypes.length > 0) {
+                activeStep = step;
+                nextStepIdx = i;
+                break;
+              }
             }
-          }
-          var currentStepNum = nextStepIdx === -1 ? steps.length : nextStepIdx + 1;
-          var activePinId = activeStep ? activeStep.pin_id : null;
-          
-          var activeCheckinLogged = false;
-          if (activeStep) {
-            activeCheckinLogged = logs.some(function(l) {
-              return l.step_id === activeStep.id && l.activity_type === 'check_in';
+            var currentStepNum = nextStepIdx === -1 ? steps.length : nextStepIdx + 1;
+            var activePinId = activeStep ? activeStep.pin_id : null;
+            
+            var activeCheckinLogged = false;
+            if (activeStep) {
+              activeCheckinLogged = logs.some(function(l) {
+                return l.step_id === activeStep.id && l.activity_type === 'check_in';
+              });
+            }
+            
+            setQuickHunts({
+              loading: false,
+              active: {
+                id: activeHunt.id,
+                name: activeHunt.name,
+                visibility: activeHunt.visibility,
+                routing_mode: activeHunt.routing_mode || 'LINEAR',
+                participantStep: currentStepNum,
+                totalSteps: steps.length || 1,
+                activePinId: activePinId,
+                activeCheckinLogged: activeCheckinLogged,
+                steps: steps,
+                start_time: activeHunt.start_time,
+                teamName: teamInfo && teamInfo.team ? teamInfo.team.name : null
+              },
+              publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
             });
-          }
-          
-          setQuickHunts({
-            loading: false,
-            active: {
-              id: activeHunt.id,
-              name: activeHunt.name,
-              visibility: activeHunt.visibility,
-              routing_mode: activeHunt.routing_mode || 'LINEAR',
-              participantStep: currentStepNum,
-              totalSteps: steps.length || 1,
-              activePinId: activePinId,
-              activeCheckinLogged: activeCheckinLogged,
-              steps: steps,
-              start_time: activeHunt.start_time
-            },
-            publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
+          }).catch(function() {
+            setQuickHunts({
+              loading: false,
+              active: {
+                id: activeHunt.id,
+                name: activeHunt.name,
+                visibility: activeHunt.visibility,
+                routing_mode: activeHunt.routing_mode || 'LINEAR',
+                participantStep: 1,
+                totalSteps: 1,
+                activePinId: null,
+                activeCheckinLogged: false,
+                steps: [],
+                start_time: activeHunt.start_time,
+                teamName: null
+              },
+              publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
+            });
           });
-        }).catch(function() {
-          setQuickHunts({
-            loading: false,
-            active: {
-              id: activeHunt.id,
-              name: activeHunt.name,
-              visibility: activeHunt.visibility,
-              routing_mode: activeHunt.routing_mode || 'LINEAR',
-              participantStep: 1,
-              totalSteps: 1,
-              activePinId: null,
-              activeCheckinLogged: false,
-              steps: [],
-              start_time: activeHunt.start_time
-            },
-            publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
-          });
-        });
       } else {
         setQuickHunts({
           loading: false,
@@ -4135,7 +4138,9 @@ function App() {
             e("span", {style: {fontSize: 10, background: T.forest, color: "#fff", padding: "2px 6px", borderRadius: 10, fontFamily: T.mono, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0}}, 
               lang === 'es' ? "Caza Activa" : "Active Hunt"
             ),
-            e("span", {style: {fontWeight: 700, fontSize: 13.5, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, activeHunt.name)
+            e("span", {style: {fontWeight: 700, fontSize: 13.5, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}, 
+              activeHunt.name + (activeHunt.teamName ? (" • " + activeHunt.teamName) : "")
+            )
           ),
           e("button", {
             onClick: function(ev) {
