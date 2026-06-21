@@ -1694,11 +1694,10 @@ function App() {
       map.on("movestart", function(e) {
         if (e.originalEvent) {
           var wasFollowing = followUserRef.current;
-          if (window._setFollowUser) {
-            window._setFollowUser(false);
-          }
-          if (wasFollowing && window._flash) {
-            window._flash("🗺️ Free explore — tap 📍 to re-center");
+          if (wasFollowing) {
+            followUserRef.current = false;
+            if (window._setFollowUser) window._setFollowUser(false);
+            if (window._flash) window._flash("🗺️ Free explore — tap 📍 to re-center");
           }
         }
       });
@@ -3604,29 +3603,30 @@ function App() {
       }
       return;
     }
-    var dotIcon = window.L.divIcon({
-      className: "",
-      html: '<div style="position: relative; width: 0px; height: 0px; display: flex; align-items: center; justify-content: center;">' +
-            '  <svg id="user-direction-cone" style="position: absolute; width: 100px; height: 100px; left: -50px; top: -50px; transform-origin: 50% 50%; pointer-events: none; transition: transform 0.1s ease-out; transform: rotate(' + (window._userHeading !== undefined ? Math.round(window._userHeading) : 0) + 'deg);" viewBox="0 0 100 100">' +
-            '    <defs>' +
-            '      <radialGradient id="coneGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">' +
-            '        <stop offset="0%" stop-color="#2979ff" stop-opacity="0.4"/>' +
-            '        <stop offset="60%" stop-color="#2979ff" stop-opacity="0.15"/>' +
-            '        <stop offset="100%" stop-color="#2979ff" stop-opacity="0"/>' +
-            '      </radialGradient>' +
-            '    </defs>' +
-            '    <path d="M 50 50 L 21.13 0 A 50 50 0 0 1 78.87 0 Z" fill="url(#coneGradient)" />' +
-            '  </svg>' +
-            '  <div style="position: absolute; width: 16px; height: 16px; left: -8px; top: -8px; border-radius: 50%; background: #2979ff; border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(41,121,255,0.25); animation: pmpulse 2s infinite; pointer-events: none;"></div>' +
-            '</div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    });
-    window._userDotMarker = window.L.marker([lat, lng], {
-      icon: dotIcon,
-      zIndexOffset: 1000
-    }).addTo(mapObj.current);
-    window._gpsM = window._userDotMarker;
+    var markerEl = document.createElement('div');
+    markerEl.style.width = '16px';
+    markerEl.style.height = '16px';
+    markerEl.style.pointerEvents = 'none';
+    markerEl.innerHTML =
+      '<div style="position: relative; width: 0px; height: 0px;">' +
+      '  <svg id="user-direction-cone" style="position: absolute; width: 100px; height: 100px; left: -50px; top: -50px; transform-origin: 50% 50%; pointer-events: none; transition: transform 0.1s ease-out; transform: rotate(' + (window._userHeading !== undefined ? Math.round(window._userHeading) : 0) + 'deg);" viewBox="0 0 100 100">' +
+      '    <defs>' +
+      '      <radialGradient id="coneGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">' +
+      '        <stop offset="0%" stop-color="#2979ff" stop-opacity="0.4"/>' +
+      '        <stop offset="60%" stop-color="#2979ff" stop-opacity="0.15"/>' +
+      '        <stop offset="100%" stop-color="#2979ff" stop-opacity="0"/>' +
+      '      </radialGradient>' +
+      '    </defs>' +
+      '    <path d="M 50 50 L 21.13 0 A 50 50 0 0 1 78.87 0 Z" fill="url(#coneGradient)" />' +
+      '  </svg>' +
+      '  <div style="position: absolute; width: 16px; height: 16px; left: -8px; top: -8px; border-radius: 50%; background: #2979ff; border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(41,121,255,0.25); animation: pmpulse 2s infinite; pointer-events: none;"></div>' +
+      '</div>';
+    var markerInstance = new window.maplibregl.Marker({
+      element: markerEl,
+      anchor: 'center'
+    }).setLngLat([lng, lat]).addTo(mapObj.current);
+    window._userDotMarker = markerInstance;
+    window._gpsM = markerInstance;
   }
 
   function gpsLocate(){
@@ -4617,7 +4617,7 @@ function App() {
                 setLocating(false);
                 if (followUserRef.current) {
                   if (mapObj.current) {
-                    mapObj.current.setView([lat, lng]);
+                    mapObj.current.easeTo({ center: [lng, lat], duration: 300 });
                   }
                 }
               },
@@ -4629,6 +4629,7 @@ function App() {
             );
             gpsWatchIdRef.current = watchId;
             setGpsTracking(true);
+            followUserRef.current = true;
             setFollowUser(true);
             flash("📍 Following your location — map will stay centered");
           } else {
@@ -4636,6 +4637,7 @@ function App() {
               navigator.geolocation.clearWatch(gpsWatchIdRef.current);
               gpsWatchIdRef.current = null;
               setGpsTracking(false);
+              followUserRef.current = false;
               setFollowUser(false);
               setUserLL(null);
               if (window._userDotMarker) {
@@ -4645,6 +4647,7 @@ function App() {
               }
               flash("⛔ GPS tracking stopped");
             } else {
+              followUserRef.current = true;
               setFollowUser(true);
               if (userLL && mapObj.current) {
                 mapObj.current.setView([userLL.lat, userLL.lng], 15);
