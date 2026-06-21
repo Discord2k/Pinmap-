@@ -178,18 +178,23 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         }
         
         // Upsert the remaining/new steps
-        const stepsPayload = editingHunt.steps.map((s, idx) => ({
-          id: s.id || undefined,
-          hunt_id: editingHunt.id,
-          sequence_order: idx + 1,
-          clue: s.clue,
-          pin_id: s.pin_id,
-          trail_id: s.trail_id || null,
-          point_rules: s.point_rules,
-          type: s.type || 'GPS',
-          expected_answer: s.expected_answer || null,
-          choices: s.choices || null
-        }));
+        const stepsPayload = editingHunt.steps.map((s, idx) => {
+          const item = {
+            hunt_id: editingHunt.id,
+            sequence_order: idx + 1,
+            clue: s.clue,
+            pin_id: s.pin_id,
+            trail_id: s.trail_id || null,
+            point_rules: s.point_rules,
+            type: s.type || 'GPS',
+            expected_answer: s.expected_answer || null,
+            choices: s.choices || null
+          };
+          if (s.id) {
+            item.id = s.id;
+          }
+          return item;
+        });
         
         await api.upsertHuntSteps(stepsPayload);
       }
@@ -1776,7 +1781,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
               api.leaveHunt(participant.id).then(function() {
                 setSelectedHunt(null);
                 setActiveSubTab('my_hunts');
-                if (props.onHuntProgress) props.onHuntProgress();
+                if (onHuntProgress) onHuntProgress();
                 flash(lang === 'es' ? "Has salido de la cacería." : "You left the hunt.");
               });
             }
