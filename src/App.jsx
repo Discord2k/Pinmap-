@@ -4073,7 +4073,7 @@ function App() {
       }, "✕ Exit")
     ),
 
-    quickHunts.active && !open && (function() {
+    showHuntOverlay && quickHunts.active && (function() {
       var activeHunt = quickHunts.active;
       var huntStarted = !activeHunt || !activeHunt.start_time || new Date(activeHunt.start_time) <= new Date();
       var activeStep = (activeHunt && activeHunt.steps && huntStarted) ? activeHunt.steps[activeHunt.participantStep - 1] : null;
@@ -4104,7 +4104,7 @@ function App() {
           boxShadow: T.shadowLg,
           display: "flex",
           flexDirection: "column",
-          maxHeight: showHuntOverlay ? "calc(100vh - 200px)" : "auto",
+          maxHeight: "calc(100vh - 200px)",
           overflow: "hidden",
           transition: "max-height 0.25s ease-out",
           cursor: "default"
@@ -4145,7 +4145,7 @@ function App() {
           e("button", {
             onClick: function(ev) {
               ev.stopPropagation();
-              setShowHuntOverlay(function(v) { return !v; });
+              setShowHuntOverlay(false);
             },
             style: {
               background: "none",
@@ -4161,7 +4161,7 @@ function App() {
               fontWeight: 700
             }
           }, 
-            showHuntOverlay ? (lang === 'es' ? "Colapsar ▲" : "Collapse ▲") : (lang === 'es' ? "Expandir ▼" : "Expand ▼")
+            lang === 'es' ? "Minimizar ✕" : "Minimize ✕"
           )
         ),
         
@@ -4183,7 +4183,7 @@ function App() {
         ),
 
         // Expanded view details: full dashboard container
-        showHuntOverlay && e("div", {
+        e("div", {
           style: {
             flex: 1,
             overflowY: "auto",
