@@ -10,7 +10,6 @@ self.addEventListener("install", function(event) {
       return cache.addAll(APP_SHELL);
     })
   );
-  self.skipWaiting();
 });
 
 // ── Activate ──────────────────────────────────────────────────────────────────

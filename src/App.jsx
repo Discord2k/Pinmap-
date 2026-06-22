@@ -562,7 +562,7 @@ function App() {
       console.error("Failed to load quick hunts:", err);
       setQuickHunts({ loading: false, active: null, publicList: [] });
     });
-  }, [showTrailQuestPanel, uname, huntsUpdateTrigger]);
+  }, [uname, huntsUpdateTrigger]);
 
   var [myActivity, setMyActivity] = useState([]);
   var activityCache = useRef({data: null, ts: 0}); // {data:[], ts: ms epoch}
