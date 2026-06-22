@@ -265,8 +265,22 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         }
       }
 
+      if (!editingHunt.start_date_local) {
+        flash(lang === 'es' ? 'La fecha de inicio es obligatoria.' : 'Start date is required.');
+        return;
+      }
+      if (!editingHunt.end_date_local) {
+        flash(lang === 'es' ? 'La fecha de finalización es obligatoria.' : 'End date is required.');
+        return;
+      }
+
       const sDateObj = new Date(`${editingHunt.start_date_local.replace(/-/g, '/')} ${sTimePart}`);
       const eDateObj = new Date(`${editingHunt.end_date_local.replace(/-/g, '/')} ${eTimePart}`);
+
+      if (isNaN(sDateObj.getTime()) || isNaN(eDateObj.getTime())) {
+        flash(lang === 'es' ? 'Fechas inválidas.' : 'Invalid dates.');
+        return;
+      }
 
       let finalImgUrl = editingHunt.completion_image_url || null;
       if (editingHunt.new_completion_image) {
@@ -930,11 +944,14 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
     }
   };
 
+  const [verifyingAction, setVerifyingAction] = useState(false);
+
   const logModifierAction = async (actionType, defaultPoints) => {
-    if (!participant || !activeStep) return;
+    if (!participant || !activeStep || verifyingAction) return;
     const alreadyLogged = activityLogs.some(l => l.step_id === activeStep.id && l.activity_type === actionType);
     if (alreadyLogged) return;
 
+    setVerifyingAction(true);
     try {
       const points = activeStep.point_rules[actionType] || defaultPoints;
       await api.logHuntActivity(participant.id, activeStep.id, actionType, points);
@@ -984,6 +1001,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       if (onHuntProgress) onHuntProgress();
     } catch (err) {
       console.error(`Failed to log modifier ${actionType}:`, err);
+    } finally {
+      setVerifyingAction(false);
     }
   };
 
