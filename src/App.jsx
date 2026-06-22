@@ -515,6 +515,10 @@ function App() {
               });
             }
             
+            // Check if user minimized the hunt overlay in localStorage previously
+            var wasMinimized = localStorage.getItem("pm_active_hunt_minimized_" + activeHunt.id) === "true";
+            setShowHuntOverlay(!wasMinimized);
+            
             setQuickHunts({
               loading: false,
               active: {
@@ -4146,6 +4150,9 @@ function App() {
             onClick: function(ev) {
               ev.stopPropagation();
               setShowHuntOverlay(false);
+              if (activeHunt && activeHunt.id) {
+                localStorage.setItem("pm_active_hunt_minimized_" + activeHunt.id, "true");
+              }
             },
             style: {
               background: "none",
@@ -4516,6 +4523,9 @@ function App() {
             if (next) {
               setOpen(false);
               setShowTrailQuestPanel(false);
+              if (quickHunts.active && quickHunts.active.id) {
+                localStorage.removeItem("pm_active_hunt_minimized_" + quickHunts.active.id);
+              }
             }
             return next;
           });
