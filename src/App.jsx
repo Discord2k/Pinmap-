@@ -475,7 +475,9 @@ function App() {
       var enrolledHunts = allHunts.filter(function(h){ 
         return h.creator === uname || enrolledIds.indexOf(h.id) >= 0; 
       });
-            var activeEnroll = enrollments.find(function(e_rec) { return e_rec.status === 'enrolled'; });
+            
+      var activeEnroll = enrollments.find(function(e_rec) { return e_rec.status === 'enrolled'; });
+
       var getActiveHunt = activeEnroll
         ? api.getHunt(activeEnroll.hunt_id).catch(function(err) {
             console.error("Failed to load active hunt details via getHunt:", err);
@@ -566,6 +568,9 @@ function App() {
             publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
           });
         }
+      }).catch(function(innerErr) {
+        console.error("Failed in active hunt resolution:", innerErr);
+        setQuickHunts({ loading: false, active: null, publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3) });
       });
     }).catch(function(err){
       console.error("Failed to load quick hunts:", err);

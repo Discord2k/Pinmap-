@@ -24,7 +24,8 @@ export function HuntJoinModal({ huntId, userId, lang = 'en', onJoined, onClose, 
         setError(lang === 'es' ? "No se pudo encontrar este desafío de búsqueda." : "Could not find this scavenger hunt.");
         setLoading(false);
       });
-  }, [huntId, lang]);
+  }, [huntId]); // lang intentionally excluded — hunt data is language-agnostic
+
 
   const handleJoin = async () => {
     if (!userId || userId === 'guest') {
@@ -133,7 +134,10 @@ export function HuntJoinModal({ huntId, userId, lang = 'en', onJoined, onClose, 
             e('div', { style: { fontSize: 10, color: T.ink3, fontWeight: 700, textTransform: 'uppercase' } },
               lang === 'es' ? "FECHA LÍMITE" : "END DATE"),
             e('div', { style: { fontSize: 12.5, fontWeight: 700, color: T.ink, marginTop: 2 } },
-              new Date(hunt.end_date).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+              (hunt.end_date || hunt.end_time)
+                ? new Date(hunt.end_date || hunt.end_time).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : (lang === 'es' ? 'Sin fecha límite' : 'No end date'))
+
           ),
           e('div', { style: { background: T.paper, padding: 10, borderRadius: 10 } },
             e('div', { style: { fontSize: 10, color: T.ink3, fontWeight: 700, textTransform: 'uppercase' } },

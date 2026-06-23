@@ -227,12 +227,15 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
   // Sync state if check-in happens outside of this component (e.g., from map check-ins)
   useEffect(() => {
     if (huntsUpdateTrigger) {
-      loadHuntsData();
       if (selectedHunt) {
+        // If a hunt is actively selected, refresh its details (which also fetches updated hunt list data)
         handleSelectHunt(selectedHunt);
+      } else {
+        // No hunt selected — just refresh the hunts list and enrollments
+        loadHuntsData();
       }
     }
-  }, [huntsUpdateTrigger]);
+  }, [huntsUpdateTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Edit hunt handlers ---
   const handleSaveEdit = async () => {
@@ -472,7 +475,10 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       setParticipant(part);
       setActivityLogs([]);
       flash(lang === 'es' ? "🎉 ¡Te has inscrito en la búsqueda!" : "🎉 Successfully enrolled in the hunt!");
-      loadHuntsData();
+      // Update local enrollments state immediately without full reload to avoid race
+      setUserEnrollments(function(prev) {
+        return prev.some(function(e) { return e.hunt_id === hunt.id; }) ? prev : prev.concat([part]);
+      });
       handleSelectHunt(hunt);
     } catch (err) {
       console.error("Failed to enroll:", err);
@@ -769,6 +775,14 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
       flash(lang === 'es' ? "Debes estar a menos de 65 pies del objetivo." : "You must be within 65 feet of the objective.");
       return;
     }
+    if (!activeStep) {
+      flash(lang === 'es' ? "No hay un paso activo en esta búsqueda." : "No active step for this hunt.");
+      return;
+    }
+    if (!participant) {
+      flash(lang === 'es' ? "No estás inscrito en esta búsqueda." : "You are not enrolled in this hunt.");
+      return;
+    }
     setCheckingIn(true);
     try {
       const checkinPoints = activeStep.point_rules.check_in || 100;
@@ -795,8 +809,8 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         const rTypes = Object.keys(step.point_rules || {});
         return rTypes.every(t => lTypes.includes(t));
       }).length;
-      const allDone = completedStepsCount === huntSteps.length;
-      
+      const allDone = huntSteps.length > 0 && completedStepsCount === huntSteps.length;
+
       setTriviaAnswer('');
       setSelectedMCQ(null);
       
@@ -978,7 +992,7 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
         const rTypes = Object.keys(step.point_rules || {});
         return rTypes.every(t => lTypes.includes(t));
       }).length;
-      const allDone = completedStepsCount === huntSteps.length;
+      const allDone = huntSteps.length > 0 && completedStepsCount === huntSteps.length;
 
       if (remainingTypes.length === 0) {
         const newStatus = allDone ? 'completed' : 'enrolled';

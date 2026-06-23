@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { dbPut, dbGetAll } from './helpers';
 
 const SB_URL = "https://uuxggoydnjvsssbenkkt.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eGdnb3lkbmp2c3NzYmVua2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODg4OTgsImV4cCI6MjA5MjY2NDg5OH0.VniG6qm6Z9spdezyw-85k4liEuyC9i3B_T2Pxo-9nK0";
@@ -582,7 +583,7 @@ export const api = {
     return partRes.data[0];
   },
   enrollInHunt: function(huntId, userId, joinMethod) {
-    return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
+    return sb.from("hunt_participants").insert({hunt_id: huntId, user_id: userId, join_method: joinMethod, status: 'enrolled'}).select().then(function(r){ if (r.error) throw r.error; return r.data[0]; });
   },
   leaveHunt: async function(participantId) {
     await sb.from("hunt_activity_logs").delete().eq("participant_id", participantId);
@@ -610,8 +611,7 @@ export const api = {
       created_at: new Date().toISOString()
     };
     if (navigator && navigator.onLine === false) {
-      // Dynamic offline queue cache trigger
-      const { dbPut } = require('./helpers');
+      // Offline queue cache trigger using IndexedDB
       return dbPut("hunt_activity_logs", logItem).then(function() {
         return logItem;
       });
@@ -626,7 +626,6 @@ export const api = {
   getHuntActivityLogs: async function(participantId) {
     const dbLogs = await sb.from("hunt_activity_logs").select("*").eq("participant_id", participantId).then(function(r){ if (r.error) throw r.error; return r.data||[]; });
     try {
-      const { dbGetAll } = require('./helpers');
       const localLogs = await dbGetAll("hunt_activity_logs");
       const matchedLocal = localLogs.filter(l => l.participant_id === participantId);
       return dbLogs.concat(matchedLocal);

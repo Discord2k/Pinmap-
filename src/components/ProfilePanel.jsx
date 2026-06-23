@@ -72,7 +72,7 @@ export function ProfilePanel(props) {
   var [questTab, setQuestTab] = React.useState("active");
   var [questsCollapsed, setQuestsCollapsed] = React.useState(true);
   var [huntsCollapsed, setHuntsCollapsed] = React.useState(!!props.openHuntsExpanded ? false : true);
-  var [huntsInitialTab] = React.useState(props.initialHuntsTab || 'my_hunts');
+  var huntsInitialTab = props.initialHuntsTab || 'my_hunts';
   var [collectionsCollapsed, setCollectionsCollapsed] = React.useState(true);
   var [trailsCollapsed, setTrailsCollapsed] = React.useState(true);
   var [expandedTrails, setExpandedTrails] = React.useState({});
@@ -100,6 +100,13 @@ export function ProfilePanel(props) {
     window.addEventListener("storage", handleStorage);
     return function() { window.removeEventListener("storage", handleStorage); };
   }, []);
+
+  // Auto-expand Scavenger Hunts section when parent navigates here with openHuntsExpanded
+  React.useEffect(function() {
+    if (props.openHuntsExpanded) {
+      setHuntsCollapsed(false);
+    }
+  }, [props.openHuntsExpanded]);
 
   var deletedQuestIds = props.deletedQuestIds || [];
   var setDeletedQuestIds = props.setDeletedQuestIds || function(){};
