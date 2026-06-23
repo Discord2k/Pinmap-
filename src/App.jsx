@@ -219,6 +219,7 @@ function App() {
   var [styleLoadCount, setStyleLoadCount] = useState(0);
   var [is3d, setIs3d] = useState(false);
   var s1=useState(null);     var user=s1[0];           var setUser=s1[1];
+  var uname = userName(user);
   var s2=useState(false);    var sessionChecked=s2[0]; var setSessionChecked=s2[1];
   var s3=useState(false);    var splashDone=s3[0];     var setSplashDone=s3[1];
   var s4=useState([]);       var pins=s4[0];           var setPins=s4[1];
@@ -760,8 +761,6 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
-
-  var uname = userName(user);
 
   var flashTimeoutRef = useRef(null);
   function flash(msg) {
