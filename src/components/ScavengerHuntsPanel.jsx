@@ -207,12 +207,18 @@ export function ScavengerHuntsPanel({ uname, userLL, pins = [], trails = [], lan
 
   // Auto-select active enrolled hunt if opening active play tab directly
   useEffect(() => {
-    if (activeSubTab === 'active_play' && !selectedHunt && hunts.length > 0 && userEnrollments.length > 0) {
+    if (activeSubTab === 'active_play' && !selectedHunt && userEnrollments.length > 0) {
       const activeEnroll = userEnrollments.find(e => e.status === 'enrolled');
       if (activeEnroll) {
         const activeHuntObj = hunts.find(h => h.id === activeEnroll.hunt_id);
         if (activeHuntObj) {
           handleSelectHunt(activeHuntObj);
+        } else {
+          api.getHunt(activeEnroll.hunt_id).then(h => {
+            if (h) handleSelectHunt(h);
+          }).catch(err => {
+            console.error("Failed to load active enrolled hunt via getHunt:", err);
+          });
         }
       }
     }

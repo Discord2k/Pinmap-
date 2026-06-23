@@ -475,13 +475,17 @@ function App() {
       var enrolledHunts = allHunts.filter(function(h){ 
         return h.creator === uname || enrolledIds.indexOf(h.id) >= 0; 
       });
-      
-      var activeEnroll = enrollments.find(function(e_rec) { return e_rec.status === 'enrolled'; });
-      var activeHunt = activeEnroll 
-        ? allHunts.find(function(h){ return h.id === activeEnroll.hunt_id; })
-        : null;
-        
-      if (activeHunt) {          Promise.all([
+            var activeEnroll = enrollments.find(function(e_rec) { return e_rec.status === 'enrolled'; });
+      var getActiveHunt = activeEnroll
+        ? api.getHunt(activeEnroll.hunt_id).catch(function(err) {
+            console.error("Failed to load active hunt details via getHunt:", err);
+            return null;
+          })
+        : Promise.resolve(null);
+
+      getActiveHunt.then(function(activeHunt) {
+        if (activeHunt) {
+          Promise.all([
             api.getHuntSteps(activeHunt.id),
             activeEnroll ? api.getHuntActivityLogs(activeEnroll.id) : Promise.resolve([]),
             activeEnroll && activeEnroll.team_id ? api.getTeamDetails(activeEnroll.team_id) : Promise.resolve(null)
@@ -555,13 +559,14 @@ function App() {
               publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
             });
           });
-      } else {
-        setQuickHunts({
-          loading: false,
-          active: null,
-          publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
-        });
-      }
+        } else {
+          setQuickHunts({
+            loading: false,
+            active: null,
+            publicList: allHunts.filter(function(h){ return h.visibility === 'public' && h.creator !== uname && enrolledIds.indexOf(h.id) < 0; }).slice(0,3)
+          });
+        }
+      });
     }).catch(function(err){
       console.error("Failed to load quick hunts:", err);
       setQuickHunts({ loading: false, active: null, publicList: [] });
