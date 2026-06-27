@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api, uploadJournalPhoto } from '../utils/api';
 import { dbPut, uid } from '../utils/helpers';
+import { PhotoModal } from './overlays/PhotoModal';
 
 export function Comments(props) {
   var pinId = props.pinId, uname = props.uname;
@@ -438,32 +439,10 @@ export function Comments(props) {
 
       {/* Fullscreen Photo Modal */}
       {fullscreenPhoto && (
-        <div 
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(18, 25, 20, 0.93)",
-            zIndex: 3000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 20
-          }}
-          onClick={() => setFullscreenPhoto(null)}
-        >
-          <div style={{position:"relative",maxWidth:"90%",maxHeight:"90%",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={(e)=>e.stopPropagation()}>
-            <img src={fullscreenPhoto} alt="Journal Log Full" style={{maxWidth:"100%",maxHeight:"85vh",borderRadius:8,boxShadow:"0 12px 48px rgba(0,0,0,0.4)"}} />
-            <button 
-              style={{position:"absolute",top:-14,right:-14,background:"#c05050",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontWeight:"bold",fontSize:14,boxShadow:"0 2px 8px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}
-              onClick={() => setFullscreenPhoto(null)}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+        <PhotoModal
+          fullscreenPhoto={fullscreenPhoto}
+          setFullscreenPhoto={setFullscreenPhoto}
+        />
       )}
 
       {/* Photo Source Selection Prompt */}
