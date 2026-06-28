@@ -153,6 +153,7 @@ export function ProfilePanel(props) {
       var packs = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
       packs = packs.filter(function(p) { return p.id !== packId; });
       localStorage.setItem("pinmap_offline_packs", JSON.stringify(packs));
+      localStorage.removeItem("pinmap_offlinepins_" + packId);
       setOfflinePacks(packs);
       flash(lang === 'es' ? "Paquete eliminado" : "Pack deleted");
     } catch(e) {}
@@ -1314,8 +1315,14 @@ export function ProfilePanel(props) {
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                       <div>
                         <div style={{fontSize:15,fontWeight:700,color:T.ink}}>{pack.name}</div>
-                        <div style={{fontSize:12,color:T.ink3,marginTop:4}}>
-                          {new Date(pack.date).toLocaleDateString()} · ~{(pack.tileCount * 0.05).toFixed(1)} MB
+                        <div style={{fontSize:12,color:T.ink3,marginTop:4,display:"flex",flexDirection:"column",gap:2}}>
+                          <div>
+                            {new Date(pack.date).toLocaleDateString()} · ~{(pack.tileCount * 0.05).toFixed(1)} MB
+                          </div>
+                          <div style={{fontSize:11,color:T.forest,fontWeight:500}}>
+                            {pack.tagFilter ? "#" + pack.tagFilter + " · " : ""}
+                            {pack.pinCount || 0} {lang === 'es' ? 'pines' : 'pins'}
+                          </div>
                         </div>
                       </div>
                       <button 

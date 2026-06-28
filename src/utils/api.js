@@ -26,6 +26,17 @@ export function parseComment(item) {
 
 export const api = {
   list:           function()           { return sb.from("pins").select("*").order("created_at",{ascending:false}).then(function(r){return r.data||[];}); },
+  getPinsInBounds: function(minLat, minLng, maxLat, maxLng, tag) {
+    var q = sb.from("pins").select("*")
+      .in("privacy", ["public"])
+      .gte("lat", minLat).lte("lat", maxLat)
+      .gte("lng", minLng).lte("lng", maxLng);
+    if (tag && tag.trim()) {
+      var cleanTag = tag.trim().replace(/^#/, "");
+      q = q.contains("tags", [cleanTag]);
+    }
+    return q.then(function(r) { return r.data || []; });
+  },
   insert:         function(pin)        { return sb.from("pins").insert(pin).select().then(function(r){return r.data;}); },
   update:         function(id,p,uname) { return sbWithUser(uname).from("pins").update(p).eq("id",id).then(function(r){return r.data;}); },
   upvotePin:      function(id,upvotes)  { return sb.rpc("upvote_pin", { pin_id: id, new_upvotes: upvotes }).then(function(r) { if (r.error) throw r.error; return r.data; }); },

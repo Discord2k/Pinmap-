@@ -372,6 +372,13 @@ function App() {
   var s70=useState(false); var offlineMode=s70[0]; var setOfflineMode=s70[1];
   var [offlineDownloadProgress, setOfflineDownloadProgress] = useState(null);
   var [offlineDownloadTotal, setOfflineDownloadTotal] = useState(null);
+  // Offline config panel state
+  var [offlineConfigOpen, setOfflineConfigOpen] = useState(false);
+  var [offlineConfigName, setOfflineConfigName] = useState("");
+  var [offlineConfigTag, setOfflineConfigTag] = useState("");
+  var [offlineConfigPinCount, setOfflineConfigPinCount] = useState(null);
+  var [offlineConfigCounting, setOfflineConfigCounting] = useState(false);
+  var [offlineConfigBounds, setOfflineConfigBounds] = useState(null);
   var [showAisModal, setShowAisModal] = useState(false);
   var [bearing, setBearing] = useState(0);
   useEffect(function() {
@@ -1133,56 +1140,125 @@ function App() {
     }
   }, [offlineMode]);
 
+  // Opens the config panel — computes bounds immediately so preview can use them
+  function openOfflineConfig() {
+    if (!mapObj.current || !reticleBox) return;
+    var map = mapObj.current;
+    var rb = reticleBox;
+    var llNW = map.containerPointToLatLng(window.L.point(rb.left, rb.top));
+    var llSE = map.containerPointToLatLng(window.L.point(rb.left + rb.width, rb.top + rb.height));
+    var minLat = Math.min(llNW.lat, llSE.lat);
+    var maxLat = Math.max(llNW.lat, llSE.lat);
+    var minLng = Math.min(llNW.lng, llSE.lng);
+    var maxLng = Math.max(llNW.lng, llSE.lng);
+    setOfflineConfigBounds({ llNW, llSE, minLat, maxLat, minLng, maxLng });
+    setOfflineConfigName("");
+    setOfflineConfigTag("");
+    setOfflineConfigPinCount(null);
+    setOfflineConfigOpen(true);
+  }
+
+  // Called when tag input changes — debounced live pin count
+  var _offlineTagTimer = useRef(null);
+  function onOfflineTagChange(val) {
+    setOfflineConfigTag(val);
+    setOfflineConfigPinCount(null);
+    if (!offlineConfigBounds) return;
+    clearTimeout(_offlineTagTimer.current);
+    _offlineTagTimer.current = setTimeout(function() {
+      var b = offlineConfigBounds;
+      api.getPinsInBounds(b.minLat, b.minLng, b.maxLat, b.maxLng, val).then(function(pins) {
+        setOfflineConfigPinCount(pins.length);
+        setOfflineConfigCounting(false);
+      }).catch(function() { setOfflineConfigCounting(false); });
+    }, 500);
+  }
+
+  function loadOfflinePins() {
+    var allLocalPins = [];
+    var seenPinIds = {};
+    dbGetAll("pins").then(function(queued) {
+      (queued || []).forEach(function(p) {
+        if (p && p.id && !seenPinIds[p.id]) {
+          seenPinIds[p.id] = true;
+          allLocalPins.push(p);
+        }
+      });
+      try {
+        var packs = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
+        packs.forEach(function(pack) {
+          try {
+            var packPins = JSON.parse(localStorage.getItem("pinmap_offlinepins_" + pack.id) || "[]");
+            (packPins || []).forEach(function(p) {
+              if (p && p.id && !seenPinIds[p.id]) {
+                seenPinIds[p.id] = true;
+                allLocalPins.push(p);
+              }
+            });
+          } catch(e) {}
+        });
+      } catch(e) {}
+      setPins(allLocalPins);
+      window._allPins = allLocalPins;
+      window._pinsLoaded = true;
+    }).catch(function() {
+      flash("Error loading local offline pins");
+    });
+  }
+
   function downloadOfflineTiles() {
     try {
-      if(!mapObj.current || !reticleBox) return;
-      var packName = window.prompt(lang === 'es' ? "Ingresa un nombre para tu mapa sin conexión:" : "Enter a name for your offline map pack:");
-      if(!packName || packName.trim() === "") {
-        setOfflineMode(false);
-        return;
-      }
-      packName = packName.trim();
+      if (!mapObj.current || !reticleBox) return;
+      if (!offlineConfigOpen) { openOfflineConfig(); return; }
+
+      var packName = offlineConfigName.trim();
+      if (!packName) { flash(lang === 'es' ? "Ingresa un nombre para el paquete" : "Please enter a pack name"); return; }
+
+      var b = offlineConfigBounds;
+      if (!b) return;
+      var llNW = b.llNW, llSE = b.llSE;
+
       var map = mapObj.current;
-      // Convert reticle pixel corners to lat/lng using the frozen map state
-      var rb = reticleBox;
-      var llNW = map.containerPointToLatLng(window.L.point(rb.left, rb.top));
-      var llSE = map.containerPointToLatLng(window.L.point(rb.left + rb.width, rb.top + rb.height));
       var zMin = mapZoom > 11 ? mapZoom - 1 : 11;
       var zMax = 16;
       var tiles = [];
-      for(var z = zMin; z <= zMax; z++){
+      for (var z = zMin; z <= zMax; z++) {
         var pNW = map.project(llNW, z);
         var pSE = map.project(llSE, z);
         var tNW = { x: Math.floor(pNW.x / 256), y: Math.floor(pNW.y / 256) };
         var tSE = { x: Math.floor(pSE.x / 256), y: Math.floor(pSE.y / 256) };
-        for(var x = tNW.x; x <= tSE.x; x++){
-          for(var y = tNW.y; y <= tSE.y; y++){
-             if(baseLayer==="osm") {
-               tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
-             } else if(baseLayer==="topo") {
-               tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
-             } else if(baseLayer==="trails") {
-               tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
-               tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
-             } else if(baseLayer==="satellite") {
-               tiles.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x);
-             }
+        for (var x = tNW.x; x <= tSE.x; x++) {
+          for (var y = tNW.y; y <= tSE.y; y++) {
+            if (baseLayer === "osm") {
+              tiles.push("https://tiles.openfreemap.org/planet/v1/" + z + "/" + x + "/" + y + ".pbf");
+            } else if (baseLayer === "topo") {
+              tiles.push("https://a.tile.opentopomap.org/" + z + "/" + x + "/" + y + ".png");
+            } else if (baseLayer === "trails") {
+              tiles.push("https://tiles.openfreemap.org/planet/v1/" + z + "/" + x + "/" + y + ".pbf");
+              tiles.push("https://tile.waymarkedtrails.org/hiking/" + z + "/" + x + "/" + y + ".png");
+            } else if (baseLayer === "satellite") {
+              tiles.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/" + z + "/" + y + "/" + x);
+            }
           }
         }
       }
-      tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
-      if(tiles.length === 0) {
-        flash(lang === 'es' ? "No se encontraron imágenes en esta área" : "No map tiles found in this area");
-        setOfflineMode(false);
-        return;
-      }
-      if(tiles.length > 8000) { flash(t("toast_trail_too_large", {count: tiles.length})); setOfflineMode(false); return; }
-      
+      tiles = tiles.filter(function(v, i, a) { return a.indexOf(v) === i; });
+
+      if (tiles.length === 0) { flash(lang === 'es' ? "No se encontraron imágenes" : "No map tiles found"); return; }
+      if (tiles.length > 8000) { flash(t("toast_trail_too_large", { count: tiles.length })); return; }
+
+      // Close config panel and start download
+      setOfflineConfigOpen(false);
+      setOfflineMode(false);
+
       var packId = "pack_" + Date.now();
+      var tagFilter = offlineConfigTag.trim().replace(/^#/, "") || null;
       var newPack = {
         id: packId,
         name: packName,
         tileCount: tiles.length,
+        pinCount: offlineConfigPinCount || 0,
+        tagFilter: tagFilter,
         bounds: [[llNW.lat, llNW.lng], [llSE.lat, llSE.lng]],
         date: Date.now(),
         baseLayer: baseLayer
@@ -1192,58 +1268,80 @@ function App() {
         if (!Array.isArray(packs)) packs = [];
         packs.push(newPack);
         localStorage.setItem("pinmap_offline_packs", JSON.stringify(packs));
-      } catch(e){
-        console.error("Localstorage save error", e);
-      }
+      } catch (e) { console.error("Localstorage save error", e); }
 
-      setOfflineMode(false);
-      flash(t("toast_tiles_downloading", {count: tiles.length}));
+      // Fetch pin data for the area right away and store in IndexedDB
+      api.getPinsInBounds(b.minLat, b.minLng, b.maxLat, b.maxLng, tagFilter).then(function(areaPins) {
+        // Store pins in IndexedDB keyed by packId
+        try {
+          localStorage.setItem("pinmap_offlinepins_" + packId, JSON.stringify(areaPins));
+        } catch(e) {}
+
+        // Collect photo URLs to pre-cache
+        var photoUrls = [];
+        areaPins.forEach(function(pin) {
+          ["photo", "photo_2", "photo_3"].forEach(function(field) {
+            if (pin[field] && typeof pin[field] === "string" && pin[field].startsWith("http")) {
+              photoUrls.push(pin[field]);
+            }
+          });
+        });
+        return photoUrls;
+      }).then(function(photoUrls) {
+        // Cache photos in the tile cache
+        if (photoUrls.length > 0) {
+          caches.open("pinmap-tiles-v2").then(function(cache) {
+            photoUrls.forEach(function(url) {
+              cache.match(url).then(function(existing) {
+                if (!existing) fetch(url).then(function(r) { if (r.ok) cache.put(url, r); }).catch(function() {});
+              });
+            });
+          });
+        }
+      }).catch(function(e) { console.warn("Pin data cache error", e); });
+
+      // Start tile download
       var loaded = 0;
-      if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(0);
-      if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(tiles.length);
-      
+      setOfflineDownloadProgress(0);
+      setOfflineDownloadTotal(tiles.length);
+
       var cancelled = false;
       window._cancelOfflineDownload = function() {
         cancelled = true;
-        if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(null);
-        if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(null);
+        setOfflineDownloadProgress(null);
+        setOfflineDownloadTotal(null);
         flash(lang === 'es' ? "Descarga cancelada" : "Download cancelled");
-        // Remove partially completed pack from list
         try {
           var pks = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
           pks = pks.filter(function(p) { return p.id !== packId; });
           localStorage.setItem("pinmap_offline_packs", JSON.stringify(pks));
+          localStorage.removeItem("pinmap_offlinepins_" + packId);
         } catch(e) {}
       };
 
-      // Use Cache API directly — works reliably on both desktop and mobile
-      // without the no-cors opaque response issue
       function cacheBatch(idx) {
         if (cancelled) return;
         if (idx >= tiles.length) {
           window._cancelOfflineDownload = null;
           flash(t("toast_tiles_success"));
-          if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(null);
-          if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(null);
+          setOfflineDownloadProgress(null);
+          setOfflineDownloadTotal(null);
           return;
         }
         var batch = tiles.slice(idx, idx + 8);
         caches.open("pinmap-tiles-v2").then(function(cache) {
           return Promise.all(batch.map(function(url) {
             return cache.match(url).then(function(existing) {
-              if (existing) return; // Already cached
+              if (existing) return;
               return fetch(url).then(function(resp) {
-                if (resp && resp.ok) {
-                  return cache.put(url, resp);
-                }
-              }).catch(function() {}); // Silently skip failed tiles
+                if (resp && resp.ok) return cache.put(url, resp);
+              }).catch(function() {});
             });
           }));
         }).then(function() {
           if (cancelled) return;
           loaded += batch.length;
-          if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(loaded);
-          // Use setTimeout to yield to the browser and prevent UI freeze on mobile
+          setOfflineDownloadProgress(loaded);
           setTimeout(function() { cacheBatch(idx + 8); }, 30);
         }).catch(function(err) {
           console.error("Cache batch error", err);
@@ -1255,6 +1353,7 @@ function App() {
       console.error("Download offline tiles error", globalErr);
       flash("Error: " + globalErr.message);
       setOfflineMode(false);
+      setOfflineConfigOpen(false);
     }
   }
 
@@ -2212,14 +2311,22 @@ function App() {
   useEffect(function(){
     if(!splashDone) return;
     setLoading(true);
-    api.list().then(function(data){
-      if(Array.isArray(data)){
-        setPins(data);
-        window._allPins = data;
-        window._pinsLoaded = true;
-        checkNewComments(data);
-      }
-    }).catch(function(){flash("Could not load pins");}).finally(function(){setLoading(false);});
+    if (isOnline) {
+      api.list().then(function(data){
+        if(Array.isArray(data)){
+          setPins(data);
+          window._allPins = data;
+          window._pinsLoaded = true;
+          checkNewComments(data);
+        }
+      }).catch(function(){
+        flash("Could not load pins; loading local pins");
+        loadOfflinePins();
+      }).finally(function(){setLoading(false);});
+    } else {
+      loadOfflinePins();
+      setLoading(false);
+    }
     // Load trending tags
     setTrendingLoading(true);
     api.getTrending().then(function(data){setTrending(data);setTrendingLoading(false);});
@@ -2235,6 +2342,22 @@ function App() {
       .then(function(data){ setTrails(data || []); })
       .catch(function(err){ console.error("Could not load trails:", err); });
   },[splashDone]);
+
+  useEffect(function(){
+    if(!splashDone) return;
+    if (isOnline) {
+      setLoading(true);
+      api.list().then(function(data){
+        if(Array.isArray(data)){
+          setPins(data);
+          window._allPins = data;
+          window._pinsLoaded = true;
+        }
+      }).catch(function(){}).finally(function(){setLoading(false);});
+    } else {
+      loadOfflinePins();
+    }
+  }, [isOnline]);
 
   useEffect(function(){
     if(!selPin) {
@@ -5440,30 +5563,105 @@ function App() {
           }},"✥ Drag to move · corners to resize")
         ),
 
-        // ── Action bar below the reticle ───────────────────────────
-        e("div",{style:{
-          position:"absolute",
-          top: Math.min(rb.top + rb.height + 16, vh - 80),
-          left:0,right:0,
-          display:"flex",justifyContent:"center",gap:12,
-          padding:"0 24px"
-        }},
-          e("button",{
-            style:{flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
-              border:"1px solid rgba(246,241,228,0.4)",
-              background:"rgba(26,32,28,0.82)",
-              color:"rgba(246,241,228,0.85)",fontSize:14,cursor:"pointer",
-              fontFamily:"Inter, system-ui, sans-serif"},
-            onClick:function(){setOfflineMode(false);}
-          },"Cancel"),
-          e("button",{
-            style:{flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
-              border:"none",background:"#2a5d3c",
-              color:"#f6f1e4",fontSize:14,fontWeight:700,cursor:"pointer",
-              fontFamily:"Inter, system-ui, sans-serif",
-              boxShadow:"0 4px 16px rgba(0,0,0,0.3)"},
-            onClick:downloadOfflineTiles
-          },"📥 Download")
+        // ── Action bar / Configuration Panel below the reticle ───────────────────────────
+        offlineConfigOpen ? (
+          e("div", {
+            style: {
+              position: "absolute",
+              top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: T.paper,
+              border: "1px solid " + T.border,
+              borderRadius: 20,
+              padding: "24px 28px",
+              width: 310,
+              display: "flex", flexDirection: "column", gap: 14,
+              boxShadow: "0 12px 36px rgba(0,0,0,0.25)",
+              zIndex: 3000
+            }
+          },
+            e("div", { style: { fontSize: 16, fontWeight: 800, color: T.forest, textAlign: "center", letterSpacing: "0.02em" } },
+              lang === 'es' ? "Configurar Mapa sin Conexión" : "Offline Map Settings"
+            ),
+            e("div", { style: { display: "flex", flexDirection: "column", gap: 5 } },
+              e("label", { style: { fontSize: 11, fontWeight: 700, color: T.ink3 } }, lang === 'es' ? "Nombre del Mapa" : "Map Name"),
+              e("input", {
+                type: "text",
+                value: offlineConfigName,
+                onChange: function(ev) { setOfflineConfigName(ev.target.value); },
+                placeholder: lang === 'es' ? "Ej. Bahía de Pesca" : "e.g. Fishing Bay",
+                style: { padding: "10px 12px", borderRadius: 10, border: "1px solid " + T.border, background: T.paper2, color: T.ink, fontSize: 13 }
+              })
+            ),
+            e("div", { style: { display: "flex", flexDirection: "column", gap: 5 } },
+              e("label", { style: { fontSize: 11, fontWeight: 700, color: T.ink3 } }, lang === 'es' ? "Filtrar por Etiqueta (Opcional)" : "Filter by Tag (Optional)"),
+              e("input", {
+                type: "text",
+                value: offlineConfigTag,
+                onChange: function(ev) { onOfflineTagChange(ev.target.value); },
+                placeholder: "#fishing, #hiking...",
+                style: { padding: "10px 12px", borderRadius: 10, border: "1px solid " + T.border, background: T.paper2, color: T.ink, fontSize: 13 }
+              })
+            ),
+            e("div", {
+              style: {
+                background: T.paper2,
+                borderRadius: 10,
+                padding: "8px 12px",
+                fontSize: 12,
+                color: T.ink2,
+                textAlign: "center",
+                border: "1px solid " + T.borderSoft
+              }
+            },
+              offlineConfigCounting ? (
+                e("span", { style: { color: T.ink3 } }, lang === 'es' ? "🔍 Contando pines..." : "🔍 Counting pins...")
+              ) : offlineConfigPinCount !== null ? (
+                e("span", { style: { fontWeight: 700, color: offlineConfigPinCount > 0 ? T.forest : T.ink2 } },
+                  lang === 'es'
+                    ? "📌 " + offlineConfigPinCount + " pines encontrados"
+                    : "📌 " + offlineConfigPinCount + " pins found in area"
+                )
+              ) : (
+                e("span", { style: { color: T.ink3 } }, lang === 'es' ? "Ingresa una etiqueta para filtrar" : "Type a tag to calculate count")
+              )
+            ),
+            e("div", { style: { display: "flex", gap: 10, marginTop: 4 } },
+              e("button", {
+                onClick: function() { setOfflineConfigOpen(false); },
+                style: { flex: 1, padding: "11px 0", borderRadius: 10, border: "1px solid " + T.border, background: T.paper2, color: T.ink, fontSize: 13, cursor: "pointer", fontWeight: 600 }
+              }, lang === 'es' ? "Atrás" : "Back"),
+              e("button", {
+                onClick: downloadOfflineTiles,
+                style: { flex: 1, padding: "11px 0", borderRadius: 10, border: "none", background: "#2a5d3c", color: "#f6f1e4", fontSize: 13, fontWeight: 700, cursor: "pointer" }
+              }, lang === 'es' ? "Descargar" : "Download")
+            )
+          )
+        ) : (
+          e("div",{style:{
+            position:"absolute",
+            top: Math.min(rb.top + rb.height + 16, vh - 80),
+            left:0,right:0,
+            display:"flex",justifyContent:"center",gap:12,
+            padding:"0 24px"
+          }},
+            e("button",{
+              style:{flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
+                border:"1px solid rgba(246,241,228,0.4)",
+                background:"rgba(26,32,28,0.82)",
+                color:"rgba(246,241,228,0.85)",fontSize:14,cursor:"pointer",
+                fontFamily:"Inter, system-ui, sans-serif"},
+              onClick:function(){setOfflineMode(false);}
+            },"Cancel"),
+            e("button",{
+              style:{flex:1,maxWidth:160,padding:"13px 0",borderRadius:12,
+                border:"none",background:"#2a5d3c",
+                color:"#f6f1e4",fontSize:14,fontWeight:700,cursor:"pointer",
+                fontFamily:"Inter, system-ui, sans-serif",
+                boxShadow:"0 4px 16px rgba(0,0,0,0.3)"},
+              onClick:openOfflineConfig
+            },"📥 Download")
+          )
         )
       );
     })(),

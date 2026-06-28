@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v386";
+var CACHE_NAME = "pinmap-v387";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -74,6 +74,34 @@ self.addEventListener("fetch", function(event) {
             caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
           }
           return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Supabase storage files (photos/images) - cache-first, then network
+  if (url.includes("supabase.co/storage/v1/object/public")) {
+    event.respondWith(
+      caches.open(TILE_CACHE).then(function(cache) {
+        return cache.match(event.request).then(function(cached) {
+          if (cached) return cached;
+          return fetch(event.request).then(function(response) {
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          }).catch(function() {
+            // Return transparent 1x1 png if offline and not cached
+            var transparentPng = new Uint8Array([
+              137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,
+              8,6,0,0,0,31,21,196,137,0,0,0,10,73,68,65,84,120,156,98,0,1,0,0,
+              5,0,1,13,10,45,180,0,0,0,0,73,69,78,68,174,66,96,130
+            ]);
+            return new Response(transparentPng.buffer, {
+              headers: { "Content-Type": "image/png" }
+            });
+          });
         });
       })
     );
