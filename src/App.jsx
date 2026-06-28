@@ -852,6 +852,12 @@ function App() {
 
   function downloadOfflineTiles() {
     if(!mapObj.current || !reticleBox) return;
+    var packName = window.prompt(lang === 'es' ? "Ingresa un nombre para tu mapa sin conexión:" : "Enter a name for your offline map pack:");
+    if(!packName || packName.trim() === "") {
+      setOfflineMode(false);
+      return;
+    }
+    packName = packName.trim();
     var map = mapObj.current;
     // Convert reticle pixel corners to lat/lng using the frozen map state
     var rb = reticleBox;
@@ -882,6 +888,22 @@ function App() {
     }
     tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
     if(tiles.length > 8000) { flash(t("toast_trail_too_large", {count: tiles.length})); setOfflineMode(false); return; }
+    
+    var packId = "pack_" + Date.now();
+    var newPack = {
+      id: packId,
+      name: packName,
+      tileCount: tiles.length,
+      bounds: [[llNW.lat, llNW.lng], [llSE.lat, llSE.lng]],
+      date: Date.now(),
+      baseLayer: baseLayer
+    };
+    try {
+      var packs = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
+      packs.push(newPack);
+      localStorage.setItem("pinmap_offline_packs", JSON.stringify(packs));
+    } catch(e){}
+
     setOfflineMode(false);
     flash(t("toast_tiles_downloading", {count: tiles.length}));
     var loaded = 0;

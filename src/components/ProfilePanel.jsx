@@ -138,6 +138,25 @@ export function ProfilePanel(props) {
   var setOnboardStep = props.setOnboardStep || function(){};
   var setOpen = props.setOpen || function(){};
   var setShowFeatures = props.setShowFeatures || function(){};
+
+  var [offlinePacks, setOfflinePacks] = React.useState([]);
+  React.useEffect(function() {
+    try {
+      var packs = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
+      setOfflinePacks(packs);
+    } catch(e) {}
+  }, []);
+
+  var handleDeleteOfflinePack = function(packId) {
+    if(!window.confirm(lang === 'es' ? "¿Eliminar este mapa sin conexión?" : "Delete this offline map pack?")) return;
+    try {
+      var packs = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
+      packs = packs.filter(function(p) { return p.id !== packId; });
+      localStorage.setItem("pinmap_offline_packs", JSON.stringify(packs));
+      setOfflinePacks(packs);
+      flash(lang === 'es' ? "Paquete eliminado" : "Pack deleted");
+    } catch(e) {}
+  };
   var setMyProfile = props.setMyProfile || function(){};
   var setShowImport = props.setShowImport || function(){};
   var myProfile = props.myProfile || null;
@@ -402,8 +421,8 @@ export function ProfilePanel(props) {
                 <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
               </div>
               <div>
-                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Colecciones':'Collections'}</div>
-                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{myCollections.length} {lang==='es'?'Paquetes':'Packs'}</div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Colecciones y Mapas':'Collections & Maps'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{myCollections.length} {lang==='es'?'Colecciones':'Collections'}</div>
               </div>
             </button>
 
@@ -1090,7 +1109,7 @@ export function ProfilePanel(props) {
               }}
             >
               <span style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
-                <span>{t('collections') + (myCollections.length > 0 ? " · " + myCollections.length : "")}</span>
+                <span>{(lang==='es'?'Colecciones y Mapas':'Collections & Maps') + (myCollections.length > 0 ? " · " + myCollections.length : "")}</span>
               </span>
               <span 
                 className="pm-info-btn"
@@ -1241,6 +1260,69 @@ export function ProfilePanel(props) {
                 })
               )}
             </div>
+          </div>
+
+          {/* Offline Map Packs */}
+          <div style={{marginTop: 32}}>
+            <div 
+              className="pm-section-header"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 16
+              }}
+            >
+              <span style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
+                <span>{lang === 'es' ? 'Mapas sin conexión' : 'Offline Map Packs'} {offlinePacks.length > 0 ? `· ${offlinePacks.length}` : ""}</span>
+              </span>
+              
+              {offlinePacks.length > 0 && (
+                <button 
+                  style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",fontSize:11,fontWeight:600}}
+                  onClick={function() {
+                    if(window.confirm(lang === 'es' ? '¿Eliminar todos los mapas sin conexión?' : 'Delete all offline maps?')) {
+                      if(props.onPurgeOfflineTiles) props.onPurgeOfflineTiles();
+                      localStorage.removeItem("pinmap_offline_packs");
+                      setOfflinePacks([]);
+                    }
+                  }}
+                >
+                  {lang === 'es' ? 'Eliminar todos' : 'Delete All'}
+                </button>
+              )}
+            </div>
+            
+            {offlinePacks.length === 0 ? (
+              <EmptyState 
+                icon={<svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>}
+                title={lang === 'es' ? 'Sin mapas' : 'No Map Packs'}
+                description={lang === 'es' ? 'Descarga áreas del mapa para usarlas sin conexión.' : 'Download map areas for offline use while exploring.'}
+                actionLabel={lang === 'es' ? 'Descargar mapa' : 'Download Map'}
+                onAction={props.onStartOfflineMode}
+              />
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {offlinePacks.map(function(pack) { return (
+                  <div key={pack.id} style={{padding:16,background:T.paper2,borderRadius:12,border:"1px solid "+T.border}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div>
+                        <div style={{fontSize:15,fontWeight:700,color:T.ink}}>{pack.name}</div>
+                        <div style={{fontSize:12,color:T.ink3,marginTop:4}}>
+                          {new Date(pack.date).toLocaleDateString()} · ~{(pack.tileCount * 0.05).toFixed(1)} MB
+                        </div>
+                      </div>
+                      <button 
+                        style={{background:"none",border:"none",color:"#c05050",cursor:"pointer",padding:4}}
+                        onClick={function() { handleDeleteOfflinePack(pack.id); }}
+                      >
+                        <svg width={15} height={15} viewBox="0 0 24 24" fill="none"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-6 5v6m4-6v6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                ); })}
+              </div>
+            )}
           </div>
         </div>
       )}
