@@ -425,7 +425,7 @@ function App() {
     function connectToAisStream(apiKey) {
       cleanUpVessels();
       try {
-        var ws = new WebSocket("wss://api.aisstream.io/v1/sub");
+        var ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
         aisSocketRef.current = ws;
 
         ws.onopen = function() {
@@ -470,7 +470,7 @@ function App() {
       var ne = bounds.getNorthEast();
 
       var subMessage = {
-        APIKey: apiKey,
+        Apikey: apiKey,
         BoundingBoxes: [[[sw.lat, sw.lng], [ne.lat, ne.lng]]]
       };
       try {
