@@ -174,7 +174,6 @@ export function ProfilePanel(props) {
             {t('back_to_profile', 'Back')}
           </button>
         )}
-        <div style={{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono}}>{t('profile')}</div>
         {activeSection === "overview" && user && !editingProfile && (
           <button 
             style={{fontSize:12,padding:"5px 14px",borderRadius:18,border:"1px solid "+T.border,background:"transparent",color:T.ink2,cursor:"pointer",fontWeight:500}}
