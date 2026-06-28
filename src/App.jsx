@@ -580,7 +580,7 @@ function App() {
       map.off("moveend", onMapMoveEnd);
       cleanUpVessels();
     };
-  }, [baseLayer]);
+  }, [baseLayer, open]);
   // reticle box: {top,left,width,height} in viewport-px, initialised when offlineMode opens
   var s71=useState(null); var reticleBox=s71[0]; var setReticleBox=s71[1];
   var reticleDrag=useRef(null); // {startX,startY,origTop,origLeft}
