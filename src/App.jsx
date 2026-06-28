@@ -372,6 +372,215 @@ function App() {
   var s70=useState(false); var offlineMode=s70[0]; var setOfflineMode=s70[1];
   var [offlineDownloadProgress, setOfflineDownloadProgress] = useState(null);
   var [offlineDownloadTotal, setOfflineDownloadTotal] = useState(null);
+  var [showAisModal, setShowAisModal] = useState(false);
+  useEffect(function() {
+    if (baseLayer === "marine") {
+      var key = localStorage.getItem("pinmap_ais_key") || "";
+      var dismissed = localStorage.getItem("pinmap_ais_dismissed") || "false";
+      if (!key && dismissed !== "true") {
+        setShowAisModal(true);
+      }
+    }
+  }, [baseLayer]);
+
+  // Live Vessel Overlay Controller
+  var vesselMarkersRef = useRef({});
+  var aisSocketRef = useRef(null);
+  var simVesselsTimerRef = useRef(null);
+
+  useEffect(function() {
+    var map = mapObj.current;
+    if (!map) return;
+
+    function cleanUpVessels() {
+      Object.keys(vesselMarkersRef.current).forEach(function(mmsi) {
+        try { vesselMarkersRef.current[mmsi].remove(); } catch(e){}
+      });
+      vesselMarkersRef.current = {};
+
+      if (aisSocketRef.current) {
+        try { aisSocketRef.current.close(); } catch(e){}
+        aisSocketRef.current = null;
+      }
+
+      if (simVesselsTimerRef.current) {
+        clearInterval(simVesselsTimerRef.current);
+        simVesselsTimerRef.current = null;
+      }
+    }
+
+    if (baseLayer !== "marine") {
+      cleanUpVessels();
+      return;
+    }
+
+    var apiImportKey = localStorage.getItem("pinmap_ais_key") || "";
+
+    if (apiImportKey) {
+      connectToAisStream(apiImportKey);
+    } else {
+      startSimulation();
+    }
+
+    function connectToAisStream(apiKey) {
+      cleanUpVessels();
+      try {
+        var ws = new WebSocket("wss://api.aisstream.io/v1/sub");
+        aisSocketRef.current = ws;
+
+        ws.onopen = function() {
+          subscribeToViewport(ws, apiKey);
+        };
+
+        ws.onmessage = function(event) {
+          try {
+            var data = JSON.parse(event.data);
+            if (data && data.MessageType === "PositionReport" && data.Message) {
+              var pos = data.Message.PositionReport;
+              var metadata = data.MetaData;
+              var mmsi = metadata.MMSI;
+              var name = metadata.ShipName ? metadata.ShipName.trim() : "Unknown Ship";
+              var lat = pos.Latitude;
+              var lng = pos.Longitude;
+              var cog = pos.Cog;
+              var sog = pos.Sog;
+              var type = metadata.ShipType || 0;
+
+              updateVesselMarker(mmsi, name, lat, lng, cog, sog, type, false);
+            }
+          } catch(e){}
+        };
+
+        ws.onclose = function() {
+          setTimeout(function() {
+            if (baseLayerRef.current === "marine" && !aisSocketRef.current) {
+              connectToAisStream(apiKey);
+            }
+          }, 5000);
+        };
+      } catch(e){
+        console.error("AIS websocket error", e);
+      }
+    }
+
+    function subscribeToViewport(ws, apiKey) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      var bounds = map.getBounds();
+      var sw = bounds.getSouthWest();
+      var ne = bounds.getNorthEast();
+
+      var subMessage = {
+        APIKey: apiKey,
+        BoundingBoxes: [[[sw.lat, sw.lng], [ne.lat, ne.lng]]]
+      };
+      try {
+        ws.send(JSON.stringify(subMessage));
+      } catch(e){}
+    }
+
+    function onMapMoveEnd() {
+      if (aisSocketRef.current && aisSocketRef.current.readyState === WebSocket.OPEN) {
+        subscribeToViewport(aisSocketRef.current, apiImportKey);
+      }
+    }
+    map.on("moveend", onMapMoveEnd);
+
+    function getVesselTypeLabel(typeNum) {
+      if (typeNum >= 70 && typeNum <= 79) return lang === 'es' ? "Carguero" : "Cargo Vessel";
+      if (typeNum >= 80 && typeNum <= 89) return lang === 'es' ? "Petrolero" : "Tanker";
+      if (typeNum >= 60 && typeNum <= 69) return lang === 'es' ? "Pasajeros" : "Passenger/Ferry";
+      if (typeNum >= 36 && typeNum <= 37) return lang === 'es' ? "Remolcador" : "Tug/Towing";
+      if (typeNum === 30) return lang === 'es' ? "Pesquero" : "Fishing Vessel";
+      return lang === 'es' ? "Embarcación" : "Vessel";
+    }
+
+    function updateVesselMarker(mmsi, name, lat, lng, heading, speed, type, isSimulated) {
+      var marker = vesselMarkersRef.current[mmsi];
+      if (marker) {
+        marker.setLngLat([lng, lat]);
+        var img = marker.getElement().querySelector('img');
+        if (img) img.style.transform = "rotate(" + (heading || 0) + "deg)";
+      } else {
+        var el = document.createElement("div");
+        el.className = "pm-vessel-marker";
+        el.style.width = "24px";
+        el.style.height = "24px";
+        el.style.cursor = "pointer";
+        
+        var clr = isSimulated ? "#3b82f6" : "#10b981";
+        el.innerHTML = '<img src="data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\''+encodeURIComponent(clr)+'\' stroke=\'white\' stroke-width=\'1.5\'><path d=\'M12 2L4 22l8-4 8 4z\'/></svg>" style="width:100%;height:100%;transform:rotate('+(heading || 0)+'deg);transition:transform 0.3s ease;" />';
+
+        el.addEventListener("click", function(ev) {
+          ev.stopPropagation();
+          var typeStr = getVesselTypeLabel(type);
+          var popupContent = '<div style="font-family:sans-serif;padding:6px;min-width:180px;">' +
+            '<div style="font-weight:700;font-size:14px;color:'+clr+';margin-bottom:4px;">🚢 ' + name + '</div>' +
+            '<div style="font-size:11px;color:#888;margin-bottom:6px;">MMSI: ' + mmsi + (isSimulated ? ' (Sim)' : '') + '</div>' +
+            '<div style="font-size:12px;margin:2px 0;"><b>' + (lang==='es'?'Tipo:':'Type:') + '</b> ' + typeStr + '</div>' +
+            '<div style="font-size:12px;margin:2px 0;"><b>' + (lang==='es'?'Velocidad:':'Speed:') + '</b> ' + (speed || 0) + ' knots</div>' +
+            '<div style="font-size:12px;margin:2px 0;"><b>' + (lang==='es'?'Rumbo:':'Heading:') + '</b> ' + (heading || 0) + '°</div>' +
+            '</div>';
+
+          new window.maplibregl.Popup({ offset: 12 })
+            .setLngLat([lng, lat])
+            .setHTML(popupContent)
+            .addTo(map);
+        });
+
+        marker = new window.maplibregl.Marker({ element: el })
+          .setLngLat([lng, lat])
+          .addTo(map);
+
+        vesselMarkersRef.current[mmsi] = marker;
+      }
+    }
+
+    function startSimulation() {
+      cleanUpVessels();
+      var center = map.getCenter();
+      var simPacks = [];
+      var names = ["Oceanic Explorer", "Sea Spray", "Marlin Hunter", "Blue Whale", "Wave Runner", "Gulf Titan"];
+      var types = [70, 80, 60, 30, 36, 70];
+
+      for (var i = 0; i < 6; i++) {
+        var offsetLat = (Math.random() - 0.5) * 0.08;
+        var offsetLng = (Math.random() - 0.5) * 0.08;
+        simPacks.push({
+          mmsi: 990000000 + i,
+          name: names[i],
+          lat: center.lat + offsetLat,
+          lng: center.lng + offsetLng,
+          heading: Math.floor(Math.random() * 360),
+          speed: parseFloat((Math.random() * 15 + 2).toFixed(1)),
+          type: types[i]
+        });
+      }
+
+      simPacks.forEach(function(v) {
+        updateVesselMarker(v.mmsi, v.name, v.lat, v.lng, v.heading, v.speed, v.type, true);
+      });
+
+      simVesselsTimerRef.current = setInterval(function() {
+        simPacks.forEach(function(v) {
+          var rad = (v.heading * Math.PI) / 180;
+          var dist = (v.speed * 0.0005) / 60;
+          v.lat += dist * Math.cos(rad);
+          v.lng += dist * Math.sin(rad);
+
+          if (Math.random() > 0.8) {
+            v.heading = (v.heading + Math.floor((Math.random() - 0.5) * 20) + 360) % 360;
+          }
+
+          updateVesselMarker(v.mmsi, v.name, v.lat, v.lng, v.heading, v.speed, v.type, true);
+        });
+      }, 2000);
+    }
+
+    return function() {
+      map.off("moveend", onMapMoveEnd);
+      cleanUpVessels();
+    };
+  }, [baseLayer]);
   // reticle box: {top,left,width,height} in viewport-px, initialised when offlineMode opens
   var s71=useState(null); var reticleBox=s71[0]; var setReticleBox=s71[1];
   var reticleDrag=useRef(null); // {startX,startY,origTop,origLeft}
@@ -1848,6 +2057,21 @@ function App() {
             });
           }
         }
+        if (baseLayerRef.current === "marine") {
+          if (!map.getSource('marine-seamarks')) {
+            map.addSource('marine-seamarks', {
+              type: 'raster',
+              tiles: ['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'],
+              tileSize: 256
+            });
+            map.addLayer({
+              id: 'marine-seamarks-layer',
+              type: 'raster',
+              source: 'marine-seamarks',
+              paint: { 'raster-opacity': 0.85 }
+            });
+          }
+        }
 
         setStyleLoadCount(function(c){ return c + 1; });
       });
@@ -2086,10 +2310,12 @@ function App() {
       if (map.getSource('hiking-trails')) map.removeSource('hiking-trails');
       if (map.getLayer('cycling-trails-layer')) map.removeLayer('cycling-trails-layer');
       if (map.getSource('cycling-trails')) map.removeSource('cycling-trails');
+      if (map.getLayer('marine-seamarks-layer')) map.removeLayer('marine-seamarks-layer');
+      if (map.getSource('marine-seamarks')) map.removeSource('marine-seamarks');
     } catch(e){}
     
     // Reset OpenFreeMap failure flag on manual style switch so we retry it
-    if (baseLayer === "osm" || baseLayer === "trails") {
+    if (baseLayer === "osm" || baseLayer === "trails" || baseLayer === "marine") {
       window._ofmFailed = false;
     }
 
@@ -2111,6 +2337,25 @@ function App() {
             id: 'hiking-trails-layer',
             type: 'raster',
             source: 'hiking-trails',
+            paint: { 'raster-opacity': 0.85 }
+          });
+        }
+      } catch(e){}
+    } else if (baseLayer === "marine") {
+      applyStyleWithFallback(map, "https://tiles.openfreemap.org/styles/liberty");
+      try {
+        if (!map.getSource('marine-seamarks')) {
+          map.addSource('marine-seamarks', {
+            type: 'raster',
+            tiles: ['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'],
+            tileSize: 256
+          });
+        }
+        if (!map.getLayer('marine-seamarks-layer')) {
+          map.addLayer({
+            id: 'marine-seamarks-layer',
+            type: 'raster',
+            source: 'marine-seamarks',
             paint: { 'raster-opacity': 0.85 }
           });
         }
@@ -3953,6 +4198,10 @@ function App() {
       e("path",{d:"M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"}),
       e("circle",{cx:12,cy:10,r:3})
     ),  url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf",                                     attr:"© OpenFreeMap © OpenStreetMap contributors",    overlay:"https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png"},
+    {id:"marine",    label:lang==='es'?'Marino':'Marine', iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
+      e("path",{d:"M12 2v18M5 12h14M12 20a7 7 0 0 1-7-7M12 20a7 7 0 0 0 7-7"}),
+      e("circle",{cx:12,cy:5,r:3})
+    ), url:"https://tiles.openfreemap.org/planet/v1/{z}/{x}/{y}.pbf", attr:"© OpenFreeMap © OpenSeaMap contributors", overlay:"https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"},
     {id:"cycling",   label:t("layer_cycling", "Cycling"),   iconSvg:e("svg",{width:18,height:18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},
       e("circle",{cx:5.5,cy:17.5,r:3.5}),
       e("circle",{cx:18.5,cy:17.5,r:3.5}),
@@ -5317,6 +5566,64 @@ function App() {
       selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToCollectionsMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null), activeHuntCheckinLogged: (quickHunts.active ? quickHunts.active.activeCheckinLogged : false), onHuntProgress: handleHuntProgress }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
+
+    showAisModal && e("div", {
+      style: {
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.5)", zIndex: 10001,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 20
+      }
+    },
+      e("div", {
+        style: {
+          background: T.paper, border: "1px solid " + T.borderSoft,
+          borderRadius: 20, padding: 24, maxWidth: 360, width: "100%",
+          boxShadow: S.shadow2, display: "flex", flexDirection: "column", gap: 16
+        }
+      },
+        e("div", { style: { fontSize: 28, textAlign: "center" } }, "🚢"),
+        e("div", { style: { fontSize: 18, fontWeight: 700, color: T.ink, textAlign: "center" } },
+          lang === 'es' ? "Tráfico Marítimo en Vivo" : "Live Marine Traffic"
+        ),
+        e("div", { style: { fontSize: 13, color: T.ink2, lineHeight: 1.5, textAlign: "center" } },
+          lang === 'es'
+            ? "Para ver barcos reales en tiempo real, necesitas una clave API gratuita de AISstream.io. Mientras tanto, mostraremos barcos simulados para que pruebes la función."
+            : "To view real-world ships in real-time, you need a free API key from AISstream.io. In the meantime, we will show simulated vessels so you can test the feature."
+        ),
+        e("button", {
+          onClick: function() {
+            window.open("https://aisstream.io/", "_blank");
+          },
+          style: {
+            padding: "12px 0", borderRadius: 12, border: "none",
+            background: T.forest, color: T.paper, fontWeight: 600,
+            cursor: "pointer", display: "flex", alignItems: "center",
+            justifyContent: "center", gap: 6
+          }
+        },
+          e("svg", { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2 },
+            e("path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }),
+            e("polyline", { points: "15 3 21 3 21 9" }),
+            e("line", { x1: 10, y1: 14, x2: 21, y2: 3 })
+          ),
+          lang === 'es' ? "Obtener Clave Gratuita" : "Get Free API Key"
+        ),
+        e("button", {
+          onClick: function() {
+            localStorage.setItem("pinmap_ais_dismissed", "true");
+            setShowAisModal(false);
+          },
+          style: {
+            padding: "10px 0", borderRadius: 12, border: "1px solid " + T.border,
+            background: "transparent", color: T.ink3, fontWeight: 600,
+            cursor: "pointer", textAlign: "center"
+          }
+        },
+          lang === 'es' ? "Entendido (Mostrar Simulación)" : "Got it (Show Simulation)"
+        )
+      )
+    ),
     pendingHuntId && e(HuntJoinModal, {
       huntId: pendingHuntId,
       userId: uname,

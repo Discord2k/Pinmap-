@@ -157,6 +157,10 @@ export function ProfilePanel(props) {
       flash(lang === 'es' ? "Paquete eliminado" : "Pack deleted");
     } catch(e) {}
   };
+
+  var [aisKey, setAisKey] = React.useState(function(){
+    return localStorage.getItem("pinmap_ais_key") || "";
+  });
   var setMyProfile = props.setMyProfile || function(){};
   var setShowImport = props.setShowImport || function(){};
   var myProfile = props.myProfile || null;
@@ -1656,6 +1660,57 @@ export function ProfilePanel(props) {
                         </svg>
                         <div style={{flex:1,fontSize:15,color:T.ink}}>{t('terms_service')}</div>
                         {chevronSvg}
+                      </div>
+                    </div>
+
+                    {/* ── MARINE SETTINGS ── */}
+                    <div className="pm-settings-label">{lang === 'es' ? "Configuración Marina" : "Marine Settings"}</div>
+                    <div className="pm-settings-card" style={{padding:"16px", display:"flex", flexDirection:"column", gap:10}}>
+                      <div style={{fontSize:14,fontWeight:700,color:T.ink}}>
+                        {lang === 'es' ? "Clave API de AISstream.io" : "AISstream.io API Key"}
+                      </div>
+                      <div style={{fontSize:12,color:T.ink3,lineHeight:1.4}}>
+                        {lang === 'es' 
+                          ? "Pega tu clave API gratuita para ver barcos en tiempo real. Consigue una clave en aisstream.io" 
+                          : "Paste your free API key to track live ships in real-time. Get a key at aisstream.io"}
+                      </div>
+                      <div style={{display:"flex",gap:8,alignItems:"center",marginTop:4}}>
+                        <input 
+                          type="password"
+                          placeholder="Your API Key"
+                          value={aisKey}
+                          onChange={function(e){
+                            var key = e.target.value;
+                            setAisKey(key);
+                            localStorage.setItem("pinmap_ais_key", key);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "8px 12px",
+                            borderRadius: 8,
+                            border: "1px solid " + T.border,
+                            background: T.paper2,
+                            color: T.ink,
+                            fontSize: 13
+                          }}
+                        />
+                        <button
+                          onClick={function(){
+                            window.open("https://aisstream.io/", "_blank");
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: 8,
+                            border: "none",
+                            background: T.forestPale,
+                            color: T.forest,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: "pointer"
+                          }}
+                        >
+                          {lang === 'es' ? "Obtener clave" : "Get Key"}
+                        </button>
                       </div>
                     </div>
 
