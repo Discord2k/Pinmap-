@@ -25,6 +25,7 @@ export function BottomNav({ uname, open, tab, setOpen, setTab, t, unreadCount })
           };
           return e("button",{key:it.id, id:"btn-tab-" + it.id,
           onClick:function(){
+            if (navigator.vibrate) navigator.vibrate(40);
             if(isMap){ setOpen(false); return; }
             setTab(it.id); setOpen(true);
           },
