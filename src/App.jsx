@@ -5069,9 +5069,13 @@ function App() {
 
     open && e("div",{className:"bubble",style:{position:"fixed",left:0,right:0,top:0,bottom:60,zIndex:1000,background:T.paper,overflow:"hidden",display:"flex",flexDirection:"column",animation:"fadeIn 0.18s ease both"}},
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"calc(16px + env(safe-area-inset-top,0px)) 22px 12px",borderBottom:"1px solid #e6dfca",background:"#f6f1e4",flexShrink:0}},
-        e("div",{style:{display:"flex",flexDirection:"column",gap:1}},
-          e("span",{style:{fontSize:14,fontWeight:700,letterSpacing:2,color:"#2a5d3c"}},"📍 PINMAP"),
-          e("span",{style:{fontSize:10,color:"#9a8f74",letterSpacing:0.3}},"(c) Seth Gray")
+        e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+          e("svg",{viewBox:"0 0 64 64",width:24,height:24},
+            e("circle",{cx:32,cy:32,r:32,fill:"#2a5d3c"}),
+            e("path",{d:"M32 12C23.163 12 16 19.163 16 28c0 13 16 26 16 26s16-13 16-26c0-8.837-7.163-16-16-16z",fill:"#f6f1e4"}),
+            e("circle",{cx:32,cy:28,r:7,fill:"#2a5d3c"})
+          ),
+          e("span",{style:{fontSize:16,fontWeight:800,letterSpacing:3,color:"#2a5d3c"}},"PINMAP")
         ),
         e("div",{style:{display:"flex",alignItems:"center",gap:6}},
           user&&userAvatar(user)?e("img",{src:userAvatar(user),style:{width:22,height:22,borderRadius:"50%",border:"1px solid #d8cfb8"}}):null,
