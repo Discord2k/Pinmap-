@@ -322,7 +322,7 @@ function App() {
   var s42=useState(null); var installPrompt=s42[0]; var setInstallPrompt=s42[1];
   var s44=useState([]); var userFollows=s44[0]; var setUserFollows=s44[1];
   var sShowCompass=useState(false); var showCompass=sShowCompass[0]; var setShowCompass=sShowCompass[1];
-  var sShowAddToGuidesMenu=useState(false); var showAddToGuidesMenu=sShowAddToGuidesMenu[0]; var setShowAddToGuidesMenu=sShowAddToGuidesMenu[1];
+  var sShowAddToCollectionsMenu=useState(false); var showAddToCollectionsMenu=sShowAddToCollectionsMenu[0]; var setShowAddToCollectionsMenu=sShowAddToCollectionsMenu[1];
   var s80=useState([]); var followers=s80[0]; var setFollowers=s80[1];
   var s43=useState(false); var showInstall=s43[0]; var setShowInstall=s43[1];
   var sReadyToShowBanner=useState(false); var readyToShowBanner=sReadyToShowBanner[0]; var setReadyToShowBanner=sReadyToShowBanner[1];
@@ -1673,7 +1673,7 @@ function App() {
     sb.from("mappack_pins").select("mappack_id").eq("pin_id", selPin.id).then(function(r){
       setSelPinMapPackIds((r.data||[]).map(function(d){ return d.mappack_id; }));
     }).catch(function(err){
-      console.error("Error loading pin guides:", err);
+      console.error("Error loading pin collections:", err);
     });
 
     if (uname && uname !== 'guest') {
@@ -2726,10 +2726,10 @@ function App() {
     api.createMapPack(pack).then(function(newPack) {
       if(newPack && newPack.length > 0) {
         setMapPacks(function(prev) { return [newPack[0]].concat(prev); });
-        flash("🧭 Guide '" + pack.name + "' created!");
+        flash("🧭 Collection '" + pack.name + "' created!");
       }
     }).catch(function(err) {
-      flash("Failed to create guide: " + err.message);
+      flash("Failed to create collection: " + err.message);
     });
   }
 
@@ -2740,9 +2740,9 @@ function App() {
         setActiveMapPack(null);
         setActiveMapPackPinIds([]);
       }
-      flash("Guide deleted.");
+      flash("Collection deleted.");
     }).catch(function(err) {
-      flash("Failed to delete guide: " + err.message);
+      flash("Failed to delete collection: " + err.message);
     });
   }
 
@@ -2770,7 +2770,7 @@ function App() {
     if (!pack) {
       setActiveMapPack(null);
       setActiveMapPackPinIds([]);
-      flash("Guide mode deactivated.");
+      flash("Collection mode deactivated.");
       return;
     }
     setActiveMapPack(pack);
@@ -2781,7 +2781,7 @@ function App() {
       flash("Showing '" + pack.name + "' on map!");
     }).catch(function(err) {
       console.error(err);
-      flash("Failed to load guide pins.");
+      flash("Failed to load collection pins.");
     });
   }
 
@@ -3665,10 +3665,10 @@ function App() {
     },
       e("div", {style: {flex: 1}},
         e("div", {style: {display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap"}},
-          e("span", {style: {fontSize: 10, background: "#2a5d3c", color: "#f6f1e4", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Guide"),
+          e("span", {style: {fontSize: 10, background: "#2a5d3c", color: "#f6f1e4", padding: "2px 6px", borderRadius: 10, fontFamily: "JetBrains Mono, monospace", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em"}}, "Active Collection"),
           e("span", {style: {fontWeight: 700, fontSize: 14, color: "#1a201c"}}, activeMapPack.name)
         ),
-        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3}}, activeMapPack.description || "Filtering map by this guide."),
+        e("div", {style: {fontSize: 11.5, color: "#3c4540", marginTop: 4, lineHeight: 1.3}}, activeMapPack.description || "Filtering map by this collection."),
         e("div", {style: {fontSize: 10, color: "#6f786f", marginTop: 2}}, "Created by @" + activeMapPack.owner)
       ),
       e("button", {
@@ -4648,24 +4648,24 @@ function App() {
 
     
 
-      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu }),
+      selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToCollectionsMenu }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
     showCompass&&e(CompassModal,{pin:selPin,onClose:function(){setShowCompass(false);},flash:flash,lang:lang,t:t}),
-    showAddToGuidesMenu && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
+    showAddToCollectionsMenu && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
       e("div",{style:{background:"#f6f1e4",border:"none",borderRadius:16,padding:"24px 22px",maxWidth:400,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.28)",maxHeight:"80vh",display:"flex",flexDirection:"column"}},
         e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}},
           e("div",null,
-            e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}}, "Add to Guides"),
+            e("div",{style:{fontSize:18,fontWeight:700,color:"#2a5d3c"}}, "Add to Collections"),
             e("div",{style:{fontSize:12,color:"#6f786f"}}, "Add \"" + selPin.name + "\" to your collections")
           ),
-          e("button",{style:{background:"none",border:"none",fontSize:22,color:"#6f786f",cursor:"pointer"},onClick:function(){setShowAddToGuidesMenu(false);}},"×")
+          e("button",{style:{background:"none",border:"none",fontSize:22,color:"#6f786f",cursor:"pointer"},onClick:function(){setShowAddToCollectionsMenu(false);}},"×")
         ),
         e("div",{style:{overflowY:"auto",flex:1,marginBottom:16,display:"flex",flexDirection:"column",gap:10}},
           (function() {
             var myPacks = mapPacks.filter(function(g){ return g.owner === uname || collabPackIds.indexOf(g.id) >= 0; });
             if (myPacks.length === 0) {
-              return e("div", {style: {fontSize: 13, color: T.ink3, padding: "20px 0", textAlign: "center"}}, "No guides yet.");
+              return e("div", {style: {fontSize: 13, color: T.ink3, padding: "20px 0", textAlign: "center"}}, "No collections yet.");
             }
             return myPacks.map(function(g) {
               var isInPack = selPinMapPackIds.indexOf(g.id) >= 0;
@@ -4714,7 +4714,7 @@ function App() {
           e("button",{
             style:{flex:1,padding:"12px",background:"transparent",border:"1px solid #2a5d3c",borderRadius:10,color:"#2a5d3c",fontSize:13,fontWeight:700,cursor:"pointer"},
             onClick: function() {
-              var name = prompt("Enter a name for your new guide:");
+              var name = prompt("Enter a name for your new collection:");
               if (name && name.trim()) {
                 handleCreateMapPack({
                   id: Math.random().toString(36).slice(2, 10),
@@ -4725,10 +4725,10 @@ function App() {
                 });
               }
             }
-          }, "＋ Create Guide"),
+          }, "＋ Create Collection"),
           e("button",{
             style:{padding:"12px 20px",background:"#2a5d3c",border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"},
-            onClick:function(){setShowAddToGuidesMenu(false);}
+            onClick:function(){setShowAddToCollectionsMenu(false);}
           },"Close")
         )
       )

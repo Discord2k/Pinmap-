@@ -6,7 +6,7 @@ const e = React.createElement;
 
 export function PinDetailModal(props) {
   const {
-    selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu
+    selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToCollectionsMenu
   } = props;
 
   return e("div",{className:"detail pm-detail",style:{position:"absolute",top:"12%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:24,padding:"14px 15px",overflow:"hidden",zIndex:1001,"display":"flex","flexDirection":"column"}},
@@ -289,13 +289,13 @@ export function PinDetailModal(props) {
         (uname && uname !== "guest") && e("button",{
           className:"pm-action-btn",
           style:{background:"rgba(42,93,60,0.08)",border:"none",color:"#2a5d3c"},
-          onClick:function(){setShowAddToGuidesMenu(true);}
+          onClick:function(){setShowAddToCollectionsMenu(true);}
         },
           e("svg",{width:13,height:13,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2.5",strokeLinecap:"round",strokeLinejoin:"round",style:{flexShrink:0}},
             e("path",{d:"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"}),
             e("path",{d:"M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"})
           ),
-          e("span",null,"Add to Guide")
+          e("span",null,"Add to Collection")
         )
       ),
       e(Comments,{pinId:selPin.id,uname:uname,pinOwner:selPin.owner,pinName:selPin.name,flash:flash,lang:lang,t:t,onHuntProgress:props.onHuntProgress})

@@ -1206,7 +1206,7 @@ export function ProfilePanel(props) {
                               }}
                             >
                               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"/></svg>
-                              <span>{isCurrentActive ? (lang === 'es' ? "Guía Activa" : "Active Guide") : (lang === 'es' ? "Ver en el mapa" : "View on Map")}</span>
+                              <span>{isCurrentActive ? (lang === 'es' ? "Colección Activa" : "Active Collection") : (lang === 'es' ? "Ver en el mapa" : "View on Map")}</span>
                             </button>
                             {user && pack.owner === uname && (
                               <button 
@@ -1236,7 +1236,7 @@ export function ProfilePanel(props) {
                                 props.onDeleteMapPack(pack.id);
                               }
                             }}
-                            title={lang === 'es' ? "Eliminar guía" : "Delete guide"}
+                            title={lang === 'es' ? "Eliminar colección" : "Delete collection"}
                           >
                             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-6 5v6m4-6v6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </button>
@@ -1670,7 +1670,7 @@ export function ProfilePanel(props) {
       {showCreatePackModal && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(26,32,28,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:16}}>
           <div style={{background:T.paper,border:"2px solid "+T.forest,borderRadius:16,padding:20,width:"100%",maxWidth:400,boxShadow:T.shadowLg}}>
-            <div style={{fontSize:16,fontWeight:700,color:T.ink,marginBottom:14,fontFamily:T.mono,letterSpacing:"0.02em"}}>{lang === 'es' ? "Crear Nueva Guía" : "Create New Guide"}</div>
+            <div style={{fontSize:16,fontWeight:700,color:T.ink,marginBottom:14,fontFamily:T.mono,letterSpacing:"0.02em"}}>{lang === 'es' ? "Crear Nueva Colección" : "Create New Collection"}</div>
             
             <div style={{marginBottom:12}}>
               <label style={{fontSize:10.5,letterSpacing:"0.12em",textTransform:"uppercase",color:T.ink3,fontFamily:T.mono,display:"block",marginBottom:4}}>{t('collection_name')}</label>
@@ -1712,7 +1712,7 @@ export function ProfilePanel(props) {
               <button 
                 style={Object.assign({}, S.btn, {flex:1})}
                 onClick={function(){
-                  if(!packName.trim()){ flash(lang === 'es' ? "¡El nombre de la guía es obligatorio!" : "Guide name is required!"); return; }
+                  if(!packName.trim()){ flash(lang === 'es' ? "¡El nombre de la colección es obligatorio!" : "Collection name is required!"); return; }
                   props.onCreateMapPack({
                     id: Math.random().toString(36).slice(2, 10),
                     name: packName.trim(),
@@ -1923,11 +1923,11 @@ export function ProfilePanel(props) {
                     var target = collabInput.trim();
                     if(!target) return;
                     if(target === uname) {
-                      flash(lang === 'es' ? "¡Ya eres el creador de esta guía!" : "You are already the creator of this guide!");
+                      flash(lang === 'es' ? "¡Ya eres el creador de esta colección!" : "You are already the creator of this collection!");
                       return;
                     }
                     if((collabMapPacks[showCollabModal.id] || []).indexOf(target) >= 0) {
-                      flash(lang === 'es' ? "¡Ya colabora en esta guía!" : "Already collaborating on this guide!");
+                      flash(lang === 'es' ? "¡Ya colabora en esta colección!" : "Already collaborating on this collection!");
                       return;
                     }
                     api.addMapPackCollaborator(showCollabModal.id, target).then(function(){

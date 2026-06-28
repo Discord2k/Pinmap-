@@ -232,7 +232,7 @@ export const BADGES = [
     threshold: 1,
     emoji: "🗺️",
     title: "Atlas Curator",
-    description: "Created your first custom guide map pack.",
+    description: "Created your first custom collection map pack.",
     colors: {
       unlocked: {
         bg: "#fdf8ee",     // Soft yellow/amber
@@ -314,7 +314,7 @@ const BADGE_TRANSLATIONS = {
     },
     mappacks_1: {
       title: "Curador del Atlas",
-      description: "Creaste tu primer paquete de mapas o guía personalizada."
+      description: "Creaste tu primer paquete de mapas o colección personalizada."
     },
     challenges_1: {
       title: "Diseñador de Leyendas",
@@ -328,7 +328,7 @@ const BADGE_TRANSLATIONS = {
  * @param {number} pinsCount - Number of pins placed by the user
  * @param {number} checkinsCount - Number of check-ins to other users' pins
  * @param {number} trailsCount - Number of trails recorded
- * @param {number} mappacksCount - Number of map packs/guides created
+ * @param {number} mappacksCount - Number of map packs/collections created
  * @param {number} challengesCount - Number of challenges designed
  * @param {string} lang - The active language code ('en' or 'es')
  * @returns {Array} Array of badges with their unlock status

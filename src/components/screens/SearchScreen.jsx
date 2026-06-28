@@ -64,7 +64,7 @@ export function SearchScreen(props) {
         e("input",{
           style:{width:"100%",boxSizing:"border-box",background:T.paper2,border:"1px solid "+T.border,
             borderRadius:12,padding:"12px 36px 12px 16px",fontSize:16,outline:"none",color:T.ink,fontFamily:T.font},
-          placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar guías...":"Search guides..."):searchMode==="activity"?(lang==="es"?"Filtrar activity...":"Filter activity..."):searchMode==="hunts"?(lang==="es"?"Buscar búsquedas públicas...":"Search public hunts..."):t("search_placeholder_places_detail"),
+          placeholder:searchMode==="tags"?t("search_placeholder_tags_detail"):searchMode==="quests"?t("search_placeholder_quests"):searchMode==="trails"?t("search_placeholder_trails"):searchMode==="mappacks"?(lang==="es"?"Buscar colecciones...":"Search collections..."):searchMode==="activity"?(lang==="es"?"Filtrar activity...":"Filter activity..."):searchMode==="hunts"?(lang==="es"?"Buscar búsquedas públicas...":"Search public hunts..."):t("search_placeholder_places_detail"),
           value:searchMode==="tags"?searchTag:searchMode==="quests"?questSearch:searchMode==="trails"?trailSearch:searchMode==="mappacks"?mapPackSearch:searchMode==="activity"?activitySearch:searchMode==="hunts"?huntsSearch:addrSearch,
           onChange:function(ev){if(searchMode==="tags")setSearchTag(ev.target.value);else if(searchMode==="quests")setQuestSearch(ev.target.value);else if(searchMode==="trails")setTrailSearch(ev.target.value);else if(searchMode==="mappacks")setMapPackSearch(ev.target.value);else if(searchMode==="activity")setActivitySearch(ev.target.value);else if(searchMode==="hunts")setHuntsSearch(ev.target.value);else setAddrSearch(ev.target.value);},
           onKeyDown:function(ev){if(ev.key==="Enter"){if(searchMode==="tags")doSearch();else if(searchMode==="trails")doTrailSearch();else if(searchMode==="places")doAddrSearch();}}
@@ -531,7 +531,7 @@ export function SearchScreen(props) {
                     );
                   });
                   if (filtered.length === 0) {
-                    return e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, lang === 'es' ? "No se encontraron guías." : "No guides found.");
+                    return e("div",{style:{padding:"20px 0",textAlign:"center",color:T.ink3,fontSize:13}}, lang === 'es' ? "No se encontraron colecciones." : "No collections found.");
                   }
                   return e("div",{style:{padding:"10px 0"}},
                     filtered.map(function(pack){

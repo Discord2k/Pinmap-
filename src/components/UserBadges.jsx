@@ -102,7 +102,7 @@ export function UserBadges(props) {
                     : badge.type === 'trails'
                       ? badge.threshold + " " + (lang === 'es' ? 'ruta' + (badge.threshold > 1 ? 's' : '') : 'route' + (badge.threshold > 1 ? 's' : ''))
                       : badge.type === 'mappacks'
-                        ? badge.threshold + " " + (lang === 'es' ? 'guía' + (badge.threshold > 1 ? 's' : '') : 'guide' + (badge.threshold > 1 ? 's' : ''))
+                        ? badge.threshold + " " + (lang === 'es' ? 'colección' + (badge.threshold > 1 ? 's' : '') : 'collection' + (badge.threshold > 1 ? 's' : ''))
                         : badge.threshold + " " + (lang === 'es' ? 'desafío' + (badge.threshold > 1 ? 's' : '') : 'quest' + (badge.threshold > 1 ? 's' : ''))
                 }
               </div>
