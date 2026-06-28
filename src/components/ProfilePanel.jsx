@@ -4,6 +4,7 @@ import { api, subscribeToPush, sb } from '../utils/api';
 import { T, S } from '../utils/styles';
 import { UserBadges } from './UserBadges';
 import { ScavengerHuntsPanel } from './ScavengerHuntsPanel';
+import { EmptyState } from './ui/EmptyState';
 
 export function ProfilePanel(props) {
   var lang = props.lang || 'en';
@@ -499,7 +500,13 @@ export function ProfilePanel(props) {
           {(true) && (
             <div style={{padding:"0 22px 16px"}}>
             {trails.length === 0 ? (
-              <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>{t('no_recorded_trails')}</div>
+              <EmptyState 
+                icon={<svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/><path d="M9 22l3-3 3 3"/></svg>}
+                title={lang === 'es' ? 'Sin Rutas' : 'No Trails Yet'}
+                description={t('no_recorded_trails')}
+                actionLabel={lang === 'es' ? 'Importar GPX' : 'Import GPX'}
+                onAction={() => fileInputRef.current && fileInputRef.current.click()}
+              />
           ) : (
             trails.map(function(trail){
               var isCurrentActive = activeTrail && activeTrail.id === trail.id;
@@ -1154,7 +1161,13 @@ export function ProfilePanel(props) {
           <div className={"pm-collapsible " + (collectionsCollapsed ? "collapsed" : "")}>
             <div>
               {myCollections.length === 0 ? (
-                <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>{t('no_collections')}</div>
+                <EmptyState 
+                  icon={<svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>}
+                  title={lang === 'es' ? 'Sin Colecciones' : 'No Collections Yet'}
+                  description={t('no_collections')}
+                  actionLabel={lang === 'es' ? 'Crear Colección' : 'Create Collection'}
+                  onAction={() => setShowCreatePackModal(true)}
+                />
               ) : (
                 myCollections.map(function(pack){
                   var isCurrentActive = activeMapPack && activeMapPack.id === pack.id;
