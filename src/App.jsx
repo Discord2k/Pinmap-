@@ -2156,6 +2156,10 @@ function App() {
       
       // Setup pin layer mocks
       window._clearMapLibreMarkers = function() {
+        if (window._tempAddPinPopup) {
+          try { window._tempAddPinPopup.remove(); } catch(e){}
+          window._tempAddPinPopup = null;
+        }
         if (map) {
           try {
             var container = map.getContainer();
@@ -2191,14 +2195,69 @@ function App() {
       
       map.on("click",function(ev){
         var target = ev.originalEvent ? ev.originalEvent.target : null;
-        if (target && (target.closest('.maplibregl-marker') || target.closest('.maplibregl-ctrl') || target.closest('.leaflet-marker-icon') || target.closest('.pm-pin') || target.closest('.pm-cluster'))) {
+        if (target && (target.closest('.maplibregl-marker') || target.closest('.maplibregl-ctrl') || target.closest('.leaflet-marker-icon') || target.closest('.pm-pin') || target.closest('.pm-cluster') || target.closest('.maplibregl-popup'))) {
           return;
         }
+        
+        // If there is already an active confirmation popup, close it and return (acts as cancel/clear tap)
+        if (window._tempAddPinPopup) {
+          window._tempAddPinPopup.remove();
+          window._tempAddPinPopup = null;
+          return;
+        }
+
         var latlng = { lat: ev.lngLat.lat, lng: ev.lngLat.lng };
-        setPendingLL(latlng);
-        setTab("add");
-        setOpen(true);
-        flash("📍 Location set — fill details in Drop tab");
+        
+        var popupDiv = document.createElement('div');
+        popupDiv.style.fontFamily = 'sans-serif';
+        popupDiv.style.padding = '8px 4px 4px 4px';
+        popupDiv.style.textAlign = 'center';
+        popupDiv.style.minWidth = '140px';
+        
+        var title = document.createElement('div');
+        title.style.fontWeight = '700';
+        title.style.fontSize = '14px';
+        title.style.marginBottom = '8px';
+        title.style.color = 'var(--ink, #1a201c)';
+        title.innerText = 'Add pin here?';
+        popupDiv.appendChild(title);
+        
+        var btn = document.createElement('button');
+        btn.style.background = '#2a5d3c';
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.padding = '6px 14px';
+        btn.style.borderRadius = '6px';
+        btn.style.cursor = 'pointer';
+        btn.style.fontWeight = '700';
+        btn.style.fontSize = '12px';
+        btn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
+        btn.innerText = 'Drop Pin';
+        
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          if (window._tempAddPinPopup) {
+            window._tempAddPinPopup.remove();
+            window._tempAddPinPopup = null;
+          }
+          setPendingLL(latlng);
+          setTab("add");
+          setOpen(true);
+          flash("📍 Location set — fill details in Drop tab");
+        };
+        
+        popupDiv.appendChild(btn);
+        
+        var popup = new window.maplibregl.Popup({ closeOnClick: false })
+          .setLngLat([latlng.lng, latlng.lat])
+          .setDOMContent(popupDiv)
+          .addTo(map);
+          
+        window._tempAddPinPopup = popup;
+        
+        popup.on('close', function() {
+          window._tempAddPinPopup = null;
+        });
       });
       map.on("movestart", function(e) {
         if (e.originalEvent) {
@@ -2300,6 +2359,10 @@ function App() {
         navigator.geolocation.clearWatch(gpsWatchIdRef.current);
         gpsWatchIdRef.current = null;
         setGpsTracking(false);
+      }
+      if (window._tempAddPinPopup) {
+        try { window._tempAddPinPopup.remove(); } catch(e){}
+        window._tempAddPinPopup = null;
       }
       if (mapObj.current) {
         try { mapObj.current.remove(); } catch(e){}
