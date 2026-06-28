@@ -9,7 +9,9 @@ export function PinDetailModal(props) {
     selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToGuidesMenu
   } = props;
 
-  return e("div",{className:"detail pm-detail",style:{position:"absolute",top:"12%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:12,padding:"14px 15px",overflow:"hidden",zIndex:1001,boxShadow:"0 8px 32px rgba(0,0,0,0.13)","display":"flex","flexDirection":"column"}},
+  return e("div",{className:"detail pm-detail",style:{position:"absolute",top:"12%",bottom:"calc(68px + env(safe-area-inset-bottom,0px))",left:16,right:16,maxWidth:480,margin:"0 auto",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",borderRadius:24,padding:"14px 15px",overflow:"hidden",zIndex:1001,"display":"flex","flexDirection":"column"}},
+      // Drag Handle for Bottom Sheet Look
+      e("div",{style:{width:32,height:4,borderRadius:2,background:"#d8cfb8",margin:"-4px auto 12px",flexShrink:0}}),
       // Frozen Header
       e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",paddingBottom:"10px",borderBottom:"1px solid #e8dcc4",marginBottom:"10px",flexShrink:0}},
         e("div",{style:{display:"flex",alignItems:"center",gap:7,minWidth:0,flex:1,paddingRight:12}},
