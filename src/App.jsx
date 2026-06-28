@@ -853,81 +853,98 @@ function App() {
   }, [offlineMode]);
 
   function downloadOfflineTiles() {
-    if(!mapObj.current || !reticleBox) return;
-    var packName = window.prompt(lang === 'es' ? "Ingresa un nombre para tu mapa sin conexión:" : "Enter a name for your offline map pack:");
-    if(!packName || packName.trim() === "") {
-      setOfflineMode(false);
-      return;
-    }
-    packName = packName.trim();
-    var map = mapObj.current;
-    // Convert reticle pixel corners to lat/lng using the frozen map state
-    var rb = reticleBox;
-    var llNW = map.containerPointToLatLng(window.L.point(rb.left, rb.top));
-    var llSE = map.containerPointToLatLng(window.L.point(rb.left + rb.width, rb.top + rb.height));
-    var zMin = mapZoom > 11 ? mapZoom - 1 : 11;
-    var zMax = 16;
-    var tiles = [];
-    for(var z = zMin; z <= zMax; z++){
-      var pNW = map.project(llNW, z);
-      var pSE = map.project(llSE, z);
-      var tNW = pNW.divideBy(256).floor();
-      var tSE = pSE.divideBy(256).floor();
-      for(var x = tNW.x; x <= tSE.x; x++){
-        for(var y = tNW.y; y <= tSE.y; y++){
-           if(baseLayer==="osm") {
-             tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
-           } else if(baseLayer==="topo") {
-             tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
-           } else if(baseLayer==="trails") {
-             tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
-             tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
-           } else if(baseLayer==="satellite") {
-             tiles.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x);
-           }
+    try {
+      if(!mapObj.current || !reticleBox) return;
+      var packName = window.prompt(lang === 'es' ? "Ingresa un nombre para tu mapa sin conexión:" : "Enter a name for your offline map pack:");
+      if(!packName || packName.trim() === "") {
+        setOfflineMode(false);
+        return;
+      }
+      packName = packName.trim();
+      var map = mapObj.current;
+      // Convert reticle pixel corners to lat/lng using the frozen map state
+      var rb = reticleBox;
+      var llNW = map.containerPointToLatLng(window.L.point(rb.left, rb.top));
+      var llSE = map.containerPointToLatLng(window.L.point(rb.left + rb.width, rb.top + rb.height));
+      var zMin = mapZoom > 11 ? mapZoom - 1 : 11;
+      var zMax = 16;
+      var tiles = [];
+      for(var z = zMin; z <= zMax; z++){
+        var pNW = map.project(llNW, z);
+        var pSE = map.project(llSE, z);
+        var tNW = pNW.divideBy(256).floor();
+        var tSE = pSE.divideBy(256).floor();
+        for(var x = tNW.x; x <= tSE.x; x++){
+          for(var y = tNW.y; y <= tSE.y; y++){
+             if(baseLayer==="osm") {
+               tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
+             } else if(baseLayer==="topo") {
+               tiles.push("https://a.tile.opentopomap.org/"+z+"/"+x+"/"+y+".png");
+             } else if(baseLayer==="trails") {
+               tiles.push("https://tiles.openfreemap.org/planet/v1/"+z+"/"+x+"/"+y+".pbf");
+               tiles.push("https://tile.waymarkedtrails.org/hiking/"+z+"/"+x+"/"+y+".png");
+             } else if(baseLayer==="satellite") {
+               tiles.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x);
+             }
+          }
         }
       }
-    }
-    tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
-    if(tiles.length > 8000) { flash(t("toast_trail_too_large", {count: tiles.length})); setOfflineMode(false); return; }
-    
-    var packId = "pack_" + Date.now();
-    var newPack = {
-      id: packId,
-      name: packName,
-      tileCount: tiles.length,
-      bounds: [[llNW.lat, llNW.lng], [llSE.lat, llSE.lng]],
-      date: Date.now(),
-      baseLayer: baseLayer
-    };
-    try {
-      var packs = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
-      packs.push(newPack);
-      localStorage.setItem("pinmap_offline_packs", JSON.stringify(packs));
-    } catch(e){}
-
-    setOfflineMode(false);
-    flash(t("toast_tiles_downloading", {count: tiles.length}));
-    var loaded = 0;
-    setOfflineDownloadProgress(0);
-    setOfflineDownloadTotal(tiles.length);
-    function fetchBatch(idx) {
-      if(idx >= tiles.length) { 
-        flash(t("toast_tiles_success")); 
-        setOfflineDownloadProgress(null);
-        setOfflineDownloadTotal(null);
-        return; 
+      tiles = tiles.filter(function(v,i,a){return a.indexOf(v)===i;});
+      if(tiles.length === 0) {
+        flash(lang === 'es' ? "No se encontraron imágenes en esta área" : "No map tiles found in this area");
+        setOfflineMode(false);
+        return;
       }
-      var batch = tiles.slice(idx, idx+20);
-      Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
-        .then(function(){
-          loaded += batch.length;
-          setOfflineDownloadProgress(loaded);
-          if(loaded % 100 === 0 || loaded === tiles.length) flash(t("toast_trail_download_progress", {progress: Math.round((loaded/tiles.length)*100)}));
-          fetchBatch(idx+20);
-        });
+      if(tiles.length > 8000) { flash(t("toast_trail_too_large", {count: tiles.length})); setOfflineMode(false); return; }
+      
+      var packId = "pack_" + Date.now();
+      var newPack = {
+        id: packId,
+        name: packName,
+        tileCount: tiles.length,
+        bounds: [[llNW.lat, llNW.lng], [llSE.lat, llSE.lng]],
+        date: Date.now(),
+        baseLayer: baseLayer
+      };
+      try {
+        var packs = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
+        if (!Array.isArray(packs)) packs = [];
+        packs.push(newPack);
+        localStorage.setItem("pinmap_offline_packs", JSON.stringify(packs));
+      } catch(e){
+        console.error("Localstorage save error", e);
+      }
+
+      setOfflineMode(false);
+      flash(t("toast_tiles_downloading", {count: tiles.length}));
+      var loaded = 0;
+      if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(0);
+      if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(tiles.length);
+      
+      function fetchBatch(idx) {
+        if(idx >= tiles.length) { 
+          flash(t("toast_tiles_success")); 
+          if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(null);
+          if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(null);
+          return; 
+        }
+        var batch = tiles.slice(idx, idx+20);
+        Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
+          .then(function(){
+            loaded += batch.length;
+            if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(loaded);
+            if(loaded % 100 === 0 || loaded === tiles.length) flash(t("toast_trail_download_progress", {progress: Math.round((loaded/tiles.length)*100)}));
+            fetchBatch(idx+20);
+          }).catch(function(err) {
+            console.error("Fetch batch error", err);
+          });
+      }
+      fetchBatch(0);
+    } catch (globalErr) {
+      console.error("Download offline tiles error", globalErr);
+      flash("Error: " + globalErr.message);
+      setOfflineMode(false);
     }
-    fetchBatch(0);
   }
 
   function purgeOfflineTiles() {
