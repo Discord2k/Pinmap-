@@ -1615,34 +1615,6 @@ export function ProfilePanel(props) {
                         </div>
                       </div>
 
-                      {/* Offline Maps */}
-                      <div style={{padding:"12px 12px 8px"}}>
-                        <div style={{fontSize:13.5, fontWeight:700, color:T.ink, marginBottom:6, display:"flex", alignItems:"center", gap:8}}>
-                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3}}>
-                            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-                            <line x1="9" y1="3" x2="9" y2="18" />
-                            <line x1="15" y1="6" x2="15" y2="21" />
-                          </svg>
-                          <span>{lang === 'es' ? "Mapas sin conexión" : "Offline Maps"}</span>
-                        </div>
-                        <div style={{fontSize:12,color:T.ink3,marginBottom:10,lineHeight:1.4}}>{lang === 'es' ? "Guarda imágenes del mapa para usarlas sin señal." : "Cache map tiles for use without a signal."}</div>
-                        <div style={{display:"flex",gap:6}}>
-                          <button
-                            style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px 0",borderRadius:8,border:"none",background:T.forest,color:T.paper,fontSize:12,fontWeight:600,cursor:"pointer"}}
-                            onClick={onStartOfflineMode}
-                          >
-                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            {lang === 'es' ? "Descargar" : "Download"}
-                          </button>
-                          <button
-                            style={{padding:"8px 10px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.ink3,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}
-                            onClick={onPurgeOfflineTiles}
-                          >
-                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            {lang === 'es' ? "Limpiar" : "Purge"}
-                          </button>
-                        </div>
-                      </div>
                     </div>
 
                     {/* ── ABOUT & LEGAL ── */}
