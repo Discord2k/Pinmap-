@@ -453,7 +453,7 @@ export function ProfilePanel(props) {
       
       {/* ── Trails & Routes ────────────────────────────────────────────────── */}
 
-      {!editingProfile && (
+      {!editingProfile && activeSection === 'trails' && (
         <div style={{borderBottom:"1px solid "+T.borderSoft}}>
           <input type="file" ref={fileInputRef} accept=".gpx" style={{display:"none"}} onChange={handleGpxImportChange} />
           <div
@@ -656,7 +656,7 @@ export function ProfilePanel(props) {
       )}
 
       {/* ── Achievements ───────────────────────────────────────────────────────── */}
-      {!editingProfile && (
+      {!editingProfile && activeSection === 'achievements' && (
         <div style={{borderBottom:"1px solid "+T.borderSoft}}>
           <div
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
@@ -691,7 +691,7 @@ export function ProfilePanel(props) {
       )}
 
       {/* ── Explorer Challenges ────────────────────────────────────────────────── */}
-      {!editingProfile && (
+      {!editingProfile && activeSection === 'challenges' && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom: 12}}>
             <div 
@@ -1026,7 +1026,7 @@ export function ProfilePanel(props) {
     )}
 
       {/* ── Scavenger Hunts ────────────────────────────────────────────── */}
-      {!editingProfile && (
+      {!editingProfile && activeSection === 'challenges' && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div 
             className="pm-section-header"
@@ -1071,7 +1071,7 @@ export function ProfilePanel(props) {
       )}
 
       {/* ── Collections ────────────────────────────────────────────────── */}
-      {!editingProfile && (
+      {!editingProfile && activeSection === 'collections' && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
             <div 
@@ -1252,7 +1252,7 @@ export function ProfilePanel(props) {
       )}
 
       {/* ── Following ──────────────────────────────────────────────────────────── */}
-      {!editingProfile && userFollows.length>0 && (
+      {!editingProfile && activeSection === 'community' && userFollows.length>0 && (
         <div style={{borderBottom:"1px solid "+T.borderSoft}}>
           <div
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
@@ -1339,7 +1339,7 @@ export function ProfilePanel(props) {
       )}
 
       {/* ── Followers ──────────────────────────────────────────────────────────── */}
-      {!editingProfile && followers.length>0 && (
+      {!editingProfile && activeSection === 'community' && followers.length>0 && (
         <div style={{borderBottom:"1px solid "+T.borderSoft}}>
           <div
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
@@ -1390,7 +1390,7 @@ export function ProfilePanel(props) {
       )}
 
       {/* ── Settings ───────────────────────────────────────────────────────────── */}
-      {!editingProfile && (
+      {!editingProfile && activeSection === 'settings' && (
         <div style={{borderBottom:"1px solid "+T.borderSoft}}>
           <div
             style={{padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}
@@ -1638,7 +1638,7 @@ export function ProfilePanel(props) {
       )}
  
       {/* ── Sign out / sign in ──────────────────────────────────────────────────── */}
-      {!editingProfile && (
+      {!editingProfile && activeSection === 'settings' && (
         <div style={{padding:"20px 22px",borderBottom:"1px solid "+T.borderSoft}}>
           {user 
             ? <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1px solid "+T.border,background:"transparent",fontSize:14,color:T.ink2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={props.onSignOut}>
