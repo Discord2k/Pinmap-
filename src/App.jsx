@@ -464,8 +464,14 @@ function App() {
                 var cog = pos.Cog;
                 var sog = pos.Sog;
                 var type = metadata.ShipType || 0;
+                
+                var navStatus = pos.NavigationalStatus;
+                var destination = metadata.Destination ? metadata.Destination.trim() : "";
+                var callSign = metadata.CallSign ? metadata.CallSign.trim() : "";
+                var imo = metadata.IMO || 0;
+                var draught = metadata.Draught || 0;
 
-                updateVesselMarker(mmsi, name, lat, lng, cog, sog, type, false);
+                updateVesselMarker(mmsi, name, lat, lng, cog, sog, type, navStatus, destination, callSign, imo, draught, false);
               }
             }
           } catch(e){
@@ -524,7 +530,23 @@ function App() {
       return lang === 'es' ? "Embarcación" : "Vessel";
     }
 
-    function updateVesselMarker(mmsi, name, lat, lng, heading, speed, type, isSimulated) {
+    function getNavStatusLabel(statusNum) {
+      var statusMap = {
+        0: lang === 'es' ? "En navegación (motor)" : "Under way using engine",
+        1: lang === 'es' ? "Fondeado" : "At anchor",
+        2: lang === 'es' ? "Sin gobierno" : "Not under command",
+        3: lang === 'es' ? "Maniobrabilidad restringida" : "Restricted manoeuvrability",
+        4: lang === 'es' ? "Restringido por calado" : "Constrained by draught",
+        5: lang === 'es' ? "Amarrado" : "Moored",
+        6: lang === 'es' ? "Varado" : "Aground",
+        7: lang === 'es' ? "Dedicado a la pesca" : "Engaged in fishing",
+        8: lang === 'es' ? "Navegando a vela" : "Under way sailing",
+        15: lang === 'es' ? "No definido" : "Undefined"
+      };
+      return statusMap[statusNum] || (lang === 'es' ? "Desconocido" : "Unknown");
+    }
+
+    function updateVesselMarker(mmsi, name, lat, lng, heading, speed, type, navStatus, destination, callSign, imo, draught, isSimulated) {
       var marker = vesselMarkersRef.current[mmsi];
       if (marker) {
         marker.setLngLat([lng, lat]);
@@ -543,12 +565,23 @@ function App() {
         el.addEventListener("click", function(ev) {
           ev.stopPropagation();
           var typeStr = getVesselTypeLabel(type);
-          var popupContent = '<div style="font-family:sans-serif;padding:6px;min-width:180px;">' +
-            '<div style="font-weight:700;font-size:14px;color:'+clr+';margin-bottom:4px;">🚢 ' + name + '</div>' +
-            '<div style="font-size:11px;color:#888;margin-bottom:6px;">MMSI: ' + mmsi + (isSimulated ? ' (Sim)' : '') + '</div>' +
-            '<div style="font-size:12px;margin:2px 0;"><b>' + (lang==='es'?'Tipo:':'Type:') + '</b> ' + typeStr + '</div>' +
-            '<div style="font-size:12px;margin:2px 0;"><b>' + (lang==='es'?'Velocidad:':'Speed:') + '</b> ' + (speed || 0) + ' knots</div>' +
-            '<div style="font-size:12px;margin:2px 0;"><b>' + (lang==='es'?'Rumbo:':'Heading:') + '</b> ' + (heading || 0) + '°</div>' +
+          var statusStr = getNavStatusLabel(navStatus);
+          
+          var popupContent = '<div style="font-family:sans-serif;padding:6px 2px;min-width:200px;max-width:240px;color:var(--ink);">' +
+            '<div style="font-weight:700;font-size:14px;color:'+clr+';margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + name + '">🚢 ' + name + '</div>' +
+            '<div style="font-size:10.5px;color:#888;margin-bottom:8px;display:flex;justify-content:space-between;border-bottom:1px solid #f0eddf;padding-bottom:4px;">' +
+              '<span>MMSI: ' + mmsi + '</span>' +
+              (imo ? '<span>IMO: ' + imo + '</span>' : '') +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr;gap:4px;font-size:11.5px;line-height:1.4;">' +
+              '<div><b>' + (lang==='es'?'Tipo:':'Type:') + '</b> ' + typeStr + '</div>' +
+              '<div><b>' + (lang==='es'?'Estado:':'Status:') + '</b> ' + statusStr + '</div>' +
+              '<div><b>' + (lang==='es'?'Velocidad:':'Speed:') + '</b> ' + (speed || 0) + ' knots</div>' +
+              '<div><b>' + (lang==='es'?'Rumbo:':'Heading:') + '</b> ' + (heading || 0) + '°</div>' +
+              (callSign ? '<div><b>Call Sign:</b> ' + callSign + '</div>' : '') +
+              (draught ? '<div><b>' + (lang==='es'?'Calado:':'Draft:') + '</b> ' + draught + 'm</div>' : '') +
+              (destination ? '<div style="border-top:1px dashed #e6dfca;margin-top:4px;padding-top:4px;"><b>' + (lang==='es'?'Destino:':'Destination:') + '</b> <span style="color:#2a5d3c;font-weight:700;">' + destination + '</span></div>' : '') +
+            '</div>' +
             '</div>';
 
           new window.maplibregl.Popup({ offset: 12 })
@@ -571,6 +604,7 @@ function App() {
       var simPacks = [];
       var names = ["Oceanic Explorer", "Sea Spray", "Marlin Hunter", "Blue Whale", "Wave Runner", "Gulf Titan"];
       var types = [70, 80, 60, 30, 36, 70];
+      var dests = ["Miami Port", "Key West", "Nassau", "Bimini", "Everglades", "Havana"];
 
       for (var i = 0; i < 6; i++) {
         var offsetLat = (Math.random() - 0.5) * 0.08;
@@ -582,26 +616,33 @@ function App() {
           lng: center.lng + offsetLng,
           heading: Math.floor(Math.random() * 360),
           speed: parseFloat((Math.random() * 15 + 2).toFixed(1)),
-          type: types[i]
+          type: types[i],
+          navStatus: i % 3 === 0 ? 1 : 0, // Alternating anchor vs under way
+          destination: dests[i],
+          callSign: "MOCK" + i,
+          imo: 1000000 + i,
+          draught: parseFloat((Math.random() * 8 + 2).toFixed(1))
         });
       }
 
       simPacks.forEach(function(v) {
-        updateVesselMarker(v.mmsi, v.name, v.lat, v.lng, v.heading, v.speed, v.type, true);
+        updateVesselMarker(v.mmsi, v.name, v.lat, v.lng, v.heading, v.speed, v.type, v.navStatus, v.destination, v.callSign, v.imo, v.draught, true);
       });
 
       simVesselsTimerRef.current = setInterval(function() {
         simPacks.forEach(function(v) {
-          var rad = (v.heading * Math.PI) / 180;
-          var dist = (v.speed * 0.0005) / 60;
-          v.lat += dist * Math.cos(rad);
-          v.lng += dist * Math.sin(rad);
+          if (v.navStatus !== 1) { // Only move if not at anchor
+            var rad = (v.heading * Math.PI) / 180;
+            var dist = (v.speed * 0.0005) / 60;
+            v.lat += dist * Math.cos(rad);
+            v.lng += dist * Math.sin(rad);
+          }
 
           if (Math.random() > 0.8) {
             v.heading = (v.heading + Math.floor((Math.random() - 0.5) * 20) + 360) % 360;
           }
 
-          updateVesselMarker(v.mmsi, v.name, v.lat, v.lng, v.heading, v.speed, v.type, true);
+          updateVesselMarker(v.mmsi, v.name, v.lat, v.lng, v.heading, v.speed, v.type, v.navStatus, v.destination, v.callSign, v.imo, v.draught, true);
         });
       }, 2000);
     }
