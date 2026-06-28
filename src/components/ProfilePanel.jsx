@@ -80,6 +80,7 @@ export function ProfilePanel(props) {
   var [followingCollapsed, setFollowingCollapsed] = React.useState(true);
   var [followersCollapsed, setFollowersCollapsed] = React.useState(true);
   var [settingsCollapsed, setSettingsCollapsed] = React.useState(true);
+  var [activeSection, setActiveSection] = React.useState("overview");
   var [helpPopup, setHelpPopup] = React.useState(null);
   var [trackedQuestIds, setTrackedQuestIds] = React.useState(function() {
     try {
@@ -163,9 +164,17 @@ export function ProfilePanel(props) {
   return (
     <div style={{height:"100%",overflowY:"auto",background:T.paper}}>
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px 10px",borderBottom:"1px solid "+T.borderSoft}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px 10px",borderBottom:"1px solid "+T.borderSoft, position: "sticky", top: 0, background: T.paper, zIndex: 10}}>
+        {activeSection === 'overview' ? (
+          <div style={{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono}}>{t('profile')}</div>
+        ) : (
+          <button style={{background:"transparent",border:"none",color:T.forest,display:"flex",alignItems:"center",gap:6,padding:0,cursor:"pointer",fontWeight:600,fontSize:13.5}} onClick={function(){ setActiveSection('overview'); }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {t('back_to_profile', 'Back')}
+          </button>
+        )}
         <div style={{fontSize:10.5,letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:600,color:T.ink3,fontFamily:T.mono}}>{t('profile')}</div>
-        {user && !editingProfile && (
+        {activeSection === "overview" && user && !editingProfile && (
           <button 
             style={{fontSize:12,padding:"5px 14px",borderRadius:18,border:"1px solid "+T.border,background:"transparent",color:T.ink2,cursor:"pointer",fontWeight:500}}
             onClick={() => {
@@ -188,6 +197,7 @@ export function ProfilePanel(props) {
       </div>
 
       {/* ── Identity ──────────────────────────────────────────────────────────── */}
+      {activeSection === "overview" && (<>
       <div style={{padding:"14px 22px 12px",borderBottom:"1px solid "+T.borderSoft}}>
         <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:12}}>
           {/* Avatar */}
@@ -367,7 +377,82 @@ export function ProfilePanel(props) {
         </div>
       )}
 
+      
+      </>)}
+
+      {/* ── Dashboard Grid ── */}
+      {activeSection === 'overview' && !editingProfile && (
+        <div style={{padding:"20px 22px"}}>
+          <div style={{fontSize:12, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color:T.ink3, marginBottom:16, fontFamily:T.mono}}>{lang==='es'?'Tus Herramientas':'Your Tools'}</div>
+          
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
+            
+            <button className="pm-card-hover" style={{background:T.paper2, border:"1px solid "+T.borderSoft, borderRadius:16, padding:"16px", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:12, cursor:"pointer", textAlign:"left"}} onClick={()=>setActiveSection('trails')}>
+              <div style={{background:T.forestPale, color:T.forest, width:36, height:36, borderRadius:18, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{t('trails_routes')}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{trails.length} {t('saved_count')}</div>
+              </div>
+            </button>
+
+            <button className="pm-card-hover" style={{background:T.paper2, border:"1px solid "+T.borderSoft, borderRadius:16, padding:"16px", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:12, cursor:"pointer", textAlign:"left"}} onClick={()=>setActiveSection('collections')}>
+              <div style={{background:T.forestPale, color:T.forest, width:36, height:36, borderRadius:18, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Colecciones':'Collections'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{myCollections.length} {lang==='es'?'Paquetes':'Packs'}</div>
+              </div>
+            </button>
+
+            <button className="pm-card-hover" style={{background:T.paper2, border:"1px solid "+T.borderSoft, borderRadius:16, padding:"16px", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:12, cursor:"pointer", textAlign:"left"}} onClick={()=>setActiveSection('challenges')}>
+              <div style={{background:T.forestPale, color:T.forest, width:36, height:36, borderRadius:18, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Retos y Búsquedas':'Challenges & Hunts'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>GPS {lang==='es'?'y Enigmas':'& Quests'}</div>
+              </div>
+            </button>
+
+            <button className="pm-card-hover" style={{background:T.paper2, border:"1px solid "+T.borderSoft, borderRadius:16, padding:"16px", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:12, cursor:"pointer", textAlign:"left"}} onClick={()=>setActiveSection('achievements')}>
+              <div style={{background:T.forestPale, color:T.forest, width:36, height:36, borderRadius:18, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{t('achievements')}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{lang==='es'?'Tus insignias':'Your badges'}</div>
+              </div>
+            </button>
+
+            <button className="pm-card-hover" style={{background:T.paper2, border:"1px solid "+T.borderSoft, borderRadius:16, padding:"16px", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:12, cursor:"pointer", textAlign:"left"}} onClick={()=>setActiveSection('community')}>
+              <div style={{background:T.forestPale, color:T.forest, width:36, height:36, borderRadius:18, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Comunidad':'Community'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{userFollows.length} {t('following')}</div>
+              </div>
+            </button>
+
+            <button className="pm-card-hover" style={{background:T.paper2, border:"1px solid "+T.borderSoft, borderRadius:16, padding:"16px", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:12, cursor:"pointer", textAlign:"left"}} onClick={()=>setActiveSection('settings')}>
+              <div style={{background:T.forestPale, color:T.forest, width:36, height:36, borderRadius:18, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Ajustes':'Settings'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{lang==='es'?'Cuenta y App':'Account & App'}</div>
+              </div>
+            </button>
+            
+          </div>
+        </div>
+      )}
+      
       {/* ── Trails & Routes ────────────────────────────────────────────────── */}
+
       {!editingProfile && (
         <div style={{borderBottom:"1px solid "+T.borderSoft}}>
           <input type="file" ref={fileInputRef} accept=".gpx" style={{display:"none"}} onChange={handleGpxImportChange} />
@@ -387,7 +472,7 @@ export function ProfilePanel(props) {
               <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.06em",background:T.forest,color:T.paper,padding:"2.5px 6.5px",borderRadius:6,textTransform:"uppercase",lineHeight:1,fontFamily:T.font}}>GPS</span>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
-              {!trailsCollapsed && user && (
+              {(true) && user && (
                 <>
                   <button
                     style={Object.assign({},S.miniBtn,{background:"transparent",border:"1px solid "+T.forest,color:T.forest,display:"flex",alignItems:"center",gap:5,fontSize:11,padding:"4px 8px"})}
@@ -411,7 +496,7 @@ export function ProfilePanel(props) {
             </div>
           </div>
 
-          {!trailsCollapsed && (
+          {(true) && (
             <div style={{padding:"0 22px 16px"}}>
             {trails.length === 0 ? (
               <div style={{fontSize:13,color:T.ink3,textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>{t('no_recorded_trails')}</div>
@@ -588,7 +673,7 @@ export function ProfilePanel(props) {
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {!badgesCollapsed && (
+          {(true) && (
             <div style={{padding:"0 22px 12px"}}>
               <UserBadges 
                 pinsCount={own.length} 
@@ -969,7 +1054,7 @@ export function ProfilePanel(props) {
             </span>
           </div>
 
-          {!huntsCollapsed && (
+          {(true) && (
             <ScavengerHuntsPanel
               uname={uname}
               userLL={props.userLL}
@@ -1185,7 +1270,7 @@ export function ProfilePanel(props) {
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {!followingCollapsed && (
+          {(true) && (
             <div style={{padding:"0 22px 12px"}}>
               {(showAllFollowing ? userFollows : userFollows.slice(0,10)).map(function(f){
                 var bellKey = "pm-bell-notify-"+f.following;
@@ -1273,7 +1358,7 @@ export function ProfilePanel(props) {
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {!followersCollapsed && (
+          {(true) && (
             <div style={{padding:"0 22px 12px"}}>
               {(showAllFollowers ? followers : followers.slice(0,10)).map(function(f){
                 var isFollowingBack = userFollows.some(function(uf){return uf.following === f.owner;});
@@ -1322,7 +1407,7 @@ export function ProfilePanel(props) {
               <path d="M6 9l6 6 6-6" stroke={T.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {!settingsCollapsed && (
+          {(true) && (
             <div style={{padding:"0 22px 12px"}}>
               {(() => {
                 var chevronSvg = (
