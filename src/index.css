@@ -367,6 +367,42 @@ button:active { transform:scale(0.97); }
   border-radius: 16px !important;
 }
 
+/* Custom MapLibre Popup Close Button Overrides for touch safety */
+.maplibregl-popup-close-button {
+  font-size: 20px !important;
+  padding: 0 !important;
+  color: var(--ink3) !important;
+  transition: color 0.15s ease, background-color 0.15s ease !important;
+  border-radius: 0 16px 0 8px !important;
+  outline: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 38px !important;
+  height: 38px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  background: transparent !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  color: var(--ink) !important;
+}
+
+.maplibregl-popup-content {
+  border-radius: 16px !important;
+  padding: 12px !important;
+  border: 1px solid var(--borderSoft) !important;
+  background: var(--paper) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+}
+
+
 
 
 
