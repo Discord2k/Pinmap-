@@ -872,8 +872,8 @@ function App() {
       for(var z = zMin; z <= zMax; z++){
         var pNW = map.project(llNW, z);
         var pSE = map.project(llSE, z);
-        var tNW = pNW.divideBy(256).floor();
-        var tSE = pSE.divideBy(256).floor();
+        var tNW = { x: Math.floor(pNW.x / 256), y: Math.floor(pNW.y / 256) };
+        var tSE = { x: Math.floor(pSE.x / 256), y: Math.floor(pSE.y / 256) };
         for(var x = tNW.x; x <= tSE.x; x++){
           for(var y = tNW.y; y <= tSE.y; y++){
              if(baseLayer==="osm") {
