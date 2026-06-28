@@ -413,7 +413,7 @@ export function ProfilePanel(props) {
               </div>
               <div>
                 <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Retos y Búsquedas':'Quests & Hunts'}</div>
-                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>GPS {lang==='es'?'y Enigmas':'& Riddles'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{lang==='es'?'Misiones y Cacerías':'Quests and Scavenger hunts'}</div>
               </div>
             </button>
 
