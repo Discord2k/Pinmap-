@@ -5642,47 +5642,79 @@ function App() {
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
 
-    baseLayer === "marine" && e("div", {
-      id: "pm-marine-compass-rose",
-      style: {
-        position: "fixed",
-        bottom: "calc(130px + env(safe-area-inset-bottom, 0px))",
-        left: 14,
-        zIndex: 998,
-        width: 80,
-        height: 80,
-        pointerEvents: "none",
-        transition: "opacity 0.3s ease",
-        opacity: 0.85
-      }
-    },
-      e("svg", {
-        width: 80,
-        height: 80,
-        viewBox: "0 0 100 100",
+    baseLayer === "marine" && (function() {
+      var displayHeading = Math.round((bearing >= 0 ? bearing : 360 + bearing) % 360);
+      var directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+      var dirLetter = directions[Math.round(displayHeading / 22.5) % 16];
+      
+      return e("div", {
+        id: "pm-marine-compass-rose",
         style: {
-          transform: "rotate(" + (-bearing) + "deg)",
-          transformOrigin: "center center",
-          filter: "drop-shadow(0 2px 5px rgba(0,0,0,0.22))"
+          position: "fixed",
+          bottom: "calc(130px + env(safe-area-inset-bottom, 0px))",
+          right: 14,
+          zIndex: 998,
+          width: 80,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+          pointerEvents: "none",
+          transition: "opacity 0.3s ease",
+          opacity: 0.85
         }
       },
-        e("circle", { cx: 50, cy: 50, r: 45, fill: "rgba(255,253,248,0.92)", stroke: T.forest, strokeWidth: 1.5 }),
-        e("circle", { cx: 50, cy: 50, r: 41, fill: "none", stroke: T.borderSoft, strokeWidth: 0.75, strokeDasharray: "2,2" }),
-        e("text", { x: 50, y: 16, fill: "#c23b22", fontSize: 10, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "N"),
-        e("text", { x: 50, y: 92, fill: T.forest, fontSize: 9, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "S"),
-        e("text", { x: 88, y: 53, fill: T.forest, fontSize: 9, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "E"),
-        e("text", { x: 13, y: 53, fill: T.forest, fontSize: 9, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "W"),
-        e("polygon", { points: "50,18 53,47 50,50 50,50", fill: "#c23b22" }),
-        e("polygon", { points: "50,18 47,47 50,50 50,50", fill: "#e07a5f" }),
-        e("polygon", { points: "50,82 53,53 50,50 50,50", fill: T.forest }),
-        e("polygon", { points: "50,82 47,53 50,50 50,50", fill: "#5fa375" }),
-        e("polygon", { points: "82,50 53,53 50,50 50,50", fill: T.forest }),
-        e("polygon", { points: "82,50 53,47 50,50 50,50", fill: "#5fa375" }),
-        e("polygon", { points: "18,50 47,53 50,50 50,50", fill: T.forest }),
-        e("polygon", { points: "18,50 47,47 50,50 50,50", fill: "#5fa375" }),
-        e("circle", { cx: 50, cy: 50, r: 4, fill: T.paper, stroke: T.forest, strokeWidth: 1 })
-      )
-    ),
+        e("svg", {
+          width: 80,
+          height: 80,
+          viewBox: "0 0 100 100",
+          style: {
+            transform: "rotate(" + (-bearing) + "deg)",
+            transformOrigin: "center center",
+            filter: "drop-shadow(0 2px 5px rgba(0,0,0,0.22))"
+          }
+        },
+          e("circle", { cx: 50, cy: 50, r: 45, fill: "rgba(255,253,248,0.92)", stroke: T.forest, strokeWidth: 1.5 }),
+          e("circle", { cx: 50, cy: 50, r: 41, fill: "none", stroke: T.borderSoft, strokeWidth: 0.75, strokeDasharray: "2,2" }),
+          
+          e("text", { x: 50, y: 15, fill: "#c23b22", fontSize: 9, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "N"),
+          e("text", { x: 50, y: 22, fill: "#c23b22", fontSize: 5.5, textAnchor: "middle", fontFamily: T.mono }, "0°"),
+          
+          e("text", { x: 50, y: 92, fill: T.forest, fontSize: 8, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "S"),
+          e("text", { x: 50, y: 85, fill: T.forest, fontSize: 5.5, textAnchor: "middle", fontFamily: T.mono }, "180°"),
+          
+          e("text", { x: 88, y: 53, fill: T.forest, fontSize: 8, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "E"),
+          e("text", { x: 79, y: 53, fill: T.forest, fontSize: 5.5, textAnchor: "middle", fontFamily: T.mono }, "90°"),
+          
+          e("text", { x: 13, y: 53, fill: T.forest, fontSize: 8, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "W"),
+          e("text", { x: 22, y: 53, fill: T.forest, fontSize: 5.5, textAnchor: "middle", fontFamily: T.mono }, "270°"),
+          
+          e("polygon", { points: "50,24 53,47 50,50 50,50", fill: "#c23b22" }),
+          e("polygon", { points: "50,24 47,47 50,50 50,50", fill: "#e07a5f" }),
+          e("polygon", { points: "50,76 53,53 50,50 50,50", fill: T.forest }),
+          e("polygon", { points: "50,76 47,53 50,50 50,50", fill: "#5fa375" }),
+          e("polygon", { points: "76,50 53,53 50,50 50,50", fill: T.forest }),
+          e("polygon", { points: "76,50 53,47 50,50 50,50", fill: "#5fa375" }),
+          e("polygon", { points: "24,50 47,53 50,50 50,50", fill: T.forest }),
+          e("polygon", { points: "24,50 47,47 50,50 50,50", fill: "#5fa375" }),
+          
+          e("circle", { cx: 50, cy: 50, r: 4, fill: T.paper, stroke: T.forest, strokeWidth: 1 })
+        ),
+        e("div", {
+          style: {
+            background: "rgba(255, 253, 248, 0.9)",
+            border: "1px solid " + T.borderSoft,
+            borderRadius: 8,
+            padding: "2px 6px",
+            fontSize: 10.5,
+            fontWeight: 700,
+            color: T.ink,
+            fontFamily: T.mono,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.1)"
+          }
+        }, displayHeading + "° " + dirLetter)
+      );
+    })(),
 
     showAisModal && e("div", {
       style: {
