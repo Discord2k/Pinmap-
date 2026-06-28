@@ -1,4 +1,4 @@
-var CACHE_NAME = "pinmap-v384";
+var CACHE_NAME = "pinmap-v385";
 var TILE_CACHE = "pinmap-tiles-v2";
 var MAX_TILES = 10000;
 var APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
@@ -10,6 +10,7 @@ self.addEventListener("install", function(event) {
       return cache.addAll(APP_SHELL);
     })
   );
+  self.skipWaiting();
 });
 
 // ── Activate ──────────────────────────────────────────────────────────────────
@@ -28,25 +29,26 @@ self.addEventListener("activate", function(event) {
 self.addEventListener("fetch", function(event) {
   var url = event.request.url;
 
-  // Cache map tiles and Waymarked Trails overlay
+  // Cache map tiles (all sources including SeaMap)
   if (url.includes("tiles.openfreemap.org") ||
       url.includes("arcgisonline.com") ||
       url.includes("tile.openstreetmap.org") ||
       url.includes("opentopomap.org") ||
       url.includes("tile-cyclosm.openstreetmap.fr") ||
-      url.includes("tile.waymarkedtrails.org")) {
+      url.includes("tile.waymarkedtrails.org") ||
+      url.includes("tiles.openseamap.org")) {
     event.respondWith(cacheTile(event.request));
     return;
   }
 
   // App shell - Network-First for HTML/dev files, Cache-First for static assets
   if (url.includes("pin-map.com") || url.includes("localhost")) {
-    var isHtml = event.request.mode === "navigate" || 
-                 url.endsWith("/") || 
+    var isHtml = event.request.mode === "navigate" ||
+                 url.endsWith("/") ||
                  url.endsWith("/index.html") ||
                  url.includes("index.html");
 
-    var isDevSource = url.includes("localhost") && 
+    var isDevSource = url.includes("localhost") &&
                       (url.includes("/src/") || url.includes("@vite") || url.includes("node_modules"));
 
     if (isHtml || isDevSource) {
@@ -82,7 +84,6 @@ self.addEventListener("fetch", function(event) {
   if (url.includes("supabase.co")) {
     event.respondWith(
       fetch(event.request.clone()).catch(function() {
-        // Return offline response for reads
         return new Response(JSON.stringify([]), {
           headers: { "Content-Type": "application/json" }
         });
@@ -97,7 +98,7 @@ self.addEventListener("fetch", function(event) {
   }));
 });
 
-// Cache a map tile with LRU eviction
+// Cache a map tile with LRU eviction — cache-first, then network
 function cacheTile(request) {
   return caches.open(TILE_CACHE).then(function(cache) {
     return cache.match(request).then(function(cached) {
@@ -105,7 +106,6 @@ function cacheTile(request) {
       return fetch(request).then(function(response) {
         if (response.ok) {
           var clone = response.clone();
-          // Evict oldest tiles if over limit
           cache.keys().then(function(keys) {
             if (keys.length >= MAX_TILES) {
               cache.delete(keys[0]);
@@ -115,16 +115,14 @@ function cacheTile(request) {
         }
         return response;
       }).catch(function() {
-        var url = request.url;
-        // If it's a vector tile (.pbf), return a 204 No Content response so MapLibre handles it gracefully
-        if (url.includes(".pbf")) {
+        var tileUrl = request.url;
+        if (tileUrl.includes(".pbf")) {
           return new Response(null, { status: 204 });
         }
-        // If it's style JSON or style assets, propagate the fetch failure (return 503)
-        if (url.includes("/styles/") || url.includes(".json") || url.includes("/glyphs/")) {
+        if (tileUrl.includes("/styles/") || tileUrl.includes(".json") || tileUrl.includes("/glyphs/")) {
           return new Response("Offline", { status: 503, statusText: "Offline" });
         }
-        // Offline and not cached (raster tiles) - return a valid 1x1 transparent PNG
+        // Return transparent 1×1 PNG for uncached raster tiles
         var transparentPng = new Uint8Array([
           137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,
           8,6,0,0,0,31,21,196,137,0,0,0,10,73,68,65,84,120,156,98,0,1,0,0,
@@ -158,7 +156,7 @@ self.addEventListener("push", function(event) {
   var title = "PINMAP";
   var body = "You have a new notification - tap to view";
   var notifData = { checkNotifications: true };
-  
+
   if (event.data) {
     try {
       var data = event.data.json();
@@ -186,33 +184,64 @@ self.addEventListener("push", function(event) {
 
 self.addEventListener("notificationclick", function(event) {
   event.notification.close();
-  console.log("notification clicked");
-  var targetUrl = self.registration.scope; // Fallback to PWA origin (works on localhost & production)
+  var targetUrl = self.registration.scope;
   if (event.notification.data && event.notification.data.url) {
     targetUrl = event.notification.data.url;
   }
-  
+
   event.waitUntil(
-    clients.matchAll({type:"window", includeUncontrolled:true}).then(function(clientList) {
-      var payload = Object.assign({type:"check-notifications"}, event.notification.data);
+    clients.matchAll({type: "window", includeUncontrolled: true}).then(function(clientList) {
+      var payload = Object.assign({type: "check-notifications"}, event.notification.data);
       try {
         var bc = new BroadcastChannel("pinmap-notifications");
         bc.postMessage(payload);
         bc.close();
       } catch(e) {}
-      for(var i = 0; i < clientList.length; i++) {
+      for (var i = 0; i < clientList.length; i++) {
         try { clientList[i].postMessage(payload); } catch(e) {}
       }
-      if(clientList.length > 0) return clientList[0].focus();
+      if (clientList.length > 0) return clientList[0].focus();
       return clients.openWindow(targetUrl);
     })
   );
 });
 
-// Handle skipWaiting message from client
+// ── Message Handler ───────────────────────────────────────────────────────────
 self.addEventListener("message", function(event) {
   if (event.data && event.data.action === "skipWaiting") {
     self.skipWaiting();
   }
-});
 
+  // Client requests SW to directly cache a batch of tile URLs (fixes no-cors opaque response issue)
+  if (event.data && event.data.action === "cache-tiles") {
+    var cacheName = event.data.cacheName || TILE_CACHE;
+    var urls = event.data.urls || [];
+    var packId = event.data.packId;
+    var client = event.source;
+
+    caches.open(cacheName).then(function(cache) {
+      var promises = urls.map(function(url) {
+        return cache.match(url).then(function(existing) {
+          if (existing) return; // Already cached, skip
+          return fetch(url).then(function(response) {
+            if (response.ok) {
+              cache.put(url, response);
+            }
+          }).catch(function() {});
+        });
+      });
+      return Promise.all(promises);
+    }).then(function() {
+      // Report back to the client that this batch completed
+      if (client) {
+        client.postMessage({
+          action: "cache-tiles-progress",
+          packId: packId,
+          count: urls.length
+        });
+      }
+    }).catch(function(err) {
+      console.error("[SW] cache-tiles error:", err);
+    });
+  }
+});

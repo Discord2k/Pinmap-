@@ -1202,25 +1202,47 @@ function App() {
       if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(0);
       if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(tiles.length);
       
-      function fetchBatch(idx) {
-        if(idx >= tiles.length) { 
-          flash(t("toast_tiles_success")); 
+      // Send tiles to the Service Worker for direct caching (avoids opaque no-cors response issue)
+      function cacheBatchViaSW(idx) {
+        if (idx >= tiles.length) {
+          flash(t("toast_tiles_success"));
           if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(null);
           if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(null);
-          return; 
+          return;
         }
-        var batch = tiles.slice(idx, idx+20);
-        Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
-          .then(function(){
+        var batch = tiles.slice(idx, idx + 10);
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            action: "cache-tiles",
+            cacheName: "pinmap-tiles-v2",
+            urls: batch
+          });
+          // Listen for SW progress reply
+          var handler = function(event) {
+            if (event.data && event.data.action === "cache-tiles-progress" && event.data.packId === packId) {
+              loaded += event.data.count;
+              if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(loaded);
+              navigator.serviceWorker.removeEventListener("message", handler);
+              cacheBatchViaSW(idx + 10);
+            }
+          };
+          navigator.serviceWorker.addEventListener("message", handler);
+        } else {
+          // Fallback: direct fetch with cache API if SW not available
+          Promise.all(batch.map(function(url) {
+            return caches.open("pinmap-tiles-v2").then(function(cache) {
+              return fetch(url, { mode: "cors" })
+                .then(function(resp) { if (resp.ok) cache.put(url, resp); })
+                .catch(function() {});
+            });
+          })).then(function() {
             loaded += batch.length;
             if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(loaded);
-            if(loaded % 100 === 0 || loaded === tiles.length) flash(t("toast_trail_download_progress", {progress: Math.round((loaded/tiles.length)*100)}));
-            fetchBatch(idx+20);
-          }).catch(function(err) {
-            console.error("Fetch batch error", err);
+            cacheBatchViaSW(idx + 10);
           });
+        }
       }
-      fetchBatch(0);
+      cacheBatchViaSW(0);
     } catch (globalErr) {
       console.error("Download offline tiles error", globalErr);
       flash("Error: " + globalErr.message);
