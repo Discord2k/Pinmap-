@@ -422,7 +422,9 @@ export function ProfilePanel(props) {
               </div>
               <div>
                 <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Colecciones y Mapas':'Collections & Maps'}</div>
-                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>{myCollections.length} {lang==='es'?'Colecciones':'Collections'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>
+                  {myCollections.length} {lang==='es'?'Colecciones':'Collections'} {offlinePacks.length > 0 ? `· ${offlinePacks.length} ${lang==='es'?'Mapas':'Maps'}` : ""}
+                </div>
               </div>
             </button>
 

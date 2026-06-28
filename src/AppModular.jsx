@@ -364,6 +364,8 @@ function App() {
   var s72=useState([]); var newUpvotePinIds=s72[0]; var setNewUpvotePinIds=s72[1];
   var s69=useState(function(){try{return JSON.parse(localStorage.getItem("pm-drafts")||"[]");}catch(e){return [];}}); var drafts=s69[0]; var setDrafts=s69[1];
   var s70=useState(false); var offlineMode=s70[0]; var setOfflineMode=s70[1];
+  var [offlineDownloadProgress, setOfflineDownloadProgress] = useState(null);
+  var [offlineDownloadTotal, setOfflineDownloadTotal] = useState(null);
   // reticle box: {top,left,width,height} in viewport-px, initialised when offlineMode opens
   var s71=useState(null); var reticleBox=s71[0]; var setReticleBox=s71[1];
   var reticleDrag=useRef(null); // {startX,startY,origTop,origLeft}
@@ -754,12 +756,20 @@ function App() {
     setOfflineMode(false);
     flash(t("toast_tiles_downloading", {count: tiles.length}));
     var loaded = 0;
+    setOfflineDownloadProgress(0);
+    setOfflineDownloadTotal(tiles.length);
     function fetchBatch(idx) {
-      if(idx >= tiles.length) { flash(t("toast_tiles_success")); return; }
+      if(idx >= tiles.length) { 
+        flash(t("toast_tiles_success")); 
+        setOfflineDownloadProgress(null);
+        setOfflineDownloadTotal(null);
+        return; 
+      }
       var batch = tiles.slice(idx, idx+20);
       Promise.all(batch.map(function(url){ return fetch(url,{mode:"no-cors"}).catch(function(){}); }))
         .then(function(){
           loaded += batch.length;
+          setOfflineDownloadProgress(loaded);
           if(loaded % 100 === 0 || loaded === tiles.length) flash(t("toast_trail_download_progress", {progress: Math.round((loaded/tiles.length)*100)}));
           fetchBatch(idx+20);
         });
@@ -5473,7 +5483,15 @@ function App() {
       )
     ),
 
-      fullscreenPhoto && e(PhotoModal, { fullscreenPhoto, setFullscreenPhoto, t }),
+    fullscreenPhoto && e(PhotoModal, { fullscreenPhoto, setFullscreenPhoto, t }),
+
+    offlineDownloadProgress !== null && offlineDownloadTotal !== null && e("div",{style:{position:"absolute",bottom:90,left:"50%",transform:"translateX(-50%)",background:T.paper,border:"1px solid "+T.borderSoft,padding:"12px 16px",borderRadius:16,zIndex:1001,boxShadow:S.shadow1,width:240,display:"flex",flexDirection:"column",gap:8}},
+      e("div",{style:{fontSize:13,fontWeight:700,color:T.ink,textAlign:"center"}}, lang==='es'?'Descargando mapa...':'Downloading map pack...'),
+      e("div",{style:{height:6,background:T.forestPale,borderRadius:3,overflow:"hidden"}},
+        e("div",{style:{height:"100%",background:T.forest,width:Math.min(100, (offlineDownloadProgress/offlineDownloadTotal*100))+"%",transition:"width 0.2s ease"}})
+      ),
+      e("div",{style:{fontSize:11,color:T.ink3,textAlign:"center",fontFamily:T.mono}}, offlineDownloadProgress + " / " + offlineDownloadTotal + " " + (lang==='es'?'teselas':'tiles'))
+    ),
 
     toast&&e("div",{className:"pm-toast",style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",color:"#2a5d3c",padding:"7px 16px",borderRadius:20,fontSize:13,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast),
 
