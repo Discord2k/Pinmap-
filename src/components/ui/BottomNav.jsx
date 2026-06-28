@@ -3,7 +3,7 @@ import { T } from '../../utils/styles';
 const e = React.createElement;
 
 export function BottomNav({ uname, open, tab, setOpen, setTab, t, unreadCount }) {
-  return e("div",{style:{position:"fixed",left:0,right:0,bottom:0,zIndex:1001,background:T.paper,borderTop:"1px solid "+T.borderSoft,paddingBottom:"calc(6px + env(safe-area-inset-bottom,0px))",boxShadow:"0 -1px 0 rgba(28,32,28,0.04), 0 -8px 24px rgba(28,32,28,0.06)"}},
+  return e("div",{style:{position:"fixed",left:0,right:0,bottom:0,zIndex:1001,background:T.paper,borderTop:"1px solid "+T.borderSoft,paddingBottom:"calc(6px + env(safe-area-inset-bottom,0px))",boxShadow:"none"}},
     e("div",{style:{display:"flex",alignItems:"stretch",height:60}},
       [
         {id:"map",label:"Map"},
@@ -30,10 +30,9 @@ export function BottomNav({ uname, open, tab, setOpen, setTab, t, unreadCount })
           },
           style:{flex:1,position:"relative",background:"transparent",border:"none",padding:"8px 0 6px",
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-            color:isActive?T.forest:T.ink3,cursor:"pointer",fontFamily:T.font,transition:"color 0.15s"}
+            color:isActive?"var(--on-primary-container)":T.ink3,cursor:"pointer",fontFamily:T.font,transition:"color 0.15s"}
         },
-          isActive && e("div",{style:{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:28,height:2,background:T.forest,borderRadius:"0 0 2px 2px"}}),
-          e("div",{style:{opacity:isActive?1:0.7,transition:"opacity 0.15s"}},icons[it.id]||icons.map),
+          e("div",{style:{opacity:isActive?1:0.7,transition:"all 0.15s", background: isActive ? "var(--primary-container)" : "transparent", padding: "4px 16px", borderRadius: 16}},icons[it.id]||icons.map),
           e("span",{style:{fontSize:10,fontWeight:isActive?700:500,letterSpacing:"0.14em",textTransform:"uppercase"}},t("tab_" + it.id, it.label)),
           it.id==="mine" && unreadCount>0 && e("div",{style:{position:"absolute",top:8,right:"calc(50% - 18px)",width:6,height:6,borderRadius:"50%",background:"#b85c2a",pointerEvents:"none"}})
         );

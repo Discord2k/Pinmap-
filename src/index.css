@@ -1,14 +1,32 @@
 :root {
-  --paper:      #f6f1e4;
-  --paper2:     #efe9d8;
-  --paper3:     #e8e1cd;
-  --ink:        #1a201c;
-  --ink2:       #3c4540;
-  --ink3:       #6f786f;
-  --forest:     #2a5d3c;
-  --forest2:    #1f4a30;
+  /* Core Brand (Material 3 Tonal Palette) */
+  --primary: #2a5d3c;
+  --on-primary: #ffffff;
+  --primary-container: #a5eed0; /* Lighter tint of forest */
+  --on-primary-container: #002111;
+
+  /* Surfaces */
+  --surface: #f6f1e4;
+  --surface-dim: #efe9d8;
+  --surface-container-low: #f8f4eb;
+  --surface-container: #f3edd9;
+  --surface-container-high: #e8e1cd;
+  
+  /* Text */
+  --on-surface: #1a201c;
+  --on-surface-variant: #3c4540;
+
+  /* Legacy Maps (Keeping for JS compatibility) */
+  --paper: var(--surface);
+  --paper2: var(--surface-dim);
+  --paper3: var(--surface-container-high);
+  --ink: var(--on-surface);
+  --ink2: var(--on-surface-variant);
+  --ink3: #6f786f;
+  --forest: var(--primary);
+  --forest2: #1f4a30;
   --forestPale: #dde6dc;
-  --border:     #d8cfb8;
+  --border: #d8cfb8;
   --borderSoft: #e6dfca;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
