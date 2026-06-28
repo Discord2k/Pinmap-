@@ -1,9 +1,12 @@
 export const COLORS = ["#2a5d3c","#e65100","#1565c0","#ad1457","#6a1599","#00695c","#c62828","#4e342e"];
 export const ONBOARD_KEY = "pm-onboarded-v8";
-export const WHATSNEW_KEY = "pm-whatsnew-v15";
+export const WHATSNEW_KEY = "pm-whatsnew-v16";
 export const APP_VERSION = "2.5.0";
 
 export const WHATSNEW_EN = [
+  {emoji:"🚢", title:"Live Marine Traffic Overlay", body:"Switch to the new Marine map layer to see real-world ships and vessels moving in real-time on your map! Powered by AISstream.io, the live overlay shows vessel names, speed, heading, type, destination, and more. If you do not have an API key yet, a demo simulation mode with animated vessels is shown automatically. Add your free key in Profile → Settings → Marine Settings."},
+  {emoji:"⚓", title:"Nautical Map Layer & Compass Rose", body:"The new Marine layer overlays full OpenSeaMap nautical charts (buoys, beacons, depth alerts, shipping lanes) on top of the standard map. A beautiful rotating compass rose with degree headings and a real-time bearing readout automatically appears in the corner whenever Marine mode is active."},
+  {emoji:"🗺️", title:"Offline Map Packs", body:"Download map areas for use without an internet connection! Open Profile → Collections & Maps and tap 'Download Map Area' to save any visible region to your device with a custom name. Offline packs appear in your Collections & Maps panel with storage size and can be deleted anytime."},
   {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files! Features include automatic screen wake-lock while recording, advanced GPS drift and app-resumption spike filtering, and a public trail search and bookmarking system so trails don't automatically appear for others unless saved."},
   {emoji:"🧭", title:"Guides & Map Packs", body:"Curate and publish custom map packs! Group your favorite spots into custom guides (e.g. 'Coffee Shops' or 'Weekend Hikes') from your profile. Select a map pack to filter the map view to just those spots."},
   {emoji:"🏆", title:"Explorer Quests", body:"Embark on location-based challenges! Design custom quests with target tags (e.g. check in to 3 #waterfalls) and see progress update in real time as you and other explorers check in to matching spots."},
@@ -20,6 +23,9 @@ export const WHATSNEW_EN = [
 ];
 
 export const WHATSNEW_ES = [
+  {emoji:"🚢", title:"Tráfico Marítimo en Vivo", body:"¡Cambia a la nueva capa Marina para ver barcos moviéndose en tiempo real en tu mapa! Impulsado por AISstream.io, el overlay muestra nombre del buque, velocidad, rumbo, tipo, destino y más. Si aún no tienes clave API, se muestra automáticamente un modo de simulación con barcos animados. Añade tu clave gratuita en Perfil → Ajustes → Configuración Marina."},
+  {emoji:"⚓", title:"Capa Náutica y Rosa de los Vientos", body:"La nueva capa Marina superpone cartas náuticas OpenSeaMap completas (boyas, balizas, alertas de profundidad, rutas de navegación). Una hermosa rosa de los vientos con grados y lectura digital del rumbo aparece automáticamente en la esquina cuando el modo Marino está activo."},
+  {emoji:"🗺️", title:"Paquetes de Mapas Sin Conexión", body:"¡Descarga áreas del mapa para usarlas sin conexión! Abre Perfil → Colecciones y Mapas y toca 'Descargar Área del Mapa' para guardar cualquier región visible con un nombre personalizado. Los paquetes aparecen con tamaño de almacenamiento y se pueden eliminar en cualquier momento."},
   {emoji:"⏺️", title:"Senderos GPX Interactivos", body:"¡Graba tus rutas en tiempo real o importa archivos GPX! Incluye bloqueo automático de pantalla encendida, filtrado de deriva GPS y picos al reanudar la app, y un sistema de búsqueda y guardado de senderos públicos para que no aparezcan automáticamente a otros a menos que decidan agregarlos."},
   {emoji:"🧭", title:"Guías y Paquetes de Mapas", body:"¡Crea y publica paquetes de mapas personalizados! Agrupa tus lugares favoritos en guías personalizadas (ej. 'Cafeterías' o 'Caminatas de Fin de Semana') desde tu perfil. Selecciona un paquete de mapas para filtrar la vista del mapa a solo esos puntos."},
   {emoji:"🏆", title:"Búsquedas de Explorador", body:"¡Embárcate en desafíos basados en la ubicación! Diseña búsquedas personalizadas con etiquetas objetivo (ej. registrar visita en 3 #cascadas) y mira el progreso actualizarse en tiempo real a medida que tú y otros exploradores registran visitas en lugares coincidentes."},
@@ -36,6 +42,9 @@ export const WHATSNEW_ES = [
 ];
 
 export const ALL_FEATURES_EN = [
+  {emoji:"🚢", title:"Live Marine Traffic", body:"Switch to the Marine layer to see real-world ships and vessels moving in real-time! The overlay shows name, MMSI, IMO, speed, heading, type, navigational status, call sign, draft, and destination for every vessel in your current map view. Powered by AISstream.io — add your free API key in Profile → Settings → Marine Settings. Without a key, animated demo vessels are shown so you can explore the feature."},
+  {emoji:"⚓", title:"Nautical Chart Layer", body:"The Marine layer overlays full OpenSeaMap nautical charts on your map — buoys, beacons, depth contours, shipping lanes and navigational aids. A rotating compass rose with N/S/E/W degree markings and a live digital bearing readout badge appears in the corner whenever Marine mode is active."},
+  {emoji:"🗺️", title:"Offline Map Packs", body:"Download map areas to your device for offline use. Open Profile → Collections & Maps and tap 'Download Map Area' to save any visible region with a custom name. Packs are shown with storage estimates and can be deleted anytime. Great for boating, hiking, or any adventure outside cell coverage."},
   {emoji:"⏺️", title:"Interactive GPX Trails", body:"Record your outdoor routes in real-time or import GPX trail files! Features include automatic screen wake-lock while recording, advanced GPS drift and app-resumption spike filtering, and a public trail search and bookmarking system so trails don't automatically appear for others unless saved."},
   {emoji:"🧭", title:"Collections", body:"Design, publish, and view custom collections! Group your favorite pins into collections in your Profile, filter the map to see only those spots, and share collections with fellow explorers."},
   {emoji:"🏆", title:"Explorer Quests", body:"Create and join custom location challenges! Challenge yourself or other users by setting requirements like checking in to 3 spots tagged #viewpoint. Track quest completion status dynamically."},
@@ -66,6 +75,9 @@ export const ALL_FEATURES_EN = [
 ];
 
 export const ALL_FEATURES_ES = [
+  {emoji:"🚢", title:"Tráfico Marítimo en Vivo", body:"¡Cambia a la capa Marina para ver barcos moviéndose en tiempo real! El overlay muestra nombre, MMSI, IMO, velocidad, rumbo, tipo, estado de navegación, señal de llamada, calado y destino para cada embarcación en tu vista actual. Impulsado por AISstream.io — añade tu clave gratuita en Perfil → Ajustes → Configuración Marina. Sin clave se muestran barcos de demostración animados."},
+  {emoji:"⚓", title:"Capa de Carta Náutica", body:"La capa Marina superpone cartas náuticas OpenSeaMap completas — boyas, balizas, contornos de profundidad, rutas de navegación y ayudas náuticas. Una rosa de los vientos giratoria con marcas de grado y una lectura digital del rumbo aparece en la esquina cuando el modo Marino está activo."},
+  {emoji:"🗺️", title:"Paquetes de Mapas Sin Conexión", body:"Descarga áreas del mapa para uso sin conexión. Abre Perfil → Colecciones y Mapas y toca 'Descargar Área del Mapa' para guardar cualquier región visible con un nombre personalizado. Los paquetes se muestran con estimaciones de almacenamiento y se pueden eliminar en cualquier momento. Ideal para navegar, senderismo o aventuras fuera de cobertura."},
   {emoji:"⏺️", title:"Senderos GPX Interactivos", body:"¡Graba tus rutas en tiempo real o importa archivos GPX! Incluye bloqueo automático de pantalla encendida, filtrado de deriva GPS y picos al reanudar la app, y un sistema de búsqueda y guardado de senderos públicos para que no aparezcan automáticamente a otros a menos que decidan agregarlos."},
   {emoji:"🧭", title:"Colecciones", body:"¡Diseña, publica y visualiza colecciones personalizadas! Agrupa tus pines favoritos en colecciones en tu Perfil, filtra el mapa para ver solo esos puntos y comparte colecciones con otros exploradores."},
   {emoji:"🏆", title:"Búsquedas de Explorador", body:"¡Crea y únete a desafíos de ubicación personalizados! Desafíate a ti mismo o a otros usuarios configurando requisitos como registrar visitas en 3 lugares con la etiqueta #mirador. Realiza el seguimiento del estado de finalización de forma dinámica."},
@@ -116,6 +128,11 @@ export const TUTORIALS_EN = {
       title: "Record Your Routes",
       body: "Click here to toggle the Trails & Quests panel. Start recording your path in real-time or import external GPX files.",
       target: "btn-trail-quest"
+    },
+    {
+      title: "Marine Mode & Live Vessels 🚢",
+      body: "Open the Layers menu and select Marine to activate the nautical chart overlay and live vessel tracking! Ships in your current map view appear as animated markers — tap any vessel to see its name, speed, heading, destination, and more. Add a free AISstream.io API key in Profile → Settings → Marine Settings for live real-world data.",
+      target: "btn-layers"
     }
   ],
   search: [
@@ -199,6 +216,11 @@ export const TUTORIALS_ES = {
       title: "Graba tus Rutas",
       body: "Toca aquí para abrir el panel de Rutas y Desafíos. Graba tu recorrido en tiempo real o importa archivos GPX.",
       target: "btn-trail-quest"
+    },
+    {
+      title: "Modo Marino y Barcos en Vivo 🚢",
+      body: "¡Abre el menú de Capas y selecciona Marina para activar la superposición de carta náutica y el rastreo de barcos en vivo! Los buques en tu vista actual aparecen como marcadores animados — toca cualquiera para ver nombre, velocidad, rumbo, destino y más. Añade una clave API gratuita de AISstream.io en Perfil → Ajustes → Configuración Marina para datos reales en vivo.",
+      target: "btn-layers"
     }
   ],
   search: [
