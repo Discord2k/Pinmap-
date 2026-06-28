@@ -1202,47 +1202,55 @@ function App() {
       if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(0);
       if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(tiles.length);
       
-      // Send tiles to the Service Worker for direct caching (avoids opaque no-cors response issue)
-      function cacheBatchViaSW(idx) {
+      var cancelled = false;
+      window._cancelOfflineDownload = function() {
+        cancelled = true;
+        if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(null);
+        if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(null);
+        flash(lang === 'es' ? "Descarga cancelada" : "Download cancelled");
+        // Remove partially completed pack from list
+        try {
+          var pks = JSON.parse(localStorage.getItem("pinmap_offline_packs") || "[]");
+          pks = pks.filter(function(p) { return p.id !== packId; });
+          localStorage.setItem("pinmap_offline_packs", JSON.stringify(pks));
+        } catch(e) {}
+      };
+
+      // Use Cache API directly — works reliably on both desktop and mobile
+      // without the no-cors opaque response issue
+      function cacheBatch(idx) {
+        if (cancelled) return;
         if (idx >= tiles.length) {
+          window._cancelOfflineDownload = null;
           flash(t("toast_tiles_success"));
           if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(null);
           if (typeof setOfflineDownloadTotal === "function") setOfflineDownloadTotal(null);
           return;
         }
-        var batch = tiles.slice(idx, idx + 10);
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            action: "cache-tiles",
-            cacheName: "pinmap-tiles-v2",
-            urls: batch
-          });
-          // Listen for SW progress reply
-          var handler = function(event) {
-            if (event.data && event.data.action === "cache-tiles-progress" && event.data.packId === packId) {
-              loaded += event.data.count;
-              if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(loaded);
-              navigator.serviceWorker.removeEventListener("message", handler);
-              cacheBatchViaSW(idx + 10);
-            }
-          };
-          navigator.serviceWorker.addEventListener("message", handler);
-        } else {
-          // Fallback: direct fetch with cache API if SW not available
-          Promise.all(batch.map(function(url) {
-            return caches.open("pinmap-tiles-v2").then(function(cache) {
-              return fetch(url, { mode: "cors" })
-                .then(function(resp) { if (resp.ok) cache.put(url, resp); })
-                .catch(function() {});
+        var batch = tiles.slice(idx, idx + 8);
+        caches.open("pinmap-tiles-v2").then(function(cache) {
+          return Promise.all(batch.map(function(url) {
+            return cache.match(url).then(function(existing) {
+              if (existing) return; // Already cached
+              return fetch(url).then(function(resp) {
+                if (resp && resp.ok) {
+                  return cache.put(url, resp);
+                }
+              }).catch(function() {}); // Silently skip failed tiles
             });
-          })).then(function() {
-            loaded += batch.length;
-            if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(loaded);
-            cacheBatchViaSW(idx + 10);
-          });
-        }
+          }));
+        }).then(function() {
+          if (cancelled) return;
+          loaded += batch.length;
+          if (typeof setOfflineDownloadProgress === "function") setOfflineDownloadProgress(loaded);
+          // Use setTimeout to yield to the browser and prevent UI freeze on mobile
+          setTimeout(function() { cacheBatch(idx + 8); }, 30);
+        }).catch(function(err) {
+          console.error("Cache batch error", err);
+          if (!cancelled) setTimeout(function() { cacheBatch(idx + 8); }, 100);
+        });
       }
-      cacheBatchViaSW(0);
+      cacheBatch(0);
     } catch (globalErr) {
       console.error("Download offline tiles error", globalErr);
       flash("Error: " + globalErr.message);
@@ -6672,15 +6680,23 @@ function App() {
 
     fullscreenPhoto && e(PhotoModal, { fullscreenPhoto, setFullscreenPhoto, t }),
 
-    offlineDownloadProgress !== null && offlineDownloadTotal !== null && e("div",{style:{position:"absolute",bottom:90,left:"50%",transform:"translateX(-50%)",background:T.paper,border:"1px solid "+T.borderSoft,padding:"12px 16px",borderRadius:16,zIndex:1001,boxShadow:S.shadow1,width:240,display:"flex",flexDirection:"column",gap:8}},
-      e("div",{style:{fontSize:13,fontWeight:700,color:T.ink,textAlign:"center"}}, lang==='es'?'Descargando mapa...':'Downloading map pack...'),
-      e("div",{style:{height:6,background:T.forestPale,borderRadius:3,overflow:"hidden"}},
-        e("div",{style:{height:"100%",background:T.forest,width:Math.min(100, (offlineDownloadProgress/offlineDownloadTotal*100))+"%",transition:"width 0.2s ease"}})
+    offlineDownloadProgress !== null && offlineDownloadTotal !== null && e("div",{style:{position:"fixed",bottom:"calc(90px + env(safe-area-inset-bottom,0px))",left:"50%",transform:"translateX(-50%)",background:T.paper,border:"1px solid "+T.borderSoft,padding:"14px 18px",borderRadius:16,zIndex:1005,boxShadow:S.shadow2,width:260,display:"flex",flexDirection:"column",gap:10}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
+        e("div",{style:{fontSize:13,fontWeight:700,color:T.ink}}, lang==='es'?'Descargando mapa...':'Downloading map pack...'),
+        e("button",{
+          onClick: function() { if (window._cancelOfflineDownload) window._cancelOfflineDownload(); },
+          style:{background:"transparent",border:"none",cursor:"pointer",color:T.ink3,fontSize:18,lineHeight:1,padding:"0 2px"}
+        }, "✕")
       ),
-      e("div",{style:{fontSize:11,color:T.ink3,textAlign:"center",fontFamily:T.mono}}, offlineDownloadProgress + " / " + offlineDownloadTotal + " " + (lang==='es'?'teselas':'tiles'))
+      e("div",{style:{height:8,background:T.forestPale,borderRadius:4,overflow:"hidden"}},
+        e("div",{style:{height:"100%",background:T.forest,width:Math.min(100, (offlineDownloadProgress/offlineDownloadTotal*100))+"%",borderRadius:4,transition:"width 0.3s ease"}})
+      ),
+      e("div",{style:{fontSize:11,color:T.ink3,textAlign:"center",fontFamily:T.mono}},
+        Math.round((offlineDownloadProgress/offlineDownloadTotal)*100) + "% — " + offlineDownloadProgress + " / " + offlineDownloadTotal + " " + (lang==='es'?'teselas':'tiles')
+      )
     ),
 
-    toast&&e("div",{className:"pm-toast",style:{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",color:"#2a5d3c",padding:"7px 16px",borderRadius:20,fontSize:13,zIndex:1002,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast),
+    toast&&e("div",{className:"pm-toast",style:{position:"fixed",bottom:18,left:"50%",transform:"translateX(-50%)",background:"rgba(255,253,248,0.97)",border:"1px solid #d8cfb8",color:"#2a5d3c",padding:"7px 16px",borderRadius:20,fontSize:13,zIndex:1003,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}},toast),
 
     e(BottomNav, { uname, open, tab, setOpen, setTab, t, unreadCount })
 
