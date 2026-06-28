@@ -373,6 +373,7 @@ function App() {
   var [offlineDownloadProgress, setOfflineDownloadProgress] = useState(null);
   var [offlineDownloadTotal, setOfflineDownloadTotal] = useState(null);
   var [showAisModal, setShowAisModal] = useState(false);
+  var [bearing, setBearing] = useState(0);
   useEffect(function() {
     if (baseLayer === "marine") {
       var key = localStorage.getItem("pinmap_ais_key") || "";
@@ -651,7 +652,7 @@ function App() {
       map.off("moveend", onMapMoveEnd);
       cleanUpVessels();
     };
-  }, [baseLayer, open]);
+  }, [baseLayer, open, styleLoadCount]);
   // reticle box: {top,left,width,height} in viewport-px, initialised when offlineMode opens
   var s71=useState(null); var reticleBox=s71[0]; var setReticleBox=s71[1];
   var reticleDrag=useRef(null); // {startX,startY,origTop,origLeft}
@@ -2096,6 +2097,9 @@ function App() {
         var c = map.getCenter();
         setMapCenter({lat: c.lat, lng: c.lng});
         setMapZoom(map.getZoom());
+      });
+      map.on("rotate", function() {
+        setBearing(map.getBearing());
       });
       
       map.on('style.load', function() {
@@ -5637,6 +5641,48 @@ function App() {
       selPin && !open && e(PinDetailModal, { selPin, setSelPin, uname, api, t, formatLL, distKm, userLL, userFollows, follows, loadUserProfile, setFullscreenPhoto, getPinIcon, tagColor, toggleFollow, checkins, mapPacks, activeMapPack, setSelPinOwnerProfile, selPinOwnerProfile, toggleUserFollow, selPinTrail, activeTrail, setActiveTrail, savedTrailIds, setSavedTrailIds, setTrails, flash, selPinCheckinsCount, toggleUpvote, lang, checkinToPin, openEdit, deletePin, setShowCompass, setShowAddToCollectionsMenu, activeHuntPinId: (quickHunts.active ? quickHunts.active.activePinId : null), activeHuntCheckinLogged: (quickHunts.active ? quickHunts.active.activeCheckinLogged : false), onHuntProgress: handleHuntProgress }),
 
     showWhatsNew&&e(WhatsNew,{onDismiss:dismissWhatsNew,lang:lang,t:t}),
+
+    baseLayer === "marine" && e("div", {
+      id: "pm-marine-compass-rose",
+      style: {
+        position: "fixed",
+        bottom: "calc(130px + env(safe-area-inset-bottom, 0px))",
+        left: 14,
+        zIndex: 998,
+        width: 80,
+        height: 80,
+        pointerEvents: "none",
+        transition: "opacity 0.3s ease",
+        opacity: 0.85
+      }
+    },
+      e("svg", {
+        width: 80,
+        height: 80,
+        viewBox: "0 0 100 100",
+        style: {
+          transform: "rotate(" + (-bearing) + "deg)",
+          transformOrigin: "center center",
+          filter: "drop-shadow(0 2px 5px rgba(0,0,0,0.22))"
+        }
+      },
+        e("circle", { cx: 50, cy: 50, r: 45, fill: "rgba(255,253,248,0.92)", stroke: T.forest, strokeWidth: 1.5 }),
+        e("circle", { cx: 50, cy: 50, r: 41, fill: "none", stroke: T.borderSoft, strokeWidth: 0.75, strokeDasharray: "2,2" }),
+        e("text", { x: 50, y: 16, fill: "#c23b22", fontSize: 10, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "N"),
+        e("text", { x: 50, y: 92, fill: T.forest, fontSize: 9, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "S"),
+        e("text", { x: 88, y: 53, fill: T.forest, fontSize: 9, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "E"),
+        e("text", { x: 13, y: 53, fill: T.forest, fontSize: 9, fontWeight: "bold", textAnchor: "middle", fontFamily: T.mono }, "W"),
+        e("polygon", { points: "50,18 53,47 50,50 50,50", fill: "#c23b22" }),
+        e("polygon", { points: "50,18 47,47 50,50 50,50", fill: "#e07a5f" }),
+        e("polygon", { points: "50,82 53,53 50,50 50,50", fill: T.forest }),
+        e("polygon", { points: "50,82 47,53 50,50 50,50", fill: "#5fa375" }),
+        e("polygon", { points: "82,50 53,53 50,50 50,50", fill: T.forest }),
+        e("polygon", { points: "82,50 53,47 50,50 50,50", fill: "#5fa375" }),
+        e("polygon", { points: "18,50 47,53 50,50 50,50", fill: T.forest }),
+        e("polygon", { points: "18,50 47,47 50,50 50,50", fill: "#5fa375" }),
+        e("circle", { cx: 50, cy: 50, r: 4, fill: T.paper, stroke: T.forest, strokeWidth: 1 })
+      )
+    ),
 
     showAisModal && e("div", {
       style: {
