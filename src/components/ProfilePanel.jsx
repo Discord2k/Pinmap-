@@ -1087,24 +1087,10 @@ export function ProfilePanel(props) {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                cursor: "pointer",
                 userSelect: "none"
               }}
-              onClick={function(){
-                setCollectionsCollapsed(function(prev) { return !prev; });
-              }}
             >
-              <span style={{
-                fontSize: 10,
-                color: T.ink3,
-                display: "inline-block",
-                transition: "transform 0.2s",
-                transform: collectionsCollapsed ? "rotate(0deg)" : "rotate(90deg)"
-              }}>▶</span>
               <span style={Object.assign({}, S.secHead, {display:"flex",alignItems:"center",gap:8})}>
-                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{color: T.ink3, flexShrink: 0}}>
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                </svg>
                 <span>{t('collections') + (myCollections.length > 0 ? " · " + myCollections.length : "")}</span>
               </span>
               <span 
@@ -1144,11 +1130,7 @@ export function ProfilePanel(props) {
                   border: "none",
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
-                  opacity: collectionsCollapsed ? 0 : 1,
-                  transform: collectionsCollapsed ? "scale(0.9)" : "scale(1)",
-                  pointerEvents: collectionsCollapsed ? "none" : "auto",
-                  transition: "opacity 0.2s, transform 0.2s"
+                  gap: 4
                 })}
                 onClick={function(){ setShowCreatePackModal(true); }}
               >
@@ -1158,7 +1140,7 @@ export function ProfilePanel(props) {
             )}
           </div>
  
-          <div className={"pm-collapsible " + (collectionsCollapsed ? "collapsed" : "")}>
+          <div style={{marginTop: 16}}>
             <div>
               {myCollections.length === 0 ? (
                 <EmptyState 
