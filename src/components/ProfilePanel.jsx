@@ -412,8 +412,8 @@ export function ProfilePanel(props) {
                 <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
               </div>
               <div>
-                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Retos y Búsquedas':'Challenges & Hunts'}</div>
-                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>GPS {lang==='es'?'y Enigmas':'& Quests'}</div>
+                <div style={{fontSize:14, fontWeight:700, color:T.ink}}>{lang==='es'?'Retos y Búsquedas':'Quests & Hunts'}</div>
+                <div style={{fontSize:11, color:T.ink3, marginTop:2}}>GPS {lang==='es'?'y Enigmas':'& Riddles'}</div>
               </div>
             </button>
 
