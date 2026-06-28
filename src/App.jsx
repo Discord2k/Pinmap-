@@ -435,10 +435,21 @@ function App() {
         };
 
         ws.onmessage = function(event) {
+          if (event.data instanceof Blob) {
+            event.data.text().then(function(text) {
+              processAisMessageText(text);
+            }).catch(function(err){
+              console.error("AIS blob text error", err);
+            });
+          } else {
+            processAisMessageText(event.data);
+          }
+        };
+
+        function processAisMessageText(text) {
           try {
-            var data = JSON.parse(event.data);
+            var data = JSON.parse(text);
             console.log("AIS message received:", data);
-            // Accept any PositionReport type (PositionReport, StandardClassBPositionReport, etc.)
             if (data && data.Message) {
               var pos = null;
               var typeKey = Object.keys(data.Message).find(function(k){ return k.includes("PositionReport"); });
@@ -460,7 +471,7 @@ function App() {
           } catch(e){
             console.error("AIS parse error", e);
           }
-        };
+        }
 
         ws.onerror = function(err) {
           console.error("AIS stream error:", err);
