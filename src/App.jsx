@@ -424,34 +424,50 @@ function App() {
 
     function connectToAisStream(apiKey) {
       cleanUpVessels();
+      console.log("AIS stream connecting...");
       try {
         var ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
         aisSocketRef.current = ws;
 
         ws.onopen = function() {
+          console.log("AIS stream connected, subscribing...");
           subscribeToViewport(ws, apiKey);
         };
 
         ws.onmessage = function(event) {
           try {
             var data = JSON.parse(event.data);
-            if (data && data.MessageType === "PositionReport" && data.Message) {
-              var pos = data.Message.PositionReport;
-              var metadata = data.MetaData;
-              var mmsi = metadata.MMSI;
-              var name = metadata.ShipName ? metadata.ShipName.trim() : "Unknown Ship";
-              var lat = pos.Latitude;
-              var lng = pos.Longitude;
-              var cog = pos.Cog;
-              var sog = pos.Sog;
-              var type = metadata.ShipType || 0;
+            console.log("AIS message received:", data);
+            // Accept any PositionReport type (PositionReport, StandardClassBPositionReport, etc.)
+            if (data && data.Message) {
+              var pos = null;
+              var typeKey = Object.keys(data.Message).find(function(k){ return k.includes("PositionReport"); });
+              if (typeKey) pos = data.Message[typeKey];
 
-              updateVesselMarker(mmsi, name, lat, lng, cog, sog, type, false);
+              if (pos) {
+                var metadata = data.MetaData;
+                var mmsi = metadata.MMSI;
+                var name = metadata.ShipName ? metadata.ShipName.trim() : "Unknown Ship";
+                var lat = pos.Latitude;
+                var lng = pos.Longitude;
+                var cog = pos.Cog;
+                var sog = pos.Sog;
+                var type = metadata.ShipType || 0;
+
+                updateVesselMarker(mmsi, name, lat, lng, cog, sog, type, false);
+              }
             }
-          } catch(e){}
+          } catch(e){
+            console.error("AIS parse error", e);
+          }
         };
 
-        ws.onclose = function() {
+        ws.onerror = function(err) {
+          console.error("AIS stream error:", err);
+        };
+
+        ws.onclose = function(e) {
+          console.log("AIS stream closed:", e.code, e.reason);
           setTimeout(function() {
             if (baseLayerRef.current === "marine" && !aisSocketRef.current) {
               connectToAisStream(apiKey);
@@ -473,9 +489,12 @@ function App() {
         Apikey: apiKey,
         BoundingBoxes: [[[sw.lat, sw.lng], [ne.lat, ne.lng]]]
       };
+      console.log("Subscribing to AISstream bounds:", subMessage.BoundingBoxes);
       try {
         ws.send(JSON.stringify(subMessage));
-      } catch(e){}
+      } catch(e){
+        console.error("AIS subscribe send error", e);
+      }
     }
 
     function onMapMoveEnd() {
